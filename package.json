@@ -1,0 +1,21 @@
+{
+  "name": "freelance-doc-maker",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "generate": "node src/generate-quote.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^2.1.71",
+    "docx": "^9.6.0",
+    "express": "^5.2.1",
+    "fs-extra": "^11.3.4",
+    "puppeteer": "^24.38.0"
+  }
+}

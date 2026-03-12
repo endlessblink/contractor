@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>יוצר מסמכים — Noam Naumovsky Productions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Heebo', sans-serif;
+      background: #f8f9fa;
+      color: #1e293b;
+      direction: rtl;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 860px;
+      margin: 0 auto;
+      background: #ffffff;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #1e293b;
+      color: #ffffff;
+      padding-block: 16px;
+      padding-inline: 24px;
+      flex-shrink: 0;
+    }
+
+    .header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .header .subtitle {
+      font-size: 0.8rem;
+      font-weight: 300;
+      opacity: 0.7;
+      margin-block-start: 2px;
+    }
+
+    /* ── Messages Area ── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding-block: 24px;
+      padding-inline: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      align-self: flex-end;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+    }
+
+    .message .label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      margin-block-end: 4px;
+      padding-inline-start: 4px;
+      opacity: 0.6;
+    }
+
+    .message .bubble {
+      padding-block: 12px;
+      padding-inline: 16px;
+      border-radius: 16px;
+      line-height: 1.7;
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .message.user .bubble {
+      background: #4f46e5;
+      color: #ffffff;
+      border-end-end-radius: 4px;
+    }
+
+    .message.assistant .bubble {
+      background: #f1f5f9;
+      color: #1e293b;
+      border-end-start-radius: 4px;
+    }
+
+    .message .bubble strong {
+      font-weight: 700;
+    }
+
+    .message .bubble ul {
+      padding-inline-start: 20px;
+      margin-block: 4px;
+    }
+
+    .message .bubble ul li {
+      margin-block-end: 2px;
+    }
+
+    /* ── Typing Indicator ── */
+    .typing-indicator {
+      display: none;
+      align-self: flex-start;
+      padding-inline: 4px;
+    }
+
+    .typing-indicator.visible {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .typing-indicator .dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .typing-indicator .dots span {
+      width: 7px;
+      height: 7px;
+      background: #94a3b8;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+
+    .typing-indicator .dots span:nth-child(2) { animation-delay: 0.15s; }
+    .typing-indicator .dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    .typing-indicator .typing-text {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    /* ── Welcome ── */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 12px;
+      opacity: 0.5;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .welcome .icon {
+      font-size: 2.5rem;
+    }
+
+    .welcome p {
+      font-size: 1rem;
+      font-weight: 400;
+      max-width: 320px;
+      line-height: 1.7;
+    }
+
+    /* ── Input Area ── */
+    .input-area {
+      flex-shrink: 0;
+      border-block-start: 1px solid #e2e8f0;
+      background: #ffffff;
+      padding-block: 14px;
+      padding-inline: 20px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .input-row textarea {
+      flex: 1;
+      font-family: 'Heebo', sans-serif;
+      font-size: 0.95rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding-block: 12px;
+      padding-inline: 16px;
+      resize: none;
+      outline: none;
+      direction: rtl;
+      line-height: 1.5;
+      max-height: 120px;
+      overflow-y: auto;
+      transition: border-color 0.15s;
+      background: #fafbfc;
+    }
+
+    .input-row textarea:focus {
+      border-color: #4f46e5;
+      background: #ffffff;
+    }
+
+    .input-row textarea::placeholder {
+      color: #94a3b8;
+    }
+
+    .send-btn {
+      width: 46px;
+      height: 46px;
+      border: none;
+      border-radius: 14px;
+      background: #4f46e5;
+      color: #ffffff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      background: #4338ca;
+    }
+
+    .send-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .send-btn svg {
+      width: 20px;
+      height: 20px;
+      /* Flip arrow for RTL so it points left (send direction) */
+      transform: scaleX(-1);
+    }
+
+    /* ── Error Toast ── */
+    .error-toast {
+      display: none;
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #dc2626;
+      color: #fff;
+      padding-block: 10px;
+      padding-inline: 20px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      z-index: 100;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    }
+
+    .error-toast.visible {
+      display: block;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .app {
+        max-width: 100%;
+        box-shadow: none;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .header {
+        padding-inline: 16px;
+      }
+
+      .messages {
+        padding-inline: 14px;
+      }
+
+      .input-area {
+        padding-inline: 14px;
+      }
+
+      .message {
+        max-width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1>יוצר מסמכים</h1>
+      <div class="subtitle">Noam Naumovsky Productions</div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="icon">&#128196;</div>
+        <p>שלום! אני יכול לעזור לך ליצור הצעות מחיר, חוזים והזמנות עבודה. ספר לי מה אתה צריך.</p>
+      </div>
+    </div>
+
+    <div class="typing-indicator" id="typing">
+      <div class="dots">
+        <span></span><span></span><span></span>
+      </div>
+      <span class="typing-text">Claude חושב...</span>
+    </div>
+
+    <div class="error-toast" id="errorToast"></div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <textarea
+          id="userInput"
+          rows="1"
+          placeholder="כתוב הודעה..."
+          autofocus
+        ></textarea>
+        <button class="send-btn" id="sendBtn" title="שלח">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById('messages');
+    const welcomeEl = document.getElementById('welcome');
+    const typingEl = document.getElementById('typing');
+    const inputEl = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const errorToast = document.getElementById('errorToast');
+
+    // Conversation history
+    const conversation = [];
+    let isStreaming = false;
+
+    // ── Auto-resize textarea ──
+    inputEl.addEventListener('input', () => {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+    });
+
+    // ── Send on Enter (Shift+Enter = new line) ──
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    // ── Simple markdown parser ──
+    function renderMarkdown(text) {
+      // Escape HTML
+      let html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Bold: **text**
+      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+      // Bullet points: lines starting with "- " or "* "
+      html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+      // Wrap consecutive <li> in <ul>
+      html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+
+      // Numbered lists: lines starting with "1. " etc.
+      html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+      // Newlines to <br> (but not inside <ul>)
+      html = html.replace(/\n/g, '<br>');
+      // Clean up <br> right after <ul> or before </ul>
+      html = html.replace(/<br><ul>/g, '<ul>');
+      html = html.replace(/<\/ul><br>/g, '</ul>');
+      html = html.replace(/<br><li>/g, '<li>');
+
+      return html;
+    }
+
+    // ── Add message bubble to UI ──
+    function addMessage(role, text) {
+      if (welcomeEl) welcomeEl.remove();
+
+      const wrapper = document.createElement('div');
+      wrapper.className = `message ${role}`;
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = role === 'user' ? 'אני' : 'Claude';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = renderMarkdown(text);
+
+      wrapper.appendChild(label);
+      wrapper.appendChild(bubble);
+      messagesEl.appendChild(wrapper);
+      scrollToBottom();
+
+      return bubble;
+    }
+
+    // ── Scroll to bottom ──
+    function scrollToBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // ── Show error ──
+    function showError(msg) {
+      errorToast.textContent = msg;
+      errorToast.classList.add('visible');
+      setTimeout(() => errorToast.classList.remove('visible'), 4000);
+    }
+
+    // ── Set loading state ──
+    function setLoading(loading) {
+      isStreaming = loading;
+      sendBtn.disabled = loading;
+      inputEl.disabled = loading;
+      if (loading) {
+        typingEl.classList.add('visible');
+        messagesEl.appendChild(typingEl);
+        scrollToBottom();
+      } else {
+        typingEl.classList.remove('visible');
+      }
+    }
+
+    // ── Send message ──
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text || isStreaming) return;
+
+      // Clear input
+      inputEl.value = '';
+      inputEl.style.height = 'auto';
+
+      // Add user message
+      addMessage('user', text);
+      conversation.push({ role: 'user', content: text });
+
+      setLoading(true);
+
+      // Prepare streaming assistant bubble
+      let assistantBubble = null;
+      let fullText = '';
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: conversation }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+
+              if (parsed.type === 'text') {
+                if (!assistantBubble) {
+                  typingEl.classList.remove('visible');
+                  assistantBubble = addMessage('assistant', '');
+                  fullText = '';
+                }
+                fullText += parsed.text;
+                assistantBubble.innerHTML = renderMarkdown(fullText);
+                scrollToBottom();
+              } else if (parsed.type === 'error') {
+                showError(parsed.error || 'שגיאה מהשרת');
+              }
+            } catch {
+              // skip
+            }
+          }
+        }
+
+        // Save assistant response
+        if (fullText) {
+          conversation.push({ role: 'assistant', content: fullText });
+        }
+
+      } catch (err) {
+        console.error('Fetch error:', err);
+        showError('שגיאה בחיבור לשרת — ודא שהשרת פועל');
+      } finally {
+        setLoading(false);
+        inputEl.focus();
+      }
+    }
+  </script>
+</body>
+</html>
