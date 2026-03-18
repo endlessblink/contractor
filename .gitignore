@@ -9,6 +9,7 @@ projects/
 *.pem
 *.png
 !assets/**/*.png
+!docs/**/*.png
 .playwright-mcp/
 .claude/
 knowledge/learned-context.json
