@@ -1,5 +1,16 @@
 node_modules/
+dist/
 output/
+uploads/
+data/
+projects/
 .env*
 *.key
 *.pem
+*.png
+!assets/**/*.png
+.playwright-mcp/
+.claude/
+knowledge/learned-context.json
+knowledge/project-context.md
+scripts/

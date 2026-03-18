@@ -1,0 +1,39 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+            suffix: linux-x64
+          - os: macos-latest
+            target: mac
+            suffix: macos-arm64
+          - os: windows-latest
+            target: win
+            suffix: win-x64.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: node build.mjs --target ${{ matrix.target }}
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: dist/executables/contractor-${{ matrix.suffix }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

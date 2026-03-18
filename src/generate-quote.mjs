@@ -9,35 +9,33 @@ import {
   WidthType,
   ShadingType,
   BorderStyle,
-  Header,
   Footer,
   ImageRun,
   convertInchesToTwip,
   AlignmentType,
   VerticalAlign,
   TableLayoutType,
-  PageNumber,
 } from "docx";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const PROJECT_DIR = "/media/endlessblink/data/my-projects/ai-development/freelance/freelance-doc-maker";
-const LOGO_PATH = path.join(PROJECT_DIR, "logo-2026_768p.png");
-const OUTPUT_PATH = path.join(PROJECT_DIR, "output", "הצעת_מחיר_מירי_פינקו_15_סרטונים.docx");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const PROJECT_DIR = path.resolve(__dirname, "..");
+const DEFAULT_LOGO_PATH = path.join(PROJECT_DIR, "logo-2026_768p.png");
 
 const FONT = "Heebo";
-const FONT_FALLBACK = { ascii: "Arial", cs: FONT, eastAsia: "Arial", hAnsi: "Arial" };
 const FONT_OBJ = { ascii: FONT, cs: FONT, eastAsia: FONT, hAnsi: FONT };
 
 const BODY_SIZE = "11pt";
-const HEADER_SIZE = "16pt";
 const SMALL_SIZE = "9pt";
 
 const LIGHT_BLUE = "D6E4F0";
 const LIGHT_GRAY_BORDER = "BFBFBF";
-const WHITE = "FFFFFF";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -85,7 +83,6 @@ function sectionHeader(text) {
   });
 }
 
-
 /** Standard thin gray border definition */
 const thinBorder = {
   style: BorderStyle.SINGLE,
@@ -98,6 +95,13 @@ const cellBorders = {
   bottom: thinBorder,
   left: thinBorder,
   right: thinBorder,
+};
+
+const noBorders = {
+  top: { style: BorderStyle.NONE },
+  bottom: { style: BorderStyle.NONE },
+  left: { style: BorderStyle.NONE },
+  right: { style: BorderStyle.NONE },
 };
 
 /** Create a table cell with RTL paragraph */
@@ -122,6 +126,38 @@ function makeCell(text, opts = {}) {
   return new TableCell(cellOpts);
 }
 
+/**
+ * Get direction-aware helpers based on language.
+ * @param {string} language - 'he' for RTL Hebrew, 'en' for LTR English
+ */
+function getDirectionHelpers(language = 'he') {
+  const isRTL = language === 'he';
+  const lang = isRTL ? { value: 'he-IL', bidirectional: 'he-IL' } : { value: 'en-US' };
+
+  function dirRun(text, opts = {}) {
+    return new TextRun({
+      text,
+      rightToLeft: isRTL,
+      font: FONT_OBJ,
+      size: BODY_SIZE,
+      language: lang,
+      ...opts,
+    });
+  }
+
+  function dirParagraph(children, opts = {}) {
+    const childArray = Array.isArray(children) ? children : [children];
+    return new Paragraph({
+      bidirectional: isRTL,
+      children: childArray,
+      spacing: { after: 120 },
+      ...opts,
+    });
+  }
+
+  return { isRTL, dirRun, dirParagraph };
+}
+
 /** Create a bullet-style paragraph (with bullet character) */
 function bulletParagraph(text) {
   return rtlParagraph([
@@ -137,362 +173,551 @@ function dashParagraph(text) {
   ], { spacing: { after: 80 }, alignment: AlignmentType.BOTH });
 }
 
-// ─── Logo ────────────────────────────────────────────────────────────────────
+// ─── Document Builder ─────────────────────────────────────────────────────────
 
-const logoBuffer = fs.readFileSync(LOGO_PATH);
+/**
+ * Generate a DOCX document from the provided data.
+ * @param {Object} data - Document data
+ * @returns {Promise<Buffer>} DOCX file as a Buffer
+ */
+export async function generateDocument(data) {
+  const {
+    clientName = "",
+    clientCompany = "",
+    documentType = "quote",
+    projectDescription = "",
+    serviceDetails = "",
+    pricingItems = [],
+    paymentTerms = { type: "two", installments: [] },
+    timeline = "",
+    generalNotes = "",
+    date = null,
+    serviceType = "",
+    selectedClauses = null,
+    clauseEdits = {},
+    userProfile = {},
+  } = data;
 
-// ─── Build Document ──────────────────────────────────────────────────────────
+  const language = userProfile.language || 'he';
 
-// ---------- FROM/TO Table ----------
-const fromToCellShading = { type: ShadingType.CLEAR, color: "auto", fill: LIGHT_BLUE };
-const fromToTable = new Table({
-  visuallyRightToLeft: true,
-  width: { size: 100, type: WidthType.PERCENTAGE },
-  rows: [
-    new TableRow({
-      children: [
-        makeCell("מאת: Noam Naumovsky", { bold: true, shading: fromToCellShading, width: { size: 50, type: WidthType.PERCENTAGE } }),
-        makeCell("לכבוד: מירי פינקו", { bold: true, shading: fromToCellShading, width: { size: 50, type: WidthType.PERCENTAGE } }),
-      ],
-    }),
-    new TableRow({
-      children: [
-        makeCell("Noam Naumovsky Productions", { shading: fromToCellShading, width: { size: 50, type: WidthType.PERCENTAGE } }),
-        makeCell("הבית ליוצרי AI מעצבים", { shading: fromToCellShading, width: { size: 50, type: WidthType.PERCENTAGE } }),
-      ],
-    }),
-  ],
-});
+  // Load clauses database for contracts
+  let clausesDb = null;
+  try {
+    const dbPath = path.join(PROJECT_DIR, 'knowledge', 'clauses-db.json');
+    clausesDb = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+  } catch { /* clauses DB not available */ }
 
-// ---------- Pricing Table ----------
-const pricingHeaderShading = { type: ShadingType.CLEAR, color: "auto", fill: LIGHT_BLUE };
+  // Find the service template's relevant clause IDs (if serviceType is provided)
+  let relevantClauseIds = null;
+  if (serviceType && clausesDb && clausesDb.serviceTemplates) {
+    const template = clausesDb.serviceTemplates.find(t => t.type === serviceType);
+    if (template && template.relevantClauses) {
+      relevantClauseIds = new Set(template.relevantClauses);
+    }
+  }
 
-const pricingTable = new Table({
-  visuallyRightToLeft: true,
-  width: { size: 100, type: WidthType.PERCENTAGE },
-  layout: TableLayoutType.FIXED,
-  columnWidths: [4500, 1500, 2000, 2000],
-  rows: [
-    // Header row
-    new TableRow({
-      children: [
-        makeCell("פירוט", { bold: true, shading: pricingHeaderShading, width: { size: 45, type: WidthType.PERCENTAGE } }),
-        makeCell("כמות", { bold: true, shading: pricingHeaderShading, width: { size: 15, type: WidthType.PERCENTAGE } }),
-        makeCell("מחיר ליחידה", { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
-        makeCell('סה"כ', { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
-      ],
-    }),
-    // Row 1
-    new TableRow({
-      children: [
-        makeCell("סרטוני הדרכה - שלב א׳", { width: { size: 45, type: WidthType.PERCENTAGE } }),
-        makeCell("5", { width: { size: 15, type: WidthType.PERCENTAGE } }),
-        makeCell("3,700 ₪", { width: { size: 20, type: WidthType.PERCENTAGE } }),
-        makeCell("18,500 ₪", { width: { size: 20, type: WidthType.PERCENTAGE } }),
-      ],
-    }),
-    // Row 2
-    new TableRow({
-      children: [
-        makeCell("סרטוני הדרכה - שלב ב׳", { width: { size: 45, type: WidthType.PERCENTAGE } }),
-        makeCell("10", { width: { size: 15, type: WidthType.PERCENTAGE } }),
-        makeCell("2,700 ₪", { width: { size: 20, type: WidthType.PERCENTAGE } }),
-        makeCell("27,000 ₪", { width: { size: 20, type: WidthType.PERCENTAGE } }),
-      ],
-    }),
-    // Total row
-    new TableRow({
-      children: [
-        makeCell("", { width: { size: 45, type: WidthType.PERCENTAGE } }),
-        makeCell("", { width: { size: 15, type: WidthType.PERCENTAGE } }),
-        makeCell('סה"כ לפני מע"מ', { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
-        makeCell("45,500 ₪", { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
-      ],
-    }),
-  ],
-});
+  function getClauseTexts(categoryKey) {
+    if (!clausesDb || !clausesDb.clauses || !clausesDb.clauses[categoryKey]) return [];
+    const docTypeKey = documentType === 'quote' ? 'quote' : documentType === 'contract' ? 'contract' : 'workOrder';
+    return clausesDb.clauses[categoryKey].clauses
+      .filter(c => {
+        // Must apply to this document type
+        if (!c.appliesTo.includes(docTypeKey)) return false;
+        // If user explicitly selected clauses in the form, use that selection
+        if (selectedClauses && Array.isArray(selectedClauses) && selectedClauses.length > 0) {
+          return selectedClauses.includes(c.id);
+        }
+        // If we have a service template, filter by relevant clauses (but always include required ones)
+        if (relevantClauseIds) {
+          return relevantClauseIds.has(c.id) || c.required;
+        }
+        // No service template — include all clauses for this doc type
+        return true;
+      })
+      .map(c => {
+        const text = clauseEdits[c.id] || c.text;
+        // Support bilingual text: { he: "...", en: "..." }
+        return typeof text === 'object' ? (text[language] || text.he || text.en || '') : text;
+      });
+  }
 
-// ---------- Signature Section ----------
-const noBorders = {
-  top: { style: BorderStyle.NONE },
-  bottom: { style: BorderStyle.NONE },
-  left: { style: BorderStyle.NONE },
-  right: { style: BorderStyle.NONE },
-};
+  const logoPath = userProfile.logoPath
+    ? (path.isAbsolute(userProfile.logoPath) ? userProfile.logoPath : path.join(PROJECT_DIR, 'data', userProfile.logoPath))
+    : DEFAULT_LOGO_PATH;
+  let logoBuffer;
+  try {
+    logoBuffer = fs.readFileSync(logoPath);
+  } catch {
+    logoBuffer = fs.existsSync(DEFAULT_LOGO_PATH) ? fs.readFileSync(DEFAULT_LOGO_PATH) : null;
+  }
+  const fromToCellShading = { type: ShadingType.CLEAR, color: "auto", fill: LIGHT_BLUE };
 
-function signatureCell(label) {
-  return new TableCell({
-    width: { size: 33, type: WidthType.PERCENTAGE },
-    borders: noBorders,
-    verticalAlign: VerticalAlign.BOTTOM,
-    children: [
-      rtlParagraph([rtlRun("_________________")], { spacing: { after: 40 }, alignment: AlignmentType.CENTER }),
-      rtlParagraph([rtlRun(label, { size: "10pt", sizeComplexScript: "10pt" })], { spacing: { after: 0 }, alignment: AlignmentType.CENTER }),
+  // ── Document title based on type ──
+  const titleMap = {
+    quote: "הצעת מחיר",
+    contract: "חוזה עבודה",
+    workOrder: "הזמנת עבודה",
+  };
+  const docTitle = titleMap[documentType] || "הצעת מחיר";
+
+  // ── Date ──
+  const today = date || new Date().toLocaleDateString("he-IL", { day: "numeric", month: "numeric", year: "2-digit" });
+
+  // ── FROM/TO Table ──
+  const fromToTable = new Table({
+    visuallyRightToLeft: true,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: [
+          makeCell(`מאת: ${userProfile.nameEn || userProfile.name || ''}`, { bold: true, shading: fromToCellShading, width: { size: 50, type: WidthType.PERCENTAGE } }),
+          makeCell(`לכבוד: ${clientName}`, { bold: true, shading: fromToCellShading, width: { size: 50, type: WidthType.PERCENTAGE } }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          makeCell(userProfile.company || '', { shading: fromToCellShading, width: { size: 50, type: WidthType.PERCENTAGE } }),
+          makeCell(clientCompany || "", { shading: fromToCellShading, width: { size: 50, type: WidthType.PERCENTAGE } }),
+        ],
+      }),
     ],
   });
+
+  // ── Pricing Table ──
+  const pricingHeaderShading = { type: ShadingType.CLEAR, color: "auto", fill: LIGHT_BLUE };
+
+  // Calculate totals
+  const totalBeforeVat = pricingItems.reduce((sum, item) => {
+    return sum + (item.quantity || 1) * (item.unitPrice || 0);
+  }, 0);
+
+  const formatPrice = (n) => n.toLocaleString("he-IL") + " ₪";
+
+  const pricingRows = pricingItems.map((item) => {
+    const total = (item.quantity || 1) * (item.unitPrice || 0);
+    return new TableRow({
+      children: [
+        makeCell(item.description || "", { width: { size: 45, type: WidthType.PERCENTAGE } }),
+        makeCell(String(item.quantity || 1), { width: { size: 15, type: WidthType.PERCENTAGE } }),
+        makeCell(formatPrice(item.unitPrice || 0), { width: { size: 20, type: WidthType.PERCENTAGE } }),
+        makeCell(formatPrice(total), { width: { size: 20, type: WidthType.PERCENTAGE } }),
+      ],
+    });
+  });
+
+  const pricingTable = new Table({
+    visuallyRightToLeft: true,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    layout: TableLayoutType.FIXED,
+    columnWidths: [4500, 1500, 2000, 2000],
+    rows: [
+      // Header row
+      new TableRow({
+        children: [
+          makeCell("פירוט", { bold: true, shading: pricingHeaderShading, width: { size: 45, type: WidthType.PERCENTAGE } }),
+          makeCell("כמות", { bold: true, shading: pricingHeaderShading, width: { size: 15, type: WidthType.PERCENTAGE } }),
+          makeCell("מחיר ליחידה", { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
+          makeCell('סה"כ', { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
+        ],
+      }),
+      ...pricingRows,
+      // Total row
+      new TableRow({
+        children: [
+          makeCell("", { width: { size: 45, type: WidthType.PERCENTAGE } }),
+          makeCell("", { width: { size: 15, type: WidthType.PERCENTAGE } }),
+          makeCell('סה"כ לפני מע"מ', { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
+          makeCell(formatPrice(totalBeforeVat), { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
+        ],
+      }),
+    ],
+  });
+
+  // ── Signature Section ──
+  function signatureCell(label) {
+    return new TableCell({
+      width: { size: 33, type: WidthType.PERCENTAGE },
+      borders: noBorders,
+      verticalAlign: VerticalAlign.BOTTOM,
+      children: [
+        rtlParagraph([rtlRun("_________________")], { spacing: { after: 40 }, alignment: AlignmentType.CENTER }),
+        rtlParagraph([rtlRun(label, { size: "10pt", sizeComplexScript: "10pt" })], { spacing: { after: 0 }, alignment: AlignmentType.CENTER }),
+      ],
+    });
+  }
+
+  function signatureRow(col1, col2, col3) {
+    return new TableRow({
+      children: [signatureCell(col1), signatureCell(col2), signatureCell(col3)],
+    });
+  }
+
+  const signatureTitle = rtlParagraph(
+    [rtlRun("חתימה על מסמך זה מהווה אישור והתחייבות לכל הרשום לעיל", {
+      bold: true, boldComplexScript: true,
+      size: "11pt", sizeComplexScript: "11pt",
+    })],
+    { spacing: { before: 400, after: 300 }, alignment: AlignmentType.CENTER }
+  );
+
+  const signatureTable = new Table({
+    visuallyRightToLeft: true,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+      insideHorizontal: { style: BorderStyle.NONE },
+      insideVertical: { style: BorderStyle.NONE },
+    },
+    rows: [
+      signatureRow("שם הלקוח", "חתימה וחותמת", "תאריך"),
+      new TableRow({
+        children: [
+          new TableCell({ borders: noBorders, children: [rtlParagraph([rtlRun("")], { spacing: { after: 200 } })] }),
+          new TableCell({ borders: noBorders, children: [rtlParagraph([rtlRun("")], { spacing: { after: 200 } })] }),
+          new TableCell({ borders: noBorders, children: [rtlParagraph([rtlRun("")], { spacing: { after: 200 } })] }),
+        ],
+      }),
+      signatureRow("שם מבצע העבודה", "חתימה וחותמת", "תאריך"),
+    ],
+  });
+
+  // ── Footer ──
+  const footerTable = new Table({
+    visuallyRightToLeft: true,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: LIGHT_GRAY_BORDER },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+      insideHorizontal: { style: BorderStyle.NONE },
+      insideVertical: { style: BorderStyle.NONE },
+    },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 20, type: WidthType.PERCENTAGE },
+            verticalAlign: VerticalAlign.CENTER,
+            borders: noBorders,
+            children: [
+              new Paragraph({
+                bidirectional: true,
+                children: logoBuffer ? [
+                  new ImageRun({
+                    data: logoBuffer,
+                    transformation: { width: 80, height: 80 },
+                    type: "png",
+                  }),
+                ] : [],
+              }),
+            ],
+          }),
+          new TableCell({
+            width: { size: 80, type: WidthType.PERCENTAGE },
+            verticalAlign: VerticalAlign.CENTER,
+            borders: noBorders,
+            children: [
+              new Paragraph({
+                bidirectional: true,
+                alignment: AlignmentType.LEFT,
+                spacing: { after: 0 },
+                children: [rtlRun(userProfile.name || '', { bold: true, boldComplexScript: true, size: SMALL_SIZE, sizeComplexScript: SMALL_SIZE })],
+              }),
+              new Paragraph({
+                bidirectional: true,
+                alignment: AlignmentType.LEFT,
+                spacing: { after: 0 },
+                children: [rtlRun(userProfile.title || '', { size: SMALL_SIZE, sizeComplexScript: SMALL_SIZE })],
+              }),
+              new Paragraph({
+                bidirectional: true,
+                alignment: AlignmentType.LEFT,
+                spacing: { after: 0 },
+                children: [new TextRun({ text: [userProfile.email, userProfile.website].filter(Boolean).join(' | '), font: FONT_OBJ, size: SMALL_SIZE, sizeComplexScript: SMALL_SIZE, rightToLeft: false })],
+              }),
+              new Paragraph({
+                bidirectional: true,
+                alignment: AlignmentType.LEFT,
+                spacing: { after: 0 },
+                children: [new TextRun({ text: userProfile.phone || '', font: FONT_OBJ, size: SMALL_SIZE, sizeComplexScript: SMALL_SIZE, rightToLeft: false })],
+              }),
+            ],
+          }),
+        ],
+      }),
+    ],
+  });
+
+  const footer = new Footer({ children: [footerTable] });
+
+  // ── Build body children ──
+  const bodyChildren = [
+    // Date
+    rtlParagraph(
+      [rtlRun(`תאריך ${today}`, { size: "11pt", sizeComplexScript: "11pt" })],
+      { spacing: { after: 60 } }
+    ),
+
+    // Title
+    rtlParagraph(
+      [rtlRun(`${docTitle} –`, {
+        bold: true, boldComplexScript: true,
+        size: "22pt", sizeComplexScript: "22pt",
+      })],
+      { spacing: { after: 60 }, alignment: AlignmentType.CENTER }
+    ),
+
+    // Subtitle (project description)
+    rtlParagraph(
+      [rtlRun(projectDescription, { size: "13pt", sizeComplexScript: "13pt" })],
+      { spacing: { after: 300 }, alignment: AlignmentType.CENTER }
+    ),
+
+    // FROM/TO
+    fromToTable,
+    rtlParagraph([rtlRun("")], { spacing: { after: 40 } }),
+  ];
+
+  // Service details section
+  if (serviceDetails) {
+    bodyChildren.push(sectionHeader("פירוט השירות"));
+    // Split by newlines and create paragraphs
+    const lines = serviceDetails.split("\n").filter(l => l.trim());
+    for (const line of lines) {
+      if (line.startsWith("•") || line.startsWith("-")) {
+        bodyChildren.push(dashParagraph(line.replace(/^[•\-]\s*/, "")));
+      } else {
+        bodyChildren.push(rtlParagraph([rtlRun(line)]));
+      }
+    }
+    bodyChildren.push(rtlParagraph([rtlRun("")], { spacing: { after: 40 } }));
+  }
+
+  // Pricing section
+  if (pricingItems.length > 0) {
+    bodyChildren.push(sectionHeader("עלות"));
+    bodyChildren.push(pricingTable);
+  }
+
+  // Payment terms section
+  if (paymentTerms && paymentTerms.installments && paymentTerms.installments.length > 0) {
+    bodyChildren.push(sectionHeader("תמורה ותנאי תשלום"));
+    for (const inst of paymentTerms.installments) {
+      const amountStr = totalBeforeVat > 0
+        ? ` (${formatPrice(Math.round(totalBeforeVat * inst.percentage / 100))} + מע"מ)`
+        : "";
+      bodyChildren.push(dashParagraph(`${inst.description} – %${inst.percentage}${amountStr}`));
+    }
+    // Add contract-specific payment clauses
+    if ((documentType === 'contract' || documentType === 'workOrder') && clausesDb) {
+      const paymentClauses = getClauseTexts('paymentTerms');
+      // Skip the first clause (advance-start) since installments already cover that
+      // Add the rest: extra hours, invoice details, no VAT, external costs, infrastructure
+      paymentClauses.forEach(text => {
+        // Don't duplicate the "no VAT" line if it's in generalNotes
+        if (!text.includes('אינו כולל מע"מ') || !generalNotes.includes('מע"מ')) {
+          bodyChildren.push(dashParagraph(text));
+        }
+      });
+    }
+    // Only add hardcoded invoice line if payment-invoice clause wasn't already included
+    const invoiceClauseSelected = selectedClauses && selectedClauses.includes('payment-invoice');
+    if (!invoiceClauseSelected) {
+      bodyChildren.push(dashParagraph('לאחר קבלת התשלום המלא תישלח חשבונית מס.'));
+    }
+  }
+
+  // Timeline section
+  if (timeline) {
+    bodyChildren.push(sectionHeader("לוחות זמנים"));
+    const timelineLines = timeline.split("\n").filter(l => l.trim());
+    for (const line of timelineLines) {
+      bodyChildren.push(dashParagraph(line.replace(/^[•\-]\s*/, "")));
+    }
+  }
+
+  // ── Contract/Work Order specific sections ──
+  if (documentType === 'contract' || documentType === 'workOrder') {
+    // Client obligations section
+    const clientObligations = getClauseTexts('clientObligations');
+    if (clientObligations.length > 0) {
+      bodyChildren.push(sectionHeader('התחייבויות הלקוח'));
+      clientObligations.forEach(text => bodyChildren.push(dashParagraph(text)));
+    }
+
+    // Early termination
+    const termination = getClauseTexts('earlyTermination');
+    if (termination.length > 0) {
+      bodyChildren.push(sectionHeader('הפסקת עבודה מוקדמת'));
+      termination.forEach(text => bodyChildren.push(dashParagraph(text)));
+    }
+
+    // Revisions policy
+    const revisions = getClauseTexts('revisions');
+    if (revisions.length > 0) {
+      bodyChildren.push(sectionHeader('תיקונים והערות'));
+      revisions.forEach(text => bodyChildren.push(dashParagraph(text)));
+    }
+
+    // Delivery process
+    const delivery = getClauseTexts('deliveryProcess');
+    if (delivery.length > 0) {
+      bodyChildren.push(sectionHeader('תהליך סיום ומסירה'));
+      delivery.forEach(text => bodyChildren.push(dashParagraph(text)));
+    }
+
+    // IP, licensing & responsibility
+    const ip = getClauseTexts('intellectualProperty');
+    if (ip.length > 0) {
+      bodyChildren.push(sectionHeader('קניין רוחני, רישוי ואחריות'));
+      ip.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
+    }
+
+    // AI disclaimers
+    const aiDisclaimers = getClauseTexts('aiDisclaimers');
+    if (aiDisclaimers.length > 0) {
+      bodyChildren.push(sectionHeader('הצהרות לקוח (AI גנרטיבי)'));
+      aiDisclaimers.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
+    }
+
+    // Warranty & completion
+    const warranty = getClauseTexts('warrantyAndCompletion');
+    if (warranty.length > 0) {
+      bodyChildren.push(sectionHeader('הגדרת "סיום" ותקופת אחריות'));
+      warranty.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
+    }
+
+    // Commercial responsibility
+    const commercial = getClauseTexts('commercialResponsibility');
+    if (commercial.length > 0) {
+      bodyChildren.push(sectionHeader('אחריות לשימוש מסחרי'));
+      commercial.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
+    }
+
+    // Confidentiality
+    const confidentiality = getClauseTexts('confidentiality');
+    if (confidentiality.length > 0) {
+      bodyChildren.push(sectionHeader('סודיות'));
+      confidentiality.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
+    }
+
+    // Project termination
+    const projectTermination = getClauseTexts('projectTermination');
+    if (projectTermination.length > 0) {
+      bodyChildren.push(sectionHeader('סיום הפרויקט'));
+      projectTermination.forEach(text => bodyChildren.push(dashParagraph(text)));
+    }
+
+    // General terms (liability, cancellation, force majeure)
+    const generalTerms = getClauseTexts('generalTerms');
+    if (generalTerms.length > 0) {
+      bodyChildren.push(sectionHeader('תנאים כלליים'));
+      generalTerms.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
+    }
+  }
+
+  // General notes section
+  if (generalNotes) {
+    bodyChildren.push(sectionHeader("הערות כלליות"));
+    const noteLines = generalNotes.split("\n").filter(l => l.trim());
+    for (const line of noteLines) {
+      bodyChildren.push(dashParagraph(line.replace(/^[•\-]\s*/, "")));
+    }
+  }
+
+  // Signature — skip the title if general-signature-binding was already rendered above
+  const signatureBindingInTerms = selectedClauses && selectedClauses.includes('general-signature-binding');
+  if (!signatureBindingInTerms) {
+    bodyChildren.push(signatureTitle);
+  }
+  bodyChildren.push(signatureTable);
+
+  // ── Build Document ──
+  const doc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: FONT_OBJ,
+            size: BODY_SIZE,
+            rightToLeft: true,
+            language: { value: "he-IL", bidirectional: "he-IL" },
+          },
+          paragraph: { bidirectional: true },
+        },
+      },
+    },
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: {
+              top: convertInchesToTwip(0.8),
+              bottom: convertInchesToTwip(1),
+              left: convertInchesToTwip(0.9),
+              right: convertInchesToTwip(0.9),
+            },
+          },
+        },
+        footers: { default: footer },
+        children: bodyChildren,
+      },
+    ],
+  });
+
+  return Packer.toBuffer(doc);
 }
 
-function signatureRow(col1, col2, col3) {
-  return new TableRow({
-    children: [signatureCell(col1), signatureCell(col2), signatureCell(col3)],
+// ─── CLI Entry Point ──────────────────────────────────────────────────────────
+
+async function main() {
+  const OUTPUT_PATH = path.join(PROJECT_DIR, "output", "sample_quote.docx");
+
+  const defaultData = {
+    clientName: "לקוח לדוגמה",
+    clientCompany: "חברה לדוגמה בע\"מ",
+    documentType: "quote",
+    projectDescription: "פרויקט לדוגמה",
+    serviceDetails: "שירות לדוגמה — ערוך את הנתונים האלה לפי הצורך.",
+    pricingItems: [
+      { description: "שירות לדוגמה", quantity: 1, unitPrice: 1000 },
+    ],
+    paymentTerms: {
+      type: "two",
+      installments: [
+        { percentage: 35, description: "מקדמה בתחילת עבודה" },
+        { percentage: 65, description: "יתרת התשלום בסיום" },
+      ],
+    },
+    timeline: "לפי סיכום עם הלקוח.",
+    generalNotes: `ההצעה בתוקף ל-30 יום מתאריך הנפקתה.\nהמחיר אינו כולל מע"מ.`,
+    date: new Date().toLocaleDateString('he-IL'),
+    userProfile: {
+      name: '',
+      nameEn: '',
+      company: '',
+      title: '',
+      email: '',
+      website: '',
+      phone: '',
+      logoPath: '',
+    },
+  };
+
+  const buffer = await generateDocument(defaultData);
+  fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
+  fs.writeFileSync(OUTPUT_PATH, buffer);
+  console.log(`Document generated successfully: ${OUTPUT_PATH}`);
+}
+
+// Run only when executed directly (not imported as module)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error("Error generating document:", err);
+    process.exit(1);
   });
 }
-
-const signatureTitle = rtlParagraph(
-  [rtlRun("חתימה על מסמך זה מהווה אישור והתחייבות לכל הרשום לעיל", {
-    bold: true, boldComplexScript: true,
-    size: "11pt", sizeComplexScript: "11pt",
-  })],
-  { spacing: { before: 400, after: 300 }, alignment: AlignmentType.CENTER }
-);
-
-const signatureTable = new Table({
-  visuallyRightToLeft: true,
-  width: { size: 100, type: WidthType.PERCENTAGE },
-  borders: {
-    top: { style: BorderStyle.NONE },
-    bottom: { style: BorderStyle.NONE },
-    left: { style: BorderStyle.NONE },
-    right: { style: BorderStyle.NONE },
-    insideHorizontal: { style: BorderStyle.NONE },
-    insideVertical: { style: BorderStyle.NONE },
-  },
-  rows: [
-    // Client row
-    signatureRow("שם הלקוח", "חתימה וחותמת", "תאריך"),
-    // Spacer row
-    new TableRow({
-      children: [
-        new TableCell({ borders: noBorders, children: [rtlParagraph([rtlRun("")], { spacing: { after: 200 } })] }),
-        new TableCell({ borders: noBorders, children: [rtlParagraph([rtlRun("")], { spacing: { after: 200 } })] }),
-        new TableCell({ borders: noBorders, children: [rtlParagraph([rtlRun("")], { spacing: { after: 200 } })] }),
-      ],
-    }),
-    // Provider row
-    signatureRow("שם מבצע העבודה", "חתימה וחותמת", "תאריך"),
-  ],
-});
-
-// ---------- Footer ----------
-const footerTable = new Table({
-  visuallyRightToLeft: true,
-  width: { size: 100, type: WidthType.PERCENTAGE },
-  borders: {
-    top: { style: BorderStyle.SINGLE, size: 1, color: LIGHT_GRAY_BORDER },
-    bottom: { style: BorderStyle.NONE },
-    left: { style: BorderStyle.NONE },
-    right: { style: BorderStyle.NONE },
-    insideHorizontal: { style: BorderStyle.NONE },
-    insideVertical: { style: BorderStyle.NONE },
-  },
-  rows: [
-    new TableRow({
-      children: [
-        // Right side in RTL = logo
-        new TableCell({
-          width: { size: 20, type: WidthType.PERCENTAGE },
-          verticalAlign: VerticalAlign.CENTER,
-          borders: {
-            top: { style: BorderStyle.NONE },
-            bottom: { style: BorderStyle.NONE },
-            left: { style: BorderStyle.NONE },
-            right: { style: BorderStyle.NONE },
-          },
-          children: [
-            new Paragraph({
-              bidirectional: true,
-              children: [
-                new ImageRun({
-                  data: logoBuffer,
-                  transformation: { width: 80, height: 80 },
-                  type: "png",
-                }),
-              ],
-            }),
-          ],
-        }),
-        // Left side = contact details
-        new TableCell({
-          width: { size: 80, type: WidthType.PERCENTAGE },
-          verticalAlign: VerticalAlign.CENTER,
-          borders: {
-            top: { style: BorderStyle.NONE },
-            bottom: { style: BorderStyle.NONE },
-            left: { style: BorderStyle.NONE },
-            right: { style: BorderStyle.NONE },
-          },
-          children: [
-            new Paragraph({
-              bidirectional: true,
-              alignment: AlignmentType.LEFT,
-              spacing: { after: 0 },
-              children: [
-                rtlRun("נועם נאומובסקי", {
-                  bold: true,
-                  boldComplexScript: true,
-                  size: SMALL_SIZE,
-                  sizeComplexScript: SMALL_SIZE,
-                }),
-              ],
-            }),
-            new Paragraph({
-              bidirectional: true,
-              alignment: AlignmentType.LEFT,
-              spacing: { after: 0 },
-              children: [
-                rtlRun("יוצר ומפתח עם בינה מלאכותית", { size: SMALL_SIZE, sizeComplexScript: SMALL_SIZE }),
-              ],
-            }),
-            new Paragraph({
-              bidirectional: true,
-              alignment: AlignmentType.LEFT,
-              spacing: { after: 0 },
-              children: [
-                new TextRun({
-                  text: "noamnau@gmail.com | noamn.com",
-                  font: FONT_OBJ,
-                  size: SMALL_SIZE,
-                  sizeComplexScript: SMALL_SIZE,
-                  rightToLeft: false,
-                }),
-              ],
-            }),
-            new Paragraph({
-              bidirectional: true,
-              alignment: AlignmentType.LEFT,
-              spacing: { after: 0 },
-              children: [
-                new TextRun({
-                  text: "052-6784960",
-                  font: FONT_OBJ,
-                  size: SMALL_SIZE,
-                  sizeComplexScript: SMALL_SIZE,
-                  rightToLeft: false,
-                }),
-              ],
-            }),
-          ],
-        }),
-      ],
-    }),
-  ],
-});
-
-const footer = new Footer({
-  children: [footerTable],
-});
-
-// ---------- Document ----------
-const doc = new Document({
-  styles: {
-    default: {
-      document: {
-        run: {
-          font: FONT_OBJ,
-          size: BODY_SIZE,
-          rightToLeft: true,
-          language: { value: "he-IL", bidirectional: "he-IL" },
-        },
-        paragraph: {
-          bidirectional: true,
-        },
-      },
-    },
-  },
-  sections: [
-    {
-      properties: {
-        page: {
-          margin: {
-            top: convertInchesToTwip(0.8),
-            bottom: convertInchesToTwip(1),
-            left: convertInchesToTwip(0.9),
-            right: convertInchesToTwip(0.9),
-          },
-        },
-      },
-      footers: {
-        default: footer,
-      },
-      children: [
-        // ── Date (top-right, above title) ──
-        rtlParagraph(
-          [rtlRun("תאריך 9.3.26", { size: "11pt", sizeComplexScript: "11pt" })],
-          { spacing: { after: 60 } }
-        ),
-
-        // ── Title ──
-        rtlParagraph(
-          [rtlRun("הצעת מחיר –", {
-            bold: true,
-            boldComplexScript: true,
-            size: "22pt",
-            sizeComplexScript: "22pt",
-          })],
-          { spacing: { after: 60 }, alignment: AlignmentType.CENTER }
-        ),
-
-        // ── Subtitle ──
-        rtlParagraph(
-          [rtlRun("הפקת 15 סרטוני הדרכה מבוססי צילומי מסך", {
-            size: "13pt",
-            sizeComplexScript: "13pt",
-          })],
-          { spacing: { after: 300 }, alignment: AlignmentType.CENTER }
-        ),
-
-        // ── FROM/TO ──
-        fromToTable,
-        rtlParagraph([rtlRun("")], { spacing: { after: 40 } }),
-
-        // ── פירוט השירות ──
-
-        sectionHeader("פירוט השירות"),
-        rtlParagraph([
-          rtlRun("הפקת 15 סרטוני הדרכה מבוססי צילומי מסך. הסרטונים יופקו על בסיס חומרים, צילומי מסך וגישה למערכת שיסופקו על ידי הלקוח."),
-        ]),
-        rtlParagraph([rtlRun("")], { spacing: { after: 40 } }),
-        rtlParagraph([rtlRun("היקף העבודה כולל:", { bold: true, boldComplexScript: true })]),
-        bulletParagraph("הפקת 5 סרטונים ראשונים בעלות של 3,700 ₪ לסרטון"),
-        bulletParagraph("הפקת 10 סרטונים נוספים בעלות של 2,700 ₪ לסרטון"),
-        bulletParagraph("כל סרטון כולל 2 סבבי תיקונים"),
-
-        // ── עלות ──
-
-        sectionHeader("עלות"),
-        pricingTable,
-
-        // ── תמורה ותנאי תשלום ──
-
-        sectionHeader("תמורה ותנאי תשלום"),
-        dashParagraph("תחילת העבודה מותנית בחתימה על חוזה עבודה מפורט על ידי כל הצדדים הרלוונטיים ובקבלת מקדמה בסך 40% (18,200 ₪ + מע\"מ)."),
-        dashParagraph("תשלום שני בסך 30% (13,650 ₪ + מע\"מ) ישולם לאחר אספקת 5 הסרטונים הראשונים."),
-        dashParagraph("יתרת התשלום בסך 30% (13,650 ₪ + מע\"מ) תשולם בסיום הפרויקט ואספקת כל הסרטונים."),
-        dashParagraph("לאחר קבלת התשלום המלא תישלח חשבונית מס."),
-
-        // ── לוחות זמנים ──
-
-        sectionHeader("לוחות זמנים"),
-        dashParagraph("קצב עבודה משוער: 1-3 סרטונים בשבוע, בהתאם למורכבות הסרטון."),
-        dashParagraph("הלקוח יספק גישה למערכת, חומרים גרפיים, חומרי וידאו וכל תוכן נוסף אחר לפני תחילת העבודה ובמהלך העבודה השוטפת."),
-        dashParagraph("עיכוב בהעברת החומרים יוביל לעיכוב בקצב העבודה."),
-        dashParagraph("פגישת חפיפה ראשונית תתואם לפני תחילת העבודה ופגישות נוספות יקבעו בהמשך לפי הצורך."),
-
-        // ── הערות כלליות ──
-
-        sectionHeader("הערות כלליות"),
-        dashParagraph("ההצעה בתוקף ל-30 יום מתאריך הנפקתה."),
-        dashParagraph('המחיר אינו כולל מע"מ.'),
-        dashParagraph("בהמשך להסכמה על הצעה זו, יישלח חוזה עבודה מפורט הכולל תנאים מלאים, מדיניות תיקונים, קניין רוחני ותנאים כלליים."),
-      ],
-    },
-  ],
-});
-
-// ─── Generate ────────────────────────────────────────────────────────────────
-
-const buffer = await Packer.toBuffer(doc);
-fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
-fs.writeFileSync(OUTPUT_PATH, buffer);
-
-console.log(`Document generated successfully: ${OUTPUT_PATH}`);
