@@ -1,53 +1,1042 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { readFileSync } from 'fs';
+import { dirname, join, extname } from 'path';
+import { readFileSync, readdirSync, statSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
 import { homedir } from 'os';
+import multer from 'multer';
+import { generateDocument } from './generate-quote.mjs';
+import mammoth from 'mammoth';
+import { exec, execSync } from 'child_process';
+import { createRequire } from 'module';
+import { chatCompletion, chatCompletionStream, parseSSEStream, getProviderConfig } from './ai-provider.mjs';
+import { IS_PKG, USER_DATA_DIR, APP_DIR, initUserDataDir, resolveData, resolveAsset } from './app-paths.mjs';
+import { checkForUpdate } from './updater.mjs';
+const require = createRequire(import.meta.url);
+let pdfParser = null;
+function getPdfParser() {
+  if (!pdfParser) {
+    try {
+      const mod = require('pdf-parse');
+      if (typeof mod === 'function') { pdfParser = { parse: mod }; }
+      else if (mod.PDFParse) { pdfParser = new mod.PDFParse(); }
+      else if (mod.default) { pdfParser = { parse: mod.default }; }
+      else { pdfParser = { parse: async () => ({ text: '' }) }; }
+    } catch { pdfParser = { parse: async () => ({ text: '' }) }; }
+  }
+  return pdfParser;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const PROJECT_DIR = join(__dirname, '..');
+if (IS_PKG) initUserDataDir();
+const DATA_DIR = IS_PKG ? USER_DATA_DIR : join(PROJECT_DIR, 'data');
+const OUTPUT_DIR = IS_PKG ? resolveData('output') : join(PROJECT_DIR, 'output');
+const UPLOADS_DIR = IS_PKG ? resolveData('uploads') : join(PROJECT_DIR, 'uploads');
 
-const DEFAULT_SYSTEM_PROMPT = `אתה עוזר ליצירת מסמכים עסקיים בעברית — הצעות מחיר, חוזים והזמנות עבודה.
-אתה עובד עם נועם נאומובסקי (Noam Naumovsky Productions).
-תמיד ענה בעברית אלא אם התבקשת אחרת.`;
+// Ensure data directories exist before fallback resolution
+mkdirSync(join(DATA_DIR, 'knowledge', 'pending-extractions'), { recursive: true });
+mkdirSync(join(DATA_DIR, 'references'), { recursive: true });
+mkdirSync(join(DATA_DIR, 'projects'), { recursive: true });
 
-/**
- * Read the Claude Code OAuth credentials from ~/.claude/.credentials.json.
- * Returns { accessToken, expiresAt } or null if not found.
- */
-function getClaudeCredentials() {
+// New data-based paths with fallback to old locations
+// Fallback checks for actual content (key files), not just empty directories
+const REFERENCES_DIR = readdirSync(join(DATA_DIR, 'references')).length > 0
+  ? join(DATA_DIR, 'references') : join(PROJECT_DIR, 'document refrences - quotes');
+const PROJECTS_DIR = readdirSync(join(DATA_DIR, 'projects')).length > 0
+  ? join(DATA_DIR, 'projects') : join(PROJECT_DIR, 'projects');
+const KNOWLEDGE_DIR = existsSync(join(DATA_DIR, 'knowledge', 'clauses-db.json'))
+  ? join(DATA_DIR, 'knowledge') : join(PROJECT_DIR, 'knowledge');
+const USER_PROFILE_PATH = join(DATA_DIR, 'user-profile.json');
+
+// Ensure remaining directories exist
+mkdirSync(OUTPUT_DIR, { recursive: true });
+mkdirSync(UPLOADS_DIR, { recursive: true });
+mkdirSync(PROJECTS_DIR, { recursive: true });
+mkdirSync(KNOWLEDGE_DIR, { recursive: true });
+
+// ─── Load clause database on startup ─────────────────────────────────────────
+let clausesDb = null;
+try {
+  const dbRaw = readFileSync(join(KNOWLEDGE_DIR, 'clauses-db.json'), 'utf-8');
+  clausesDb = JSON.parse(dbRaw);
+  const categoryCount = Object.keys(clausesDb.clauses).length;
+  const clauseCount = Object.values(clausesDb.clauses).reduce((sum, cat) => sum + cat.clauses.length, 0);
+  console.log(`Loaded clauses DB: ${clauseCount} clauses in ${categoryCount} categories`);
+} catch { /* no clauses DB yet */ }
+
+// ─── Load user profile ──────────────────────────────────────────────────────
+function loadUserProfile() {
+  const defaults = {
+    name: '', nameEn: '', company: '', companyHe: '',
+    title: '', titleEn: '', email: '', website: '', phone: '',
+    logoPath: '', language: 'he', currency: '₪', setupComplete: false,
+    aiProvider: 'anthropic', aiModel: 'claude-haiku-4-5-20251001',
+    aiApiKey: '', useClaudeOAuth: false,
+  };
   try {
-    const credPath = join(homedir(), '.claude', '.credentials.json');
-    const raw = readFileSync(credPath, 'utf-8');
-    const data = JSON.parse(raw);
-    const oauth = data?.claudeAiOauth;
-    if (oauth?.accessToken) {
-      return oauth;
-    }
+    const raw = readFileSync(USER_PROFILE_PATH, 'utf-8');
+    return { ...defaults, ...JSON.parse(raw) };
+  } catch {
+    // First run — create from example or defaults
+    try {
+      const examplePath = join(DATA_DIR, 'user-profile.example.json');
+      if (existsSync(examplePath)) {
+        const exampleRaw = readFileSync(examplePath, 'utf-8');
+        writeFileSync(USER_PROFILE_PATH, exampleRaw, 'utf-8');
+        return { ...defaults, ...JSON.parse(exampleRaw) };
+      }
+    } catch { /* ignore */ }
+    writeFileSync(USER_PROFILE_PATH, JSON.stringify(defaults, null, 2), 'utf-8');
+    return defaults;
+  }
+}
+
+let userProfile = loadUserProfile();
+
+// ─── Project helper functions ─────────────────────────────────────────────────
+
+function slugify(name) {
+  const slug = (name || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[\s]+/g, '-')
+    .replace(/[^\w\u0590-\u05ff-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return slug || `project-${Date.now()}`;
+}
+
+function readIndex() {
+  try {
+    const raw = readFileSync(join(PROJECTS_DIR, '_index.json'), 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return { projects: [], activeProjectId: null };
+  }
+}
+
+function writeIndex(data) {
+  writeFileSync(join(PROJECTS_DIR, '_index.json'), JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function readProject(id) {
+  try {
+    const raw = readFileSync(join(PROJECTS_DIR, id, 'project.json'), 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return { name: '', id, createdAt: null, chatHistory: [], formState: null };
+  }
+}
+
+function writeProject(id, data) {
+  const dir = join(PROJECTS_DIR, id);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'project.json'), JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function getProjectPath(id, subfolder) {
+  // Validate against path traversal
+  if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
     return null;
+  }
+  if (subfolder && (subfolder.includes('..') || subfolder.includes('/') || subfolder.includes('\\'))) {
+    return null;
+  }
+  const p = subfolder ? join(PROJECTS_DIR, id, subfolder) : join(PROJECTS_DIR, id);
+  mkdirSync(p, { recursive: true });
+  return p;
+}
+
+function loadLearnedContext() {
+  try {
+    const raw = readFileSync(join(KNOWLEDGE_DIR, 'learned-context.json'), 'utf-8');
+    return JSON.parse(raw);
   } catch {
     return null;
   }
 }
 
-app.use(express.json());
+// Load learned context on startup
+let learnedContext = null;
+try {
+  const ctx = readFileSync(join(KNOWLEDGE_DIR, 'learned-context.json'), 'utf-8');
+  learnedContext = JSON.parse(ctx);
+  console.log(`Loaded learned context: ${learnedContext.documentsAnalyzed} documents analyzed`);
+} catch { /* no learned context yet */ }
+
+const app = express();
+const PORT = process.env.PORT || 6831;
+
+// Load full business context from skills files
+function loadContextFile(filepath) {
+  try { return readFileSync(join(PROJECT_DIR, filepath), 'utf-8'); } catch { return ''; }
+}
+
+const freelanceSkill = loadContextFile('skills/freelance-doc-maker.md');
+const rtlSkill = loadContextFile('skills/rtl-hebrew-docx.md');
+
+// List reference documents for context
+function getRefDocList() {
+  try {
+    const docs = [];
+    for (const sub of ['2025', 'Jan-Feb 2026']) {
+      const subPath = join(REFERENCES_DIR, sub);
+      try {
+        const files = readdirSync(subPath).filter(f => f.endsWith('.docx') || f.endsWith('.pdf'));
+        docs.push(...files.map(f => `${sub}/${f}`));
+      } catch { /* skip */ }
+    }
+    return docs.join('\n');
+  } catch { return ''; }
+}
+
+function buildClausesPromptSection() {
+  if (!clausesDb) return '';
+
+  let section = '\n\n## מאגר סעיפים משפטיים מלא\n';
+  section += 'להלן כל הסעיפים המשפטיים הזמינים, מאורגנים לפי קטגוריה. השתמש בסעיפים אלו בעת יצירת מסמכים — בחר את הסעיפים הרלוונטיים לפי סוג המסמך וסוג הפרויקט.\n';
+
+  // Add all clause categories with full text
+  for (const [key, category] of Object.entries(clausesDb.clauses)) {
+    section += `\n### ${category.category}\n`;
+    for (const clause of category.clauses) {
+      const docTypes = clause.appliesTo.map(t => {
+        if (t === 'quote') return 'הצעת מחיר';
+        if (t === 'contract') return 'חוזה';
+        if (t === 'workOrder') return 'הזמנת עבודה';
+        return t;
+      }).join(', ');
+      section += `- **[${clause.id}]** (${docTypes}${clause.required ? ' | חובה' : ' | אופציונלי'}): ${clause.text}\n`;
+    }
+  }
+
+  // Add payment patterns
+  section += '\n### מבנה תשלומים\n';
+  for (const pattern of clausesDb.paymentPatterns) {
+    section += `- **${pattern.name}**: ${pattern.description} (${pattern.usage})\n`;
+  }
+
+  // Add service templates
+  section += '\n### תבניות שירות לפי סוג פרויקט\n';
+  section += 'כאשר יוצרים מסמך, בחר את הסעיפים הרלוונטיים לפי סוג הפרויקט:\n';
+  for (const template of clausesDb.serviceTemplates) {
+    section += `\n**${template.name}** (${template.type}):\n`;
+    section += `- תמחור טיפוסי: ${JSON.stringify(template.typicalPricing)}\n`;
+    section += `- לוח זמנים: ${template.typicalTimeline}\n`;
+    section += `- תוצרים: ${template.typicalDeliverables}\n`;
+    section += `- סעיפים רלוונטיים: ${template.relevantClauses.join(', ')}\n`;
+  }
+
+  // Add standard terms
+  section += '\n### תנאים סטנדרטיים\n';
+  const terms = clausesDb.standardTerms;
+  section += `- תוקף הצעה: ${terms.quoteValidity}\n`;
+  section += `- מע"מ: ${terms.vatNote}\n`;
+  section += `- תעריפים שעתיים: רגיל ${terms.hourlyRates.standard} ₪, פיתוח ${terms.hourlyRates.development} ₪, בכיר ${terms.hourlyRates.senior} ₪\n`;
+  section += `- סבבי תיקונים: ${terms.revisionRounds}\n`;
+  section += `- חלון משוב: ${terms.feedbackWindow}\n`;
+  section += `- תקופת אחריות: ${terms.warrantyPeriod}\n`;
+  section += `- הודעת ביטול: ${terms.cancellationNotice}\n`;
+  section += `- סף השהיית פרויקט: ${terms.suspensionThreshold}\n`;
+
+  section += '\n### הנחיות לשימוש בסעיפים\n';
+  section += '1. **הצעת מחיר**: כלול רק סעיפים עם appliesTo שכולל "quote". בדרך כלל: תנאי תשלום, סעיף ביטול, תוקף הצעה, והערת AI אם רלוונטי.\n';
+  section += '2. **חוזה/הזמנת עבודה**: כלול את כל הסעיפים הרלוונטיים — תנאי תשלום, התחייבויות לקוח, ביטול, תיקונים, IP, אחריות, תנאים כלליים.\n';
+  section += '3. **בחירה לפי סוג פרויקט**: השתמש ברשימת הסעיפים הרלוונטיים (relevantClauses) מתבנית השירות המתאימה.\n';
+  section += '4. **סעיפי חובה**: סעיפים המסומנים "חובה" חייבים להיכלל תמיד בסוג המסמך הרלוונטי.\n';
+  section += '5. **הוספת סעיפים חדשים**: אם יש צורך בסעיף שלא קיים במאגר, צור אותו והציע להוסיף אותו למאגר.\n';
+
+  section += '\n### שמירת סעיפים חדשים למאגר\n';
+  section += 'כשאתה מזהה סעיף חדש שצריך להישמר למאגר (מתוך הערות המשתמש, שיחה, או תוכן שנוצר), הוסף בסוף התשובה בלוק מוסתר:\n';
+  section += '<!--SAVE_CLAUSE:{"category":"generalTerms","id":"unique-slug","text":"טקסט הסעיף בעברית","appliesTo":["contract","workOrder"],"required":false}-->\n';
+  section += 'האפליקציה תזהה את הבלוק ותציע למשתמש לשמור את הסעיף.\n';
+
+  return section;
+}
+
+function getSystemPrompt() {
+  const p = userProfile;
+  const nameDisplay = p.nameEn ? `${p.name} (${p.nameEn})` : p.name || 'המשתמש';
+  const langNote = p.language === 'he' ? 'תמיד ענה בעברית אלא אם התבקשת אחרת.' : 'Respond in English unless asked otherwise.';
+
+  let prompt = `אתה העוזר האישי של ${p.name || 'המשתמש'} ליצירת מסמכים עסקיים.
+${langNote}
+
+## הזהות שלך
+- שם: ${nameDisplay}
+- חברה: ${p.company || ''}
+- תפקיד: ${p.title || ''}
+- אימייל: ${p.email || ''} | אתר: ${p.website || ''} | טלפון: ${p.phone || ''}
+
+## סוגי מסמכים
+1. הצעת מחיר — הצעה ראשונית ללקוח
+2. הזמנת עבודה — הסכם פורמלי אחרי אישור הצעה
+3. חוזה — הסכם מפורט עם תנאים מלאים
+
+## מסמכי עזר זמינים במערכת
+המשתמש יכול לנתח מסמכים קיימים דרך לשונית "מסמכים" באפליקציה.
+
+## האפליקציה
+המשתמש עובד עם אפליקציית יצירת מסמכים שכוללת:
+- לשונית צ'אט (כאן) — לשאלות, עזרה, ייעוץ
+- לשונית יצירת מסמך — טופס למילוי פרטים ויצירת DOCX
+- לשונית מסמכים — צפייה במסמכים שנוצרו, העלאת קבצים, ניתוח מסמכים קיימים
+
+כשהמשתמש מבקש ליצור מסמך, עזור לו למלא את הפרטים או הפנה אותו ללשונית "יצירת מסמך".
+כשהמשתמש שואל על תמחור, תנאים, או מבנה — השתמש בידע למעלה.
+
+## ניתוח תמונות וצילומי מסך
+
+כשמשתמש שולח צילום מסך של שיחה, הודעה, אימייל, או מסמך — נתח את התוכן וחלץ את המידע הרלוונטי:
+- שם לקוח וחברה
+- תיאור פרויקט ופרטי שירות
+- פריטי תמחור (תיאור, כמות, מחיר)
+- תנאי תשלום
+- לוחות זמנים
+- הערות נוספות
+
+כשאתה מזהה מידע שניתן למלא בטופס יצירת מסמך, הוסף בסוף התשובה בלוק JSON מוסתר בפורמט הבא (בשורה חדשה, אחרי שסיימת את התשובה הרגילה):
+<!--FORM_DATA:{"clientName":"...","clientCompany":"...","docType":"quote","projectDescription":"...","serviceDetails":"...","pricingItems":[{"desc":"...","qty":1,"price":0}],"paymentStructure":"two","customInstallments":[50,50,0],"timeline":"...","notes":"..."}-->
+
+חשוב:
+- docType יכול להיות: "quote", "order", "contract"
+- paymentStructure יכול להיות: "two", "three", "custom"
+- customInstallments הוא מערך של אחוזים (3 מספרים) — רלוונטי רק כשpaymentStructure הוא "custom"
+- מחירים צריכים להיות מספרים בלבד (ללא ₪ או פסיקים)
+- אם שדה לא נמצא, השאר מחרוזת ריקה
+- הוסף את הבלוק הזה רק כשיש מידע מספיק לטופס — לא בכל הודעה`;
+
+  prompt += buildClausesPromptSection();
+
+  if (learnedContext) {
+    prompt += `\n\n## ידע שנלמד ממסמכי עזר\n${JSON.stringify(learnedContext, null, 2)}\nשים לב: השתמש בסעיפי החוזה, תבניות השירות, ומבנה התשלומים שלמעלה כשאתה עוזר ליצור מסמכים.`;
+  }
+
+  return prompt;
+}
+
+
+// ─── Shared extraction prompt builder ─────────────────────────────────────────
+
+function buildExtractionPrompt(existingClauseIds) {
+  return `אתה מנתח מסמכים עסקיים ומומחה בחילוץ סעיפים משפטיים. קיבלת תוכן של מספר הצעות מחיר וחוזים.
+
+נתח את כל המסמכים והחזר JSON בפורמט הבא בדיוק:
+
+{
+  "newClauses": [
+    {
+      "category": "paymentTerms|clientObligations|earlyTermination|deliveryProcess|intellectualProperty|aiDisclaimers|warrantyAndCompletion|revisions|generalTerms",
+      "id": "unique-slug-id",
+      "text": "הטקסט המלא של הסעיף בעברית",
+      "appliesTo": ["quote", "contract", "workOrder"],
+      "required": true/false,
+      "notes": "הערה קצרה באנגלית (אופציונלי)"
+    }
+  ],
+  "newServiceTemplates": [
+    {
+      "type": "slug-name",
+      "name": "שם בעברית",
+      "typicalPricing": [{"desc": "תיאור", "qty": 1, "price": 0}],
+      "typicalTimeline": "...",
+      "typicalDeliverables": "...",
+      "relevantClauses": ["clause-id-1", "clause-id-2"],
+      "exampleClients": ["שם לקוח"]
+    }
+  ],
+  "newPaymentPatterns": [
+    {
+      "id": "slug-id",
+      "name": "שם בעברית",
+      "description": "תיאור",
+      "installments": [35, 65],
+      "usage": "מתי להשתמש"
+    }
+  ],
+  "updatedStandardTerms": {
+    "quoteValidity": "30 יום",
+    "vatNote": "...",
+    "hourlyRates": { "standard": 185, "development": 250, "senior": 600 },
+    "revisionRounds": 2,
+    "feedbackWindow": "2 ימי עבודה",
+    "warrantyPeriod": "5 ימי עבודה",
+    "cancellationNotice": "7 ימים בכתב",
+    "suspensionThreshold": "5 ימי עבודה עיכוב"
+  }
+}
+
+סעיפים קיימים כבר במאגר (אל תכלול אותם ב-newClauses אלא אם הטקסט שלהם שונה):
+${existingClauseIds.join(', ')}
+
+קטגוריות:
+- paymentTerms: תמורה ותנאי תשלום
+- clientObligations: התחייבויות הלקוח
+- earlyTermination: הפסקת עבודה מוקדמת
+- deliveryProcess: תהליך סיום ומסירה
+- intellectualProperty: קניין רוחני, רישוי ואחריות
+- aiDisclaimers: הצהרות לקוח AI גנרטיבי
+- warrantyAndCompletion: הגדרת סיום ותקופת אחריות
+- revisions: תיקונים והערות
+- generalTerms: תנאים כלליים
+
+חשוב:
+1. חלץ את הטקסט המלא של כל סעיף — לא תקציר
+2. זהה סעיפים חדשים שלא ברשימה הקיימת
+3. אם סעיף קיים אבל בגרסה מפורטת יותר, כלול אותו עם ה-id הקיים
+4. appliesTo: "quote" = הצעת מחיר, "contract" = חוזה, "workOrder" = הזמנת עבודה
+5. required = true לסעיפים שמופיעים בכל המסמכים מסוג זה`;
+}
+
+// ─── Multer config ────────────────────────────────────────────────────────────
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ts = Date.now();
+    cb(null, `${ts}_${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+// Dynamic multer for project-aware uploads
+const dynamicUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, _file, cb) => {
+      const projectId = req.query.projectId || req.body?.projectId;
+      let dest = UPLOADS_DIR;
+      if (projectId) {
+        const projPath = getProjectPath(projectId, 'uploads');
+        if (projPath) dest = projPath;
+      }
+      mkdirSync(dest, { recursive: true });
+      cb(null, dest);
+    },
+    filename: (_req, file, cb) => {
+      cb(null, `${Date.now()}_${file.originalname}`);
+    },
+  }),
+});
+
+// ─── Middleware ───────────────────────────────────────────────────────────────
+
+app.use(express.json({ limit: '20mb' }));
 app.use(express.static(join(__dirname, '..', 'public')));
 
+// ─── User Profile API ────────────────────────────────────────────────────────
+
+app.get('/api/user-profile', (_req, res) => {
+  res.json(userProfile);
+});
+
+app.put('/api/user-profile', (req, res) => {
+  try {
+    userProfile = { ...userProfile, ...req.body };
+    writeFileSync(USER_PROFILE_PATH, JSON.stringify(userProfile, null, 2), 'utf-8');
+    res.json({ success: true, profile: userProfile });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/user-profile/logo', upload.single('logo'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const logoFilename = 'logo' + extname(req.file.originalname);
+    const logoPath = join(DATA_DIR, logoFilename);
+    const fileData = readFileSync(req.file.path);
+    writeFileSync(logoPath, fileData);
+    rmSync(req.file.path);
+    userProfile.logoPath = logoFilename;
+    writeFileSync(USER_PROFILE_PATH, JSON.stringify(userProfile, null, 2), 'utf-8');
+    res.json({ success: true, logoPath: logoFilename });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/setup-status', (_req, res) => {
+  res.json({
+    setupComplete: userProfile.setupComplete,
+    hasProfile: !!(userProfile.name || userProfile.nameEn),
+    hasLogo: !!userProfile.logoPath,
+  });
+});
+
+// ─── Reference document management endpoints ─────────────────────────────────
+
+// Upload references to data/references/
+app.post('/api/references/upload', upload.array('files', 20), (req, res) => {
+  try {
+    const files = req.files || [];
+    if (files.length === 0) return res.status(400).json({ error: 'No files uploaded' });
+
+    const results = [];
+    const refsDir = join(DATA_DIR, 'references');
+
+    for (const file of files) {
+      const destPath = join(refsDir, file.originalname);
+      const fileData = readFileSync(file.path);
+      writeFileSync(destPath, fileData);
+      rmSync(file.path);
+      results.push({ filename: file.originalname, size: file.size });
+    }
+
+    res.json({ success: true, uploaded: results.length, files: results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// List ALL reference documents (both old and new locations)
+app.get('/api/references', (_req, res) => {
+  try {
+    const results = [];
+
+    // Scan data/references/ (new location - user uploads)
+    const newRefsDir = join(DATA_DIR, 'references');
+    try {
+      for (const name of readdirSync(newRefsDir)) {
+        const ext = name.split('.').pop().toLowerCase();
+        if (!['docx', 'doc', 'pdf'].includes(ext)) continue;
+        const stat = statSync(join(newRefsDir, name));
+        results.push({ name, source: 'uploaded', size: stat.size, modified: stat.mtime.toISOString() });
+      }
+    } catch { /* empty */ }
+
+    // Scan old references dir (legacy location)
+    const oldRefsDir = join(PROJECT_DIR, 'document refrences - quotes');
+    if (existsSync(oldRefsDir)) {
+      const subDirs = ['2025', 'Jan-Feb 2026'];
+      for (const sub of subDirs) {
+        const subPath = join(oldRefsDir, sub);
+        try {
+          for (const name of readdirSync(subPath)) {
+            const ext = name.split('.').pop().toLowerCase();
+            if (!['docx', 'doc', 'pdf'].includes(ext)) continue;
+            const stat = statSync(join(subPath, name));
+            results.push({ name, folder: sub, source: 'legacy', size: stat.size, modified: stat.mtime.toISOString() });
+          }
+        } catch { /* empty */ }
+      }
+    }
+
+    results.sort((a, b) => new Date(b.modified) - new Date(a.modified));
+    res.json({ references: results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete uploaded reference (only from data/references/)
+app.delete('/api/references/:filename', (req, res) => {
+  try {
+    const filename = req.params.filename;
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    const filePath = join(DATA_DIR, 'references', filename);
+    if (!existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+    rmSync(filePath);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Analyze references: extract clauses via Claude API and save as pending extraction
+app.post('/api/references/analyze', async (req, res) => {
+  try {
+    const { filenames } = req.body || {};
+
+    // Collect files to analyze
+    const refsDir = join(DATA_DIR, 'references');
+    const oldRefsDir = join(PROJECT_DIR, 'document refrences - quotes');
+    let filesToAnalyze = [];
+
+    if (filenames && filenames.length > 0) {
+      for (const f of filenames) {
+        if (f.includes('..')) continue;
+        let fullPath = join(refsDir, f);
+        if (!existsSync(fullPath)) {
+          for (const sub of ['2025', 'Jan-Feb 2026']) {
+            const candidate = join(oldRefsDir, sub, f);
+            if (existsSync(candidate)) { fullPath = candidate; break; }
+          }
+        }
+        if (existsSync(fullPath)) filesToAnalyze.push({ name: f, path: fullPath });
+      }
+    } else {
+      try {
+        for (const name of readdirSync(refsDir)) {
+          const ext = name.split('.').pop().toLowerCase();
+          if (['docx', 'pdf'].includes(ext)) {
+            filesToAnalyze.push({ name, path: join(refsDir, name) });
+          }
+        }
+      } catch { /* empty */ }
+    }
+
+    if (filesToAnalyze.length === 0) {
+      return res.status(404).json({ error: 'No files found to analyze' });
+    }
+
+    // Extract text from each file
+    const extractedDocs = [];
+    for (const file of filesToAnalyze) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      let text = '';
+      try {
+        if (ext === 'docx') {
+          const result = await mammoth.extractRawText({ path: file.path });
+          text = result.value;
+        } else if (ext === 'pdf') {
+          const buffer = readFileSync(file.path);
+          const pdfData = await getPdfParser().parse(buffer);
+          text = pdfData.text;
+        }
+      } catch (err) {
+        console.error(`Error extracting text from ${file.name}:`, err.message);
+        continue;
+      }
+      if (text && text.trim().length > 10) {
+        extractedDocs.push({ name: file.name, text: text.slice(0, 15000) });
+      }
+    }
+
+    if (extractedDocs.length === 0) {
+      return res.status(400).json({ error: 'Could not extract text from any files' });
+    }
+
+    // Load existing clause IDs to avoid duplicates
+    let existingClauseIds = [];
+    try {
+      const db = JSON.parse(readFileSync(join(KNOWLEDGE_DIR, 'clauses-db.json'), 'utf-8'));
+      existingClauseIds = Object.values(db.clauses).flatMap(cat => cat.clauses.map(c => c.id));
+    } catch { /* empty */ }
+
+    const systemPrompt = buildExtractionPrompt(existingClauseIds);
+
+    const combinedText = extractedDocs
+      .map((doc, i) => `=== מסמך ${i + 1}: ${doc.name} ===\n${doc.text}`)
+      .join('\n\n---\n\n');
+
+    // Call AI API
+    let apiData;
+    try {
+      apiData = await chatCompletion({
+        system: systemPrompt,
+        messages: [{ role: 'user', content: `נתח את ${extractedDocs.length} המסמכים הבאים והחזר JSON מלא:\n\n${combinedText.slice(0, 80000)}` }],
+        maxTokens: 8192,
+      });
+    } catch (err) {
+      console.error('AI API error (analyze):', err.message);
+      return res.status(502).json({ error: err.message });
+    }
+
+    const rawText = apiData.text;
+    const jsonText = rawText.replace(/^[\s\S]*?```(?:json)?\s*\n?/i, '').replace(/\n?\s*```[\s\S]*$/, '').trim() || rawText.trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch {
+      return res.status(500).json({ error: 'Failed to parse AI response', rawText: rawText.slice(0, 500) });
+    }
+
+    // Save as pending extraction
+    const extractionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const extraction = {
+      id: extractionId,
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+      sourceFiles: filesToAnalyze.map(f => f.name),
+      items: {
+        newClauses: (parsed.newClauses || []).map(c => ({ ...c, status: 'pending' })),
+        newServiceTemplates: (parsed.newServiceTemplates || []).map(t => ({ ...t, status: 'pending' })),
+        newPaymentPatterns: (parsed.newPaymentPatterns || []).map(p => ({ ...p, status: 'pending' })),
+        updatedStandardTerms: parsed.updatedStandardTerms || null,
+      },
+      summary: {
+        clauseCount: (parsed.newClauses || []).length,
+        templateCount: (parsed.newServiceTemplates || []).length,
+        patternCount: (parsed.newPaymentPatterns || []).length,
+      },
+    };
+
+    const pendingDir = join(DATA_DIR, 'knowledge', 'pending-extractions');
+    mkdirSync(pendingDir, { recursive: true });
+    writeFileSync(join(pendingDir, `${extractionId}.json`), JSON.stringify(extraction, null, 2), 'utf-8');
+
+    res.json({ success: true, extraction });
+  } catch (err) {
+    console.error('Analyze error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Extraction review endpoints ──────────────────────────────────────────────
+
+// List pending extractions
+app.get('/api/extractions', (_req, res) => {
+  try {
+    const pendingDir = join(DATA_DIR, 'knowledge', 'pending-extractions');
+    const results = [];
+    try {
+      for (const name of readdirSync(pendingDir)) {
+        if (!name.endsWith('.json')) continue;
+        const data = JSON.parse(readFileSync(join(pendingDir, name), 'utf-8'));
+        results.push({
+          id: data.id,
+          createdAt: data.createdAt,
+          status: data.status,
+          sourceFiles: data.sourceFiles,
+          summary: data.summary,
+        });
+      }
+    } catch { /* empty */ }
+    results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json({ extractions: results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get full extraction details
+app.get('/api/extractions/:id', (req, res) => {
+  try {
+    const id = req.params.id;
+    if (id.includes('..') || id.includes('/')) return res.status(400).json({ error: 'Invalid ID' });
+    const filePath = join(DATA_DIR, 'knowledge', 'pending-extractions', `${id}.json`);
+    if (!existsSync(filePath)) return res.status(404).json({ error: 'Extraction not found' });
+    const data = JSON.parse(readFileSync(filePath, 'utf-8'));
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Approve selected items from an extraction and merge into clauses DB
+app.post('/api/extractions/:id/approve', (req, res) => {
+  try {
+    const id = req.params.id;
+    if (id.includes('..') || id.includes('/')) return res.status(400).json({ error: 'Invalid ID' });
+    const filePath = join(DATA_DIR, 'knowledge', 'pending-extractions', `${id}.json`);
+    if (!existsSync(filePath)) return res.status(404).json({ error: 'Extraction not found' });
+
+    const extraction = JSON.parse(readFileSync(filePath, 'utf-8'));
+    const { approvedIds, editedItems } = req.body || {};
+
+    // Load current clauses DB
+    const dbPath = join(KNOWLEDGE_DIR, 'clauses-db.json');
+    let db;
+    try {
+      db = JSON.parse(readFileSync(dbPath, 'utf-8'));
+    } catch {
+      db = { version: 1, createdAt: new Date().toISOString(), clauses: {}, serviceTemplates: [], paymentPatterns: [], standardTerms: {} };
+    }
+
+    let added = 0;
+
+    // Merge approved clauses
+    for (const clause of (extraction.items.newClauses || [])) {
+      if (clause.status !== 'pending') continue;
+      if (approvedIds && !approvedIds.includes(clause.id)) continue;
+
+      // Apply edits if provided
+      if (editedItems && editedItems[clause.id]) {
+        Object.assign(clause, editedItems[clause.id]);
+      }
+
+      // Ensure category exists in DB
+      if (!db.clauses[clause.category]) {
+        db.clauses[clause.category] = {
+          name: clause.category,
+          category: clause.category,
+          clauses: [],
+        };
+      }
+
+      // Check if clause already exists (update vs add)
+      const existing = db.clauses[clause.category].clauses.findIndex(c => c.id === clause.id);
+      const clauseData = { id: clause.id, name: clause.name || clause.id, text: clause.text, appliesTo: clause.appliesTo, required: clause.required || false };
+
+      if (existing >= 0) {
+        db.clauses[clause.category].clauses[existing] = clauseData;
+      } else {
+        db.clauses[clause.category].clauses.push(clauseData);
+      }
+
+      clause.status = 'approved';
+      added++;
+    }
+
+    // Merge approved service templates
+    for (const tmpl of (extraction.items.newServiceTemplates || [])) {
+      if (tmpl.status !== 'pending') continue;
+      if (approvedIds && !approvedIds.includes(tmpl.type)) continue;
+
+      if (!db.serviceTemplates) db.serviceTemplates = [];
+      const existing = db.serviceTemplates.findIndex(t => t.type === tmpl.type);
+      const tmplData = { ...tmpl };
+      delete tmplData.status;
+
+      if (existing >= 0) {
+        db.serviceTemplates[existing] = tmplData;
+      } else {
+        db.serviceTemplates.push(tmplData);
+      }
+      tmpl.status = 'approved';
+      added++;
+    }
+
+    // Save updated DB
+    db.updatedAt = new Date().toISOString();
+    writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
+
+    // Reload in memory
+    clausesDb = db;
+
+    // Update extraction status
+    const allApproved = [...(extraction.items.newClauses || []), ...(extraction.items.newServiceTemplates || [])].every(c => c.status !== 'pending');
+    extraction.status = allApproved ? 'completed' : 'partial';
+    writeFileSync(filePath, JSON.stringify(extraction, null, 2), 'utf-8');
+
+    res.json({ success: true, added, extraction });
+  } catch (err) {
+    console.error('Approve error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reject items from an extraction
+app.post('/api/extractions/:id/reject', (req, res) => {
+  try {
+    const id = req.params.id;
+    if (id.includes('..') || id.includes('/')) return res.status(400).json({ error: 'Invalid ID' });
+    const filePath = join(DATA_DIR, 'knowledge', 'pending-extractions', `${id}.json`);
+    if (!existsSync(filePath)) return res.status(404).json({ error: 'Extraction not found' });
+
+    const extraction = JSON.parse(readFileSync(filePath, 'utf-8'));
+    const { rejectedIds } = req.body || {};
+
+    for (const clause of (extraction.items.newClauses || [])) {
+      if (rejectedIds && !rejectedIds.includes(clause.id)) continue;
+      if (clause.status === 'pending') clause.status = 'rejected';
+    }
+    for (const tmpl of (extraction.items.newServiceTemplates || [])) {
+      if (rejectedIds && !rejectedIds.includes(tmpl.type)) continue;
+      if (tmpl.status === 'pending') tmpl.status = 'rejected';
+    }
+
+    const allDone = [...(extraction.items.newClauses || []), ...(extraction.items.newServiceTemplates || [])].every(i => i.status !== 'pending');
+    extraction.status = allDone ? 'completed' : 'partial';
+    writeFileSync(filePath, JSON.stringify(extraction, null, 2), 'utf-8');
+
+    res.json({ success: true, extraction });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Project CRUD endpoints ───────────────────────────────────────────────────
+
+app.get('/api/projects', (_req, res) => {
+  try {
+    res.json(readIndex());
+  } catch (err) {
+    console.error('Error reading projects index:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/projects', (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'Project name is required' });
+    }
+
+    const id = slugify(name);
+    const projDir = getProjectPath(id);
+    if (!projDir) {
+      return res.status(400).json({ error: 'Invalid project name' });
+    }
+
+    mkdirSync(join(projDir, 'output'), { recursive: true });
+    mkdirSync(join(projDir, 'uploads'), { recursive: true });
+
+    const project = {
+      name: name.trim(),
+      id,
+      createdAt: new Date().toISOString(),
+      chatHistory: [],
+      formState: null,
+    };
+
+    writeProject(id, project);
+
+    const index = readIndex();
+    index.projects.push({ id, name: name.trim(), createdAt: project.createdAt, clientName: '', docType: '', docCount: 0, lastModified: project.createdAt });
+    writeIndex(index);
+
+    res.status(201).json(project);
+  } catch (err) {
+    console.error('Error creating project:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// NOTE: /active must be defined BEFORE /:id to avoid Express matching "active" as an id param
+app.put('/api/projects/active', (req, res) => {
+  try {
+    const { projectId } = req.body;
+    const index = readIndex();
+    index.activeProjectId = projectId || null;
+    writeIndex(index);
+    res.json({ success: true, activeProjectId: index.activeProjectId });
+  } catch (err) {
+    console.error('Error setting active project:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/projects/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+    const project = readProject(id);
+    res.json(project);
+  } catch (err) {
+    console.error('Error reading project:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/projects/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+    const { name } = req.body;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'Project name is required' });
+    }
+
+    const project = readProject(id);
+    project.name = name.trim();
+    writeProject(id, project);
+
+    const index = readIndex();
+    const entry = index.projects.find(p => p.id === id);
+    if (entry) {
+      entry.name = name.trim();
+      writeIndex(index);
+    }
+
+    res.json(project);
+  } catch (err) {
+    console.error('Error updating project:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/projects/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+
+    const projDir = join(PROJECTS_DIR, id);
+    rmSync(projDir, { recursive: true, force: true });
+
+    const index = readIndex();
+    index.projects = index.projects.filter(p => p.id !== id);
+    if (index.activeProjectId === id) {
+      index.activeProjectId = null;
+    }
+    writeIndex(index);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting project:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/projects/:id/chat', (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+    const { chatHistory } = req.body;
+    if (!Array.isArray(chatHistory)) {
+      return res.status(400).json({ error: 'chatHistory must be an array' });
+    }
+
+    const project = readProject(id);
+    project.chatHistory = chatHistory;
+    writeProject(id, project);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error saving chat history:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/projects/:id/form', (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+    const { formState } = req.body;
+
+    const project = readProject(id);
+    project.formState = formState;
+    writeProject(id, project);
+
+    // Update index metadata from form state
+    const index = readIndex();
+    const entry = index.projects.find(p => p.id === id);
+    if (entry) {
+      entry.clientName = (formState && formState.clientName) || entry.clientName || '';
+      entry.docType = (formState && formState.docType) || entry.docType || '';
+      entry.lastModified = new Date().toISOString();
+      // Count output files
+      try {
+        const outputDir = join(PROJECTS_DIR, id, 'output');
+        if (existsSync(outputDir)) {
+          entry.docCount = readdirSync(outputDir).filter(f => !f.startsWith('.')).length;
+        }
+      } catch { /* ignore */ }
+      writeIndex(index);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error saving form state:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Existing endpoint: POST /api/chat ────────────────────────────────────────
+
 app.post('/api/chat', async (req, res) => {
-  const { messages, system } = req.body;
+  const { messages, system, formContext } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'messages array is required' });
-  }
-
-  const creds = getClaudeCredentials();
-  if (!creds) {
-    return res.status(401).json({
-      error: 'No Claude Code credentials found. Please log in with the Claude Code CLI first: claude login',
-    });
   }
 
   // Set SSE headers
@@ -56,94 +1045,1076 @@ app.post('/api/chat', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
 
+  // Build system prompt with live form context
+  let systemPrompt = system || getSystemPrompt();
+  if (formContext) {
+    systemPrompt += '\n\n## מצב הטופס הנוכחי (בזמן אמת)\n';
+    systemPrompt += 'להלן המצב הנוכחי של הטופס שהמשתמש עובד עליו. השתמש במידע זה כדי לתת תשובות מדויקות ורלוונטיות.\n\n';
+    if (formContext.clientName) systemPrompt += `- **שם לקוח:** ${formContext.clientName}\n`;
+    if (formContext.clientCompany) systemPrompt += `- **חברה:** ${formContext.clientCompany}\n`;
+    if (formContext.docType) {
+      const docTypeNames = { quote: 'הצעת מחיר', order: 'הזמנת עבודה', contract: 'חוזה' };
+      systemPrompt += `- **סוג מסמך:** ${docTypeNames[formContext.docType] || formContext.docType}\n`;
+    }
+    if (formContext.serviceType) systemPrompt += `- **סוג שירות/תבנית:** ${formContext.serviceType}\n`;
+    if (formContext.projectDescription) systemPrompt += `- **תיאור פרויקט:** ${formContext.projectDescription}\n`;
+    if (formContext.serviceDetails) systemPrompt += `- **פרטי שירות:** ${formContext.serviceDetails}\n`;
+    if (formContext.pricingItems && formContext.pricingItems.length > 0) {
+      const validItems = formContext.pricingItems.filter(p => p.desc || p.price);
+      if (validItems.length > 0) {
+        systemPrompt += `- **פריטי תמחור:**\n`;
+        validItems.forEach(p => {
+          systemPrompt += `  - ${p.desc || '(ללא תיאור)'}: ${p.qty} x ${p.price} ₪\n`;
+        });
+        const total = validItems.reduce((sum, p) => sum + (p.qty * p.price), 0);
+        systemPrompt += `  - **סה"כ: ${total.toLocaleString()} ₪**\n`;
+      }
+    }
+    if (formContext.paymentStructure) {
+      const structNames = { two: 'שני תשלומים (35%/65%)', three: 'שלושה תשלומים (40%/30%/30%)', custom: 'מותאם אישית' };
+      systemPrompt += `- **מבנה תשלומים:** ${structNames[formContext.paymentStructure] || formContext.paymentStructure}\n`;
+      if (formContext.paymentStructure === 'custom' && formContext.customInstallments) {
+        systemPrompt += `  - חלוקה: ${formContext.customInstallments.join('% / ')}%\n`;
+      }
+    }
+    if (formContext.timeline) systemPrompt += `- **לוח זמנים:** ${formContext.timeline}\n`;
+    if (formContext.notes) systemPrompt += `- **הערות:** ${formContext.notes}\n`;
+    if (formContext.selectedClauses && formContext.selectedClauses.length > 0) {
+      systemPrompt += `- **סעיפים נבחרים (${formContext.selectedClauses.length}):** ${formContext.selectedClauses.join(', ')}\n`;
+    }
+    if (formContext.clauseEdits && Object.keys(formContext.clauseEdits).length > 0) {
+      systemPrompt += `- **סעיפים שנערכו:**\n`;
+      for (const [id, text] of Object.entries(formContext.clauseEdits)) {
+        systemPrompt += `  - ${id}: ${text.substring(0, 200)}${text.length > 200 ? '...' : ''}\n`;
+      }
+    }
+    if (formContext.sectionToggles) {
+      const toggleEntries = Object.entries(formContext.sectionToggles);
+      if (toggleEntries.length > 0) {
+        systemPrompt += `- **סקציות מופעלות/כבויות:**\n`;
+        toggleEntries.forEach(([section, enabled]) => {
+          systemPrompt += `  - ${section}: ${enabled ? 'מופעל' : 'כבוי'}\n`;
+        });
+      }
+    }
+  }
+
+  let streamResult;
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${creds.accessToken}`,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'oauth-2025-04-20',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        system: system || DEFAULT_SYSTEM_PROMPT,
-        messages,
-        stream: true,
-      }),
+    streamResult = await chatCompletionStream({
+      system: systemPrompt,
+      messages,
+      maxTokens: 4096,
     });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('Anthropic API error:', response.status, errorBody);
-      res.write(`data: ${JSON.stringify({ type: 'error', error: `API error: ${response.status}` })}\n\n`);
-      res.write('data: [DONE]\n\n');
-      res.end();
-      return;
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') {
-            res.write('data: [DONE]\n\n');
-            continue;
-          }
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-              res.write(`data: ${JSON.stringify({ type: 'text', text: parsed.delta.text })}\n\n`);
-            } else if (parsed.type === 'message_stop') {
-              res.write('data: [DONE]\n\n');
-            } else if (parsed.type === 'error') {
-              res.write(`data: ${JSON.stringify({ type: 'error', error: parsed.error?.message || 'Unknown error' })}\n\n`);
-              res.write('data: [DONE]\n\n');
-            }
-          } catch {
-            // Skip unparseable lines
-          }
-        }
-      }
-    }
-
-    // Flush any remaining buffer
-    if (buffer.startsWith('data: ')) {
-      const data = buffer.slice(6);
-      try {
-        const parsed = JSON.parse(data);
-        if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-          res.write(`data: ${JSON.stringify({ type: 'text', text: parsed.delta.text })}\n\n`);
-        }
-      } catch {
-        // Skip
-      }
-    }
-
-    res.write('data: [DONE]\n\n');
-    res.end();
   } catch (err) {
-    console.error('Stream error:', err);
+    console.error('AI API error (chat):', err.message);
     res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
     res.write('data: [DONE]\n\n');
     res.end();
+    return;
+  }
+
+  try {
+    for await (const chunk of parseSSEStream(streamResult.response, streamResult.provider)) {
+      if (chunk.type === 'text') {
+        res.write(`data: ${JSON.stringify({ type: 'text', text: chunk.text })}\n\n`);
+      } else if (chunk.type === 'error') {
+        res.write(`data: ${JSON.stringify({ type: 'error', error: chunk.error })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+        return;
+      }
+    }
+  } catch (streamErr) {
+    console.error('Stream error:', streamErr.message);
+  }
+
+  res.write('data: [DONE]\n\n');
+  res.end();
+});
+
+// ─── New endpoint: POST /api/generate-document ────────────────────────────────
+
+app.post('/api/generate-document', async (req, res) => {
+  try {
+    const raw = req.body;
+
+    if (!raw || typeof raw !== 'object') {
+      return res.status(400).json({ error: 'Request body must be a JSON object with document data' });
+    }
+
+    // Map frontend field names to generateDocument() expected format
+    const docTypeMap = { quote: 'quote', order: 'workOrder', contract: 'contract' };
+    const paymentLabels = {
+      two: [
+        { percentage: 35, description: 'מקדמה בתחילת עבודה' },
+        { percentage: 65, description: 'תשלום סופי עם סיום הפרויקט' },
+      ],
+      three: [
+        { percentage: 40, description: 'מקדמה בתחילת עבודה' },
+        { percentage: 30, description: 'תשלום שני באמצע הפרויקט' },
+        { percentage: 30, description: 'תשלום סופי עם סיום הפרויקט' },
+      ],
+    };
+
+    let installments = [];
+    if (raw.paymentTerms) {
+      if (raw.paymentTerms.type === 'custom') {
+        installments = (raw.paymentTerms.installments || []).map((pct, i) => ({
+          percentage: pct,
+          description: `תשלום ${i + 1}`,
+        }));
+      } else {
+        installments = paymentLabels[raw.paymentTerms.type] || [];
+      }
+    }
+
+    const data = {
+      clientName: raw.clientName || '',
+      clientCompany: raw.clientCompany || '',
+      documentType: docTypeMap[raw.docType] || raw.documentType || 'quote',
+      projectDescription: raw.projectDescription || '',
+      serviceDetails: raw.serviceDetails || '',
+      pricingItems: (raw.pricing || raw.pricingItems || []).map(item => ({
+        description: item.desc || item.description || '',
+        quantity: item.qty || item.quantity || 1,
+        unitPrice: item.price || item.unitPrice || 0,
+      })),
+      paymentTerms: {
+        type: raw.paymentTerms?.type || 'two',
+        installments,
+      },
+      timeline: raw.timeline || '',
+      generalNotes: raw.notes || raw.generalNotes || '',
+      serviceType: raw.serviceType || '',
+      selectedClauses: raw.selectedClauses || null,
+      clauseEdits: raw.clauseEdits || {},
+      documentDate: raw.documentDate || null,
+    };
+
+    // Clear content for disabled sections
+    const disabled = new Set(raw.disabledSections || []);
+    if (disabled.has('pricing')) {
+      data.pricingItems = [];
+    }
+    if (disabled.has('payment')) {
+      data.paymentTerms = { type: 'none', installments: [] };
+    }
+    if (disabled.has('timeline')) {
+      data.timeline = '';
+    }
+    if (disabled.has('notes')) {
+      data.generalNotes = '';
+    }
+
+    const buffer = await generateDocument({ ...data, userProfile });
+
+    // Build a descriptive Hebrew filename
+    const typeNames = { quote: 'הצעת מחיר', contract: 'חוזה', workOrder: 'הזמנת עבודה' };
+    const docTypeName = typeNames[data.documentType] || 'מסמך';
+    const clientName = (data.clientName || '').trim();
+    const projectDesc = (data.projectDescription || '').trim();
+
+    // Short project description (first meaningful chunk, max ~40 chars)
+    let shortDesc = projectDesc.split(/[.\n,]/)[0].trim();
+    if (shortDesc.length > 40) shortDesc = shortDesc.slice(0, 40).trim();
+
+    // Format date as DD.MM.YY
+    const docDate = raw.documentDate ? new Date(raw.documentDate + 'T00:00:00') : new Date();
+    const dateStr = `${docDate.getDate()}.${docDate.getMonth() + 1}.${String(docDate.getFullYear()).slice(-2)}`;
+
+    // Determine save path first (needed for sequence number)
+    let savePath = OUTPUT_DIR;
+    if (raw.projectId) {
+      const projOutput = getProjectPath(raw.projectId, 'output');
+      if (projOutput) savePath = projOutput;
+    }
+
+    // Sequence number: count existing files for this doc type in the output directory
+    let seq = 1;
+    try {
+      const existing = readdirSync(savePath).filter(f => f.endsWith('.docx'));
+      const sameType = existing.filter(f => f.startsWith(docTypeName));
+      seq = sameType.length + 1;
+    } catch { /* dir might not exist yet */ }
+
+    // Build filename parts
+    const parts = [docTypeName];
+    if (shortDesc) parts.push(shortDesc);
+    if (clientName) parts.push(`עבור ${clientName}`);
+    parts.push(dateStr);
+    parts.push(String(seq));
+
+    // Clean filename: allow Hebrew, digits, spaces, hyphens, dots
+    const filename = parts.join(' - ')
+      .replace(/[^\w\u0590-\u05ff\s.\-]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim() + '.docx';
+
+    const outputPath = join(savePath, filename);
+
+    // Save to output directory
+    writeFileSync(outputPath, buffer);
+
+    // Auto-open in default application (LibreOffice etc.)
+    exec(`xdg-open "${outputPath}"`, (err) => {
+      if (err) console.error('Failed to open document:', err.message);
+    });
+
+    // Update project doc count in index
+    if (raw.projectId) {
+      try {
+        const index = readIndex();
+        const entry = index.projects.find(p => p.id === raw.projectId);
+        if (entry) {
+          const outputDir = join(PROJECTS_DIR, raw.projectId, 'output');
+          if (existsSync(outputDir)) {
+            entry.docCount = readdirSync(outputDir).filter(f => !f.startsWith('.')).length;
+          }
+          entry.lastModified = new Date().toISOString();
+          writeIndex(index);
+        }
+      } catch { /* ignore */ }
+    }
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="document.docx"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('Document generation error:', err);
+    res.status(500).json({ error: err.message || 'Failed to generate document' });
   }
 });
 
-app.listen(PORT, () => {
+// ─── Endpoint: POST /api/upload ──────────────────────────────────────────────
+
+app.post('/api/upload', dynamicUpload.array('files', 20), (req, res) => {
+  try {
+    // Support both single file (field "file") and multiple files (field "files")
+    const files = req.files || (req.file ? [req.file] : []);
+
+    if (files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded.' });
+    }
+
+    res.json({
+      success: true,
+      uploaded: files.length,
+      files: files.map(f => ({ filename: f.filename, originalName: f.originalname, size: f.size })),
+    });
+  } catch (err) {
+    console.error('Upload error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── New endpoint: GET /api/reference-documents ──────────────────────────────
+
+app.get('/api/reference-documents', (_req, res) => {
+  try {
+    const subDirs = ['2025', 'Jan-Feb 2026'];
+    const results = [];
+
+    for (const sub of subDirs) {
+      const subPath = join(REFERENCES_DIR, sub);
+      let files;
+      try {
+        files = readdirSync(subPath);
+      } catch {
+        continue;
+      }
+
+      for (const name of files) {
+        const ext = name.split('.').pop().toLowerCase();
+        if (!['docx', 'doc', 'pdf'].includes(ext)) continue;
+        const fullPath = join(subPath, name);
+        const stat = statSync(fullPath);
+        results.push({
+          name,
+          folder: sub,
+          size: stat.size,
+          modified: stat.mtime.toISOString(),
+        });
+      }
+    }
+
+    results.sort((a, b) => new Date(b.modified) - new Date(a.modified));
+    res.json({ references: results });
+  } catch (err) {
+    console.error('Error listing reference docs:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── New endpoint: POST /api/analyze-document ─────────────────────────────────
+
+app.post('/api/analyze-document', async (req, res) => {
+  try {
+    const { filename, source, projectId } = req.body;
+
+    if (!filename) {
+      return res.status(400).json({ error: 'filename is required' });
+    }
+
+    // Prevent path traversal
+    if (filename.includes('..') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+
+    let filePath;
+    if (source === 'references') {
+      // Accept "2025/filename.docx" or "Jan-Feb 2026/filename.docx"
+      const parts = filename.split('/');
+      if (parts.length !== 2) {
+        return res.status(400).json({ error: 'Reference filename must be in format "subfolder/filename"' });
+      }
+      const [subfolder, fname] = parts;
+      const allowedSubfolders = ['2025', 'Jan-Feb 2026'];
+      if (!allowedSubfolders.includes(subfolder)) {
+        return res.status(400).json({ error: 'Invalid subfolder' });
+      }
+      filePath = join(REFERENCES_DIR, subfolder, fname);
+    } else if (projectId) {
+      // Project-specific uploads folder
+      const projUploads = getProjectPath(projectId, 'uploads');
+      if (!projUploads) {
+        return res.status(400).json({ error: 'Invalid project ID' });
+      }
+      filePath = join(projUploads, filename);
+    } else {
+      // Default: uploads directory
+      filePath = join(UPLOADS_DIR, filename);
+    }
+
+    // Check file exists
+    try {
+      statSync(filePath);
+    } catch {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const ext = filename.split('.').pop().toLowerCase();
+    let extractedText = '';
+
+    if (ext === 'docx' || ext === 'doc') {
+      const result = await mammoth.extractRawText({ path: filePath });
+      extractedText = result.value;
+    } else if (ext === 'pdf') {
+      const buffer = readFileSync(filePath);
+      const pdfData = await getPdfParser().parse(buffer);
+      extractedText = pdfData.text;
+    } else {
+      return res.status(400).json({ error: 'Unsupported file type. Only DOCX and PDF files can be analyzed.' });
+    }
+
+    if (!extractedText || extractedText.trim().length < 10) {
+      return res.status(422).json({ error: 'Could not extract text from this file. It may be image-based or corrupted.' });
+    }
+
+    const systemPrompt = `אתה מנתח מסמכים עסקיים בעברית. קיבלת תוכן של מסמך עסקי (הצעת מחיר, חוזה, או הזמנת עבודה).
+נתח את המסמך והחזר JSON עם המידע הבא:
+
+{
+  "clientName": "שם הלקוח",
+  "clientCompany": "שם החברה של הלקוח",
+  "documentType": "quote" | "contract" | "workOrder",
+  "projectDescription": "תיאור קצר של הפרויקט",
+  "serviceDetails": "פירוט מלא של השירות",
+  "pricingItems": [{"desc": "תיאור", "qty": מספר, "price": מספר}],
+  "paymentStructure": "two" | "three" | "custom",
+  "timeline": "פרטי לוחות זמנים",
+  "generalNotes": "הערות כלליות",
+  "styleNotes": "הערות לגבי סגנון המסמך, עיצוב, מבנה"
+}
+
+החזר רק JSON תקין, ללא טקסט נוסף. אם שדה לא נמצא במסמך, השאר אותו כמחרוזת ריקה או מערך ריק.
+מחירים צריכים להיות מספרים בלבד (ללא סימן ₪ או פסיקים).`;
+
+    let apiData;
+    try {
+      apiData = await chatCompletion({
+        system: systemPrompt,
+        messages: [{ role: 'user', content: `נתח את המסמך הבא והחזר JSON:\n\n${extractedText.slice(0, 20000)}` }],
+        maxTokens: 4096,
+      });
+    } catch (err) {
+      console.error('AI API error (analyze-document):', err.message);
+      return res.status(502).json({ error: err.message });
+    }
+
+    const rawText = apiData.text;
+
+    // Strip markdown code fences if present
+    const jsonText = rawText.replace(/^[\s\S]*?```(?:json)?\s*\n?/i, '').replace(/\n?\s*```[\s\S]*$/, '').trim() || rawText.trim();
+
+    let extracted;
+    try {
+      extracted = JSON.parse(jsonText);
+    } catch {
+      console.error('Failed to parse Claude response as JSON:', rawText);
+      return res.status(502).json({ error: 'Claude did not return valid JSON', raw: rawText.slice(0, 500) });
+    }
+
+    res.json({ success: true, data: extracted, filename });
+  } catch (err) {
+    console.error('Analyze document error:', err);
+    res.status(500).json({ error: err.message || 'Failed to analyze document' });
+  }
+});
+
+// ─── New endpoint: GET /api/documents (combined) ──────────────────────────────
+// Replaces the old split endpoints - returns both generated and uploaded files
+
+app.get('/api/documents', (req, res) => {
+  try {
+    const { projectId } = req.query;
+    let outputDir = OUTPUT_DIR;
+    let uploadsDir = UPLOADS_DIR;
+
+    if (projectId) {
+      const projOutput = getProjectPath(projectId, 'output');
+      const projUploads = getProjectPath(projectId, 'uploads');
+      if (projOutput && projUploads) {
+        outputDir = projOutput;
+        uploadsDir = projUploads;
+      }
+    }
+
+    const generated = readdirSync(outputDir)
+      .filter(f => f.endsWith('.docx') || f.endsWith('.pdf'))
+      .map(name => {
+        const stat = statSync(join(outputDir, name));
+        return { name, size: stat.size, modified: stat.mtime.toISOString() };
+      })
+      .sort((a, b) => new Date(b.modified) - new Date(a.modified));
+
+    const uploaded = readdirSync(uploadsDir)
+      .map(name => {
+        const stat = statSync(join(uploadsDir, name));
+        return { name, size: stat.size, modified: stat.mtime.toISOString() };
+      })
+      .sort((a, b) => new Date(b.modified) - new Date(a.modified));
+
+    res.json({ generated, uploaded });
+  } catch (err) {
+    console.error('Error listing documents:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── New endpoint: GET /api/download/:folder/:filename ────────────────────────
+
+app.get('/api/download/:folder/:filename', (req, res) => {
+  try {
+    const { folder, filename } = req.params;
+    const { projectId } = req.query;
+
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+
+    let basePath;
+    if (projectId) {
+      // Project-specific path
+      const projPath = getProjectPath(projectId, folder);
+      if (!projPath) {
+        return res.status(400).json({ error: 'Invalid project ID' });
+      }
+      basePath = projPath;
+    } else if (folder === 'output') {
+      basePath = OUTPUT_DIR;
+    } else if (folder === 'uploads') {
+      basePath = UPLOADS_DIR;
+    } else {
+      return res.status(400).json({ error: 'Invalid folder' });
+    }
+
+    const filePath = join(basePath, filename);
+    try {
+      statSync(filePath);
+    } catch {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.sendFile(filePath);
+  } catch (err) {
+    console.error('Error serving file:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Learn references endpoint ────────────────────────────────────────────────
+
+app.post('/api/learn-references', async (req, res) => {
+  try {
+    // Scan reference documents
+    const subDirs = ['2025', 'Jan-Feb 2026'];
+    const extractedDocs = [];
+    const seenNames = new Set();
+
+    for (const sub of subDirs) {
+      const subPath = join(REFERENCES_DIR, sub);
+      let files;
+      try {
+        files = readdirSync(subPath);
+      } catch {
+        continue;
+      }
+
+      for (const name of files) {
+        const ext = name.split('.').pop().toLowerCase();
+        if (!['docx', 'pdf'].includes(ext)) continue;
+
+        // Skip duplicates: prefer .docx over .pdf
+        const baseName = name.replace(/\.(docx|pdf)$/i, '');
+        if (seenNames.has(baseName)) continue;
+
+        // Check if .docx version exists when we encounter a .pdf
+        if (ext === 'pdf') {
+          const docxVersion = baseName + '.docx';
+          if (files.includes(docxVersion)) continue; // skip pdf, docx will be processed
+        }
+
+        seenNames.add(baseName);
+
+        const filePath = join(subPath, name);
+        let text = '';
+        try {
+          if (ext === 'docx') {
+            const result = await mammoth.extractRawText({ path: filePath });
+            text = result.value;
+          } else if (ext === 'pdf') {
+            const buffer = readFileSync(filePath);
+            const pdfData = await getPdfParser().parse(buffer);
+            text = pdfData.text;
+          }
+        } catch (err) {
+          console.error(`Error extracting text from ${sub}/${name}:`, err.message);
+          continue;
+        }
+
+        if (text && text.trim().length > 10) {
+          extractedDocs.push({ name: `${sub}/${name}`, text: text.slice(0, 15000) });
+        }
+      }
+    }
+
+    if (extractedDocs.length === 0) {
+      return res.status(404).json({ error: 'No reference documents found to analyze' });
+    }
+
+    // Combine all text
+    const combinedText = extractedDocs
+      .map((doc, i) => `=== מסמך ${i + 1}: ${doc.name} ===\n${doc.text}`)
+      .join('\n\n---\n\n');
+
+    // Load existing clauses DB for reference
+    let existingDb = null;
+    try {
+      existingDb = JSON.parse(readFileSync(join(KNOWLEDGE_DIR, 'clauses-db.json'), 'utf-8'));
+    } catch { /* no existing DB */ }
+
+    const existingClauseIds = existingDb
+      ? Object.values(existingDb.clauses).flatMap(cat => cat.clauses.map(c => c.id))
+      : [];
+
+    const systemPrompt = buildExtractionPrompt(existingClauseIds);
+
+    // Limit total text to avoid timeout (cap at ~40K chars for Haiku)
+    const maxTotalChars = 40000;
+    let totalChars = 0;
+    const limitedDocs = [];
+    for (const doc of extractedDocs) {
+      if (totalChars + doc.text.length > maxTotalChars && limitedDocs.length > 0) break;
+      limitedDocs.push(doc);
+      totalChars += doc.text.length;
+    }
+    const limitedText = limitedDocs
+      .map((doc, i) => `=== מסמך ${i + 1}: ${doc.name} ===\n${doc.text}`)
+      .join('\n\n---\n\n');
+    console.log(`Learn: sending ${limitedDocs.length}/${extractedDocs.length} docs (${totalChars} chars) to API...`);
+
+    const learnController = new AbortController();
+    const learnTimeout = setTimeout(() => learnController.abort(), 90000);
+
+    let apiData;
+    try {
+      apiData = await chatCompletion({
+        system: systemPrompt,
+        messages: [{ role: 'user', content: `נתח את ${limitedDocs.length} המסמכים הבאים והחזר JSON מלא:\n\n${limitedText}` }],
+        maxTokens: 8192,
+        signal: learnController.signal,
+      });
+    } catch (err) {
+      console.error('AI API error (learn-references):', err.message);
+      return res.status(502).json({ error: err.message });
+    } finally {
+      clearTimeout(learnTimeout);
+    }
+
+    const rawText = apiData.text;
+
+    // Strip markdown code fences if present
+    const jsonText = rawText.replace(/^[\s\S]*?```(?:json)?\s*\n?/i, '').replace(/\n?\s*```[\s\S]*$/, '').trim() || rawText.trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch {
+      console.error('Failed to parse learn-references response as JSON:', rawText.slice(0, 500));
+      return res.status(502).json({ error: 'Claude did not return valid JSON', raw: rawText.slice(0, 500) });
+    }
+
+    // Merge new clauses into existing DB
+    let db = existingDb || {
+      version: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      source: 'extracted from reference documents',
+      clauses: {
+        paymentTerms: { category: 'תמורה ותנאי תשלום', clauses: [] },
+        clientObligations: { category: 'התחייבויות הלקוח', clauses: [] },
+        earlyTermination: { category: 'הפסקת עבודה מוקדמת', clauses: [] },
+        deliveryProcess: { category: 'תהליך סיום ומסירה', clauses: [] },
+        intellectualProperty: { category: 'קניין רוחני, רישוי ואחריות', clauses: [] },
+        aiDisclaimers: { category: 'הצהרות לקוח (AI גנרטיבי)', clauses: [] },
+        warrantyAndCompletion: { category: 'הגדרת "סיום" ותקופת אחריות', clauses: [] },
+        revisions: { category: 'תיקונים והערות', clauses: [] },
+        generalTerms: { category: 'תנאים כלליים', clauses: [] },
+      },
+      paymentPatterns: [],
+      serviceTemplates: [],
+      standardTerms: {},
+    };
+
+    let addedClauses = 0;
+    let updatedClauses = 0;
+
+    // Merge new clauses
+    if (parsed.newClauses && Array.isArray(parsed.newClauses)) {
+      for (const clause of parsed.newClauses) {
+        if (!clause.category || !clause.id || !clause.text) continue;
+        if (!db.clauses[clause.category]) continue;
+
+        const existing = db.clauses[clause.category].clauses.find(c => c.id === clause.id);
+        if (existing) {
+          // Update if text is longer/more detailed
+          if (clause.text.length > existing.text.length) {
+            existing.text = clause.text;
+            if (clause.appliesTo) existing.appliesTo = clause.appliesTo;
+            if (clause.notes) existing.notes = clause.notes;
+            updatedClauses++;
+          }
+        } else {
+          // Add new clause
+          db.clauses[clause.category].clauses.push({
+            id: clause.id,
+            text: clause.text,
+            appliesTo: clause.appliesTo || ['contract', 'workOrder'],
+            required: clause.required || false,
+            ...(clause.notes ? { notes: clause.notes } : {}),
+          });
+          addedClauses++;
+        }
+      }
+    }
+
+    // Merge new service templates
+    let addedTemplates = 0;
+    if (parsed.newServiceTemplates && Array.isArray(parsed.newServiceTemplates)) {
+      for (const template of parsed.newServiceTemplates) {
+        if (!template.type || !template.name) continue;
+        const existing = db.serviceTemplates.find(t => t.type === template.type);
+        if (!existing) {
+          db.serviceTemplates.push(template);
+          addedTemplates++;
+        }
+      }
+    }
+
+    // Merge new payment patterns
+    let addedPatterns = 0;
+    if (parsed.newPaymentPatterns && Array.isArray(parsed.newPaymentPatterns)) {
+      for (const pattern of parsed.newPaymentPatterns) {
+        if (!pattern.id) continue;
+        const existing = db.paymentPatterns.find(p => p.id === pattern.id);
+        if (!existing) {
+          db.paymentPatterns.push(pattern);
+          addedPatterns++;
+        }
+      }
+    }
+
+    // Update standard terms if provided
+    if (parsed.updatedStandardTerms) {
+      db.standardTerms = { ...db.standardTerms, ...parsed.updatedStandardTerms };
+    }
+
+    db.updatedAt = new Date().toISOString();
+
+    // Save updated clauses DB
+    writeFileSync(join(KNOWLEDGE_DIR, 'clauses-db.json'), JSON.stringify(db, null, 2), 'utf-8');
+
+    // Also save the raw learned context for the system prompt
+    const learnedData = {
+      learnedAt: new Date().toISOString(),
+      documentsAnalyzed: extractedDocs.length,
+      ...parsed,
+    };
+    writeFileSync(join(KNOWLEDGE_DIR, 'learned-context.json'), JSON.stringify(learnedData, null, 2), 'utf-8');
+    learnedContext = learnedData;
+
+    // Update in-memory clausesDb
+    clausesDb = db;
+
+    res.json({
+      success: true,
+      documentsAnalyzed: extractedDocs.length,
+      addedClauses,
+      updatedClauses,
+      addedTemplates,
+      addedPatterns,
+      totalClauses: Object.values(db.clauses).reduce((sum, cat) => sum + cat.clauses.length, 0),
+      totalCategories: Object.keys(db.clauses).length,
+    });
+  } catch (err) {
+    console.error('Learn references error:', err);
+    res.status(500).json({ error: err.message || 'Failed to learn from references' });
+  }
+});
+
+app.get('/api/learned-context', (_req, res) => {
+  if (learnedContext) {
+    res.json(learnedContext);
+  } else {
+    res.json({ learned: false });
+  }
+});
+
+app.get('/api/clauses-db', (_req, res) => {
+  if (clausesDb) {
+    res.json(clausesDb);
+  } else {
+    res.json({ clauses: {}, serviceTemplates: [], paymentPatterns: [], standardTerms: {} });
+  }
+});
+
+// ─── Save clause to living DB ─────────────────────────────────────────────────
+
+app.post('/api/save-clause', (req, res) => {
+  try {
+    const { category, id, text, appliesTo, required, notes } = req.body;
+
+    if (!category || !id || !text) {
+      return res.status(400).json({ error: 'Missing required fields: category, id, text' });
+    }
+
+    // Load current DB and validate category against actual DB categories
+    const dbPath = join(KNOWLEDGE_DIR, 'clauses-db.json');
+    let db;
+    try {
+      db = JSON.parse(readFileSync(dbPath, 'utf-8'));
+    } catch {
+      // Create fresh DB if none exists
+      db = {
+        version: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        source: 'extracted from reference documents',
+        clauses: {
+          paymentTerms: { category: 'תמורה ותנאי תשלום', clauses: [] },
+          clientObligations: { category: 'התחייבויות הלקוח', clauses: [] },
+          earlyTermination: { category: 'הפסקת עבודה מוקדמת', clauses: [] },
+          deliveryProcess: { category: 'תהליך סיום ומסירה', clauses: [] },
+          intellectualProperty: { category: 'קניין רוחני, רישוי ואחריות', clauses: [] },
+          aiDisclaimers: { category: 'הצהרות לקוח (AI גנרטיבי)', clauses: [] },
+          warrantyAndCompletion: { category: 'הגדרת "סיום" ותקופת אחריות', clauses: [] },
+          revisions: { category: 'תיקונים והערות', clauses: [] },
+          generalTerms: { category: 'תנאים כלליים', clauses: [] },
+          confidentiality: { category: 'סודיות', clauses: [] },
+          commercialResponsibility: { category: 'אחריות לשימוש מסחרי', clauses: [] },
+          projectTermination: { category: 'סיום הפרויקט', clauses: [] },
+        },
+        paymentPatterns: [],
+        serviceTemplates: [],
+        standardTerms: {},
+      };
+    }
+
+    if (!db.clauses[category]) {
+      return res.status(400).json({ error: `Category ${category} not found in DB` });
+    }
+
+    // Check for existing clause with same ID
+    const existingIdx = db.clauses[category].clauses.findIndex(c => c.id === id);
+    const clauseObj = {
+      id,
+      text,
+      appliesTo: appliesTo || ['contract', 'workOrder'],
+      required: required || false,
+      ...(notes ? { notes } : {}),
+    };
+
+    if (existingIdx >= 0) {
+      // Update existing
+      db.clauses[category].clauses[existingIdx] = clauseObj;
+    } else {
+      // Add new
+      db.clauses[category].clauses.push(clauseObj);
+    }
+
+    db.updatedAt = new Date().toISOString();
+    writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
+
+    // Update in-memory DB
+    clausesDb = db;
+
+    const totalClauses = Object.values(db.clauses).reduce((sum, cat) => sum + cat.clauses.length, 0);
+    res.json({
+      success: true,
+      action: existingIdx >= 0 ? 'updated' : 'added',
+      clauseId: id,
+      category,
+      totalClauses,
+    });
+  } catch (err) {
+    console.error('Save clause error:', err);
+    res.status(500).json({ error: err.message || 'Failed to save clause' });
+  }
+});
+
+// ─── Service Templates CRUD ──────────────────────────────────────────────────
+
+function readClausesDb() {
+  const dbPath = join(KNOWLEDGE_DIR, 'clauses-db.json');
+  return JSON.parse(readFileSync(dbPath, 'utf-8'));
+}
+
+function writeClausesDb(db) {
+  const dbPath = join(KNOWLEDGE_DIR, 'clauses-db.json');
+  db.updatedAt = new Date().toISOString();
+  writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
+  clausesDb = db;
+}
+
+app.post('/api/service-templates', (req, res) => {
+  try {
+    const { name, typicalPricing, typicalTimeline, typicalDeliverables, relevantClauses, settings } = req.body;
+    if (!name) return res.status(400).json({ error: 'name is required' });
+
+    const db = readClausesDb();
+    const type = `custom-${Date.now()}`;
+    const template = {
+      type,
+      name,
+      typicalPricing: typicalPricing || [],
+      typicalTimeline: typicalTimeline || '',
+      typicalDeliverables: typicalDeliverables || '',
+      relevantClauses: relevantClauses || [],
+      exampleClients: [],
+      settings: settings || null,
+    };
+
+    db.serviceTemplates = db.serviceTemplates || [];
+    db.serviceTemplates.push(template);
+    writeClausesDb(db);
+
+    res.json(template);
+  } catch (err) {
+    console.error('Create template error:', err);
+    res.status(500).json({ error: err.message || 'Failed to create template' });
+  }
+});
+
+app.put('/api/service-templates/:type', (req, res) => {
+  try {
+    const { type } = req.params;
+    const { name, typicalPricing, typicalTimeline, typicalDeliverables, relevantClauses, settings } = req.body;
+
+    const db = readClausesDb();
+    const idx = (db.serviceTemplates || []).findIndex(t => t.type === type);
+    if (idx === -1) return res.status(404).json({ error: 'Template not found' });
+
+    const existing = db.serviceTemplates[idx];
+    const updated = {
+      ...existing,
+      name: name !== undefined ? name : existing.name,
+      typicalPricing: typicalPricing !== undefined ? typicalPricing : existing.typicalPricing,
+      typicalTimeline: typicalTimeline !== undefined ? typicalTimeline : existing.typicalTimeline,
+      typicalDeliverables: typicalDeliverables !== undefined ? typicalDeliverables : existing.typicalDeliverables,
+      relevantClauses: relevantClauses !== undefined ? relevantClauses : existing.relevantClauses,
+      settings: settings !== undefined ? settings : existing.settings,
+    };
+
+    db.serviceTemplates[idx] = updated;
+    writeClausesDb(db);
+
+    res.json(updated);
+  } catch (err) {
+    console.error('Update template error:', err);
+    res.status(500).json({ error: err.message || 'Failed to update template' });
+  }
+});
+
+app.delete('/api/service-templates/:type', (req, res) => {
+  try {
+    const { type } = req.params;
+    const db = readClausesDb();
+    const idx = (db.serviceTemplates || []).findIndex(t => t.type === type);
+    if (idx === -1) return res.status(404).json({ error: 'Template not found' });
+
+    db.serviceTemplates.splice(idx, 1);
+    writeClausesDb(db);
+
+    res.json({ success: true, type });
+  } catch (err) {
+    console.error('Delete template error:', err);
+    res.status(500).json({ error: err.message || 'Failed to delete template' });
+  }
+});
+
+// ─── Document Types API ──────────────────────────────────────────────────────
+const DOC_TYPES_PATH = join(DATA_DIR, 'knowledge', 'document-types.json');
+
+function loadDocumentTypes() {
+  try {
+    return JSON.parse(readFileSync(DOC_TYPES_PATH, 'utf-8'));
+  } catch {
+    // Seed from file or return empty
+    return { version: 1, types: [] };
+  }
+}
+
+app.get('/api/document-types', (_req, res) => {
+  try {
+    const data = loadDocumentTypes();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/document-types', (req, res) => {
+  try {
+    const data = loadDocumentTypes();
+    const newType = req.body;
+    if (!newType.id || !newType.name) return res.status(400).json({ error: 'id and name required' });
+    // Check for duplicate
+    if (data.types.find(t => t.id === newType.id)) return res.status(409).json({ error: 'Type already exists' });
+    data.types.push(newType);
+    writeFileSync(DOC_TYPES_PATH, JSON.stringify(data, null, 2), 'utf-8');
+    res.json({ success: true, type: newType });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/document-types/:id', (req, res) => {
+  try {
+    const data = loadDocumentTypes();
+    const idx = data.types.findIndex(t => t.id === req.params.id);
+    if (idx < 0) return res.status(404).json({ error: 'Type not found' });
+    data.types[idx] = { ...data.types[idx], ...req.body };
+    writeFileSync(DOC_TYPES_PATH, JSON.stringify(data, null, 2), 'utf-8');
+    res.json({ success: true, type: data.types[idx] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/document-types/:id', (req, res) => {
+  try {
+    const data = loadDocumentTypes();
+    const idx = data.types.findIndex(t => t.id === req.params.id);
+    if (idx < 0) return res.status(404).json({ error: 'Type not found' });
+    if (data.types[idx].builtIn) return res.status(403).json({ error: 'Cannot delete built-in type' });
+    data.types.splice(idx, 1);
+    writeFileSync(DOC_TYPES_PATH, JSON.stringify(data, null, 2), 'utf-8');
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Export/Import (Backup & Restore) ─────────────────────────────────────────
+
+app.get('/api/export', (_req, res) => {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const zipName = `office-work-backup-${timestamp}.tar.gz`;
+    const zipPath = join(OUTPUT_DIR, zipName);
+    execSync(`tar -czf "${zipPath}" -C "${PROJECT_DIR}" data/`, { timeout: 30000 });
+    res.download(zipPath, zipName, () => {
+      // Clean up after download
+      try { rmSync(zipPath); } catch {}
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/import', upload.single('backup'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const backupPath = req.file.path;
+    // Extract to project dir (overwrites data/ directory)
+    execSync(`tar -xzf "${backupPath}" -C "${PROJECT_DIR}"`, { timeout: 30000 });
+    rmSync(backupPath);
+    // Reload profile and clauses from restored data
+    userProfile = loadUserProfile();
+    try {
+      const dbRaw = readFileSync(join(KNOWLEDGE_DIR, 'clauses-db.json'), 'utf-8');
+      clausesDb = JSON.parse(dbRaw);
+    } catch {}
+    res.json({ success: true, message: 'Backup restored successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── AI provider status ──────────────────────────────────────────────────────
+app.get('/api/ai-status', (req, res) => {
+  try {
+    const config = getProviderConfig();
+    res.json({
+      configured: config.configured,
+      provider: config.provider,
+      model: config.model,
+      useClaudeOAuth: config.useClaudeOAuth,
+    });
+  } catch (err) {
+    res.json({ configured: false, error: err.message });
+  }
+});
+
+// ─── Browser launch helper (pkg-aware) ───────────────────────────────────────
+
+async function launchBrowser() {
+  const puppeteer = (await import('puppeteer')).default;
+  const opts = { headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] };
+  if (IS_PKG) {
+    try {
+      const { default: chromeFinder } = await import('chrome-finder');
+      const cp = chromeFinder();
+      if (cp) opts.executablePath = cp;
+    } catch { /* use default */ }
+  }
+  return puppeteer.launch(opts);
+}
+
+// ─── Start ────────────────────────────────────────────────────────────────────
+
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Open http://localhost:${PORT} in your browser`);
-  console.log('Using Claude Code OAuth credentials from ~/.claude/.credentials.json');
+  const aiConfig = getProviderConfig();
+  console.log(`AI Provider: ${aiConfig.provider} (${aiConfig.model}) — ${aiConfig.configured ? 'configured' : 'NOT configured'}`);
+  if (IS_PKG || process.env.OFFICE_WORK_OPEN === '1') {
+    try {
+      const { default: open } = await import('open');
+      setTimeout(() => open(`http://localhost:${PORT}`), 800);
+    } catch { /* open not available */ }
+  }
+  setTimeout(() => checkForUpdate(true), 3000);
 });
