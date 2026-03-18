@@ -2,6 +2,9 @@
 
 Self-hosted document generator for quotes, contracts, and work orders. Built for Hebrew RTL with full English support. AI-powered document drafting with multi-provider support.
 
+![Chat interface](docs/screenshot-chat.png)
+![Document creation form](docs/screenshot-form.png)
+
 ## Features
 
 - Generate professional DOCX documents (quotes, contracts, work orders)
