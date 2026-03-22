@@ -19,6 +19,7 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { IS_PKG, resolveData } from "./app-paths.mjs";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -675,7 +676,9 @@ export async function generateDocument(data) {
 // ─── CLI Entry Point ──────────────────────────────────────────────────────────
 
 async function main() {
-  const OUTPUT_PATH = path.join(PROJECT_DIR, "output", "sample_quote.docx");
+  const OUTPUT_PATH = IS_PKG
+    ? resolveData("output", "sample_quote.docx")
+    : path.join(PROJECT_DIR, "output", "sample_quote.docx");
 
   const defaultData = {
     clientName: "לקוח לדוגמה",
@@ -715,7 +718,7 @@ async function main() {
 }
 
 // Run only when executed directly (not imported as module)
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (!IS_PKG && import.meta.url === `file://${process.argv[1]}`) {
   main().catch((err) => {
     console.error("Error generating document:", err);
     process.exit(1);

@@ -20,12 +20,18 @@ export function getProviderConfig() {
   } catch { /* no profile yet */ }
 
   const provider = profile.aiProvider || 'anthropic';
-  const model = profile.aiModel || 'claude-haiku-4-5-20251001';
-  const apiKey = profile.aiApiKey || '';
+  const model = profile.aiModel || 'claude-sonnet-4-6';
+  // Priority: env var > profile setting
+  const apiKey = process.env.ANTHROPIC_API_KEY || profile.aiApiKey || '';
   const useClaudeOAuth = profile.useClaudeOAuth !== undefined ? profile.useClaudeOAuth : !apiKey;
 
-  // 2. If anthropic + useClaudeOAuth (or no API key), try Claude Code OAuth
-  if (provider === 'anthropic' && (useClaudeOAuth || !apiKey)) {
+  // 2. If API key is provided (env or settings), use it directly (skip OAuth)
+  if (apiKey) {
+    return { provider, model, apiKey, accessToken: null, useClaudeOAuth: false, configured: true };
+  }
+
+  // 3. If anthropic + no API key, try Claude Code OAuth
+  if (provider === 'anthropic') {
     try {
       const credPath = join(homedir(), '.claude', '.credentials.json');
       const raw = readFileSync(credPath, 'utf-8');
@@ -60,7 +66,7 @@ function buildHeaders(config) {
     };
     if (config.useClaudeOAuth && config.accessToken) {
       headers['Authorization'] = `Bearer ${config.accessToken}`;
-      headers['anthropic-beta'] = 'oauth-2025-04-20';
+      headers['anthropic-beta'] = 'oauth-2025-04-20,claude-code-20250219';
     } else {
       headers['x-api-key'] = config.apiKey;
     }
@@ -90,7 +96,12 @@ function buildHeaders(config) {
  * Get the API endpoint URL for the configured provider
  */
 function getEndpoint(config) {
-  if (config.provider === 'anthropic') return 'https://api.anthropic.com/v1/messages';
+  if (config.provider === 'anthropic') {
+    // OAuth tokens require ?beta=true query param
+    return config.useClaudeOAuth
+      ? 'https://api.anthropic.com/v1/messages?beta=true'
+      : 'https://api.anthropic.com/v1/messages';
+  }
   if (config.provider === 'openai') return 'https://api.openai.com/v1/chat/completions';
   if (config.provider === 'openrouter') return 'https://openrouter.ai/api/v1/chat/completions';
   throw new Error(`Unknown provider: ${config.provider}`);
@@ -163,17 +174,23 @@ export async function chatCompletion({ system, messages, maxTokens, signal } = {
     throw new Error('AI provider not configured. Please set up your AI provider in Settings.');
   }
 
+  const reqHeaders = buildHeaders(config);
+  const reqBody = buildBody(config, { system, messages, maxTokens });
+  console.log('[chatCompletion] endpoint:', getEndpoint(config));
+  console.log('[chatCompletion] headers:', JSON.stringify(Object.fromEntries(Object.entries(reqHeaders).map(([k,v]) => [k, k.toLowerCase().includes('auth') ? v.slice(0,20)+'...' : v]))));
+  console.log('[chatCompletion] body model:', reqBody.model, 'max_tokens:', reqBody.max_tokens, 'messages:', reqBody.messages?.length, 'system length:', reqBody.system?.length || 0);
+
   const response = await fetch(getEndpoint(config), {
     method: 'POST',
-    headers: buildHeaders(config),
-    body: JSON.stringify(buildBody(config, { system, messages, maxTokens })),
+    headers: reqHeaders,
+    body: JSON.stringify(reqBody),
     ...(signal ? { signal } : {}),
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.error(`AI API error (${config.provider}):`, response.status, errorBody);
-    throw new Error(`AI API error: ${response.status}`);
+    console.error(`AI API error (${config.provider} / ${config.model}):`, response.status, errorBody);
+    throw new Error(`AI API error ${response.status}: ${errorBody.slice(0, 200)}`);
   }
 
   const data = await response.json();
@@ -193,16 +210,20 @@ export async function chatCompletionStream({ system, messages, maxTokens } = {})
     throw new Error('AI provider not configured. Please set up your AI provider in Settings.');
   }
 
+  const reqHeaders = buildHeaders(config);
+  const reqBody = buildBody(config, { system, messages, maxTokens, stream: true });
+  console.log('[chatCompletionStream] model:', reqBody.model, 'stream:', reqBody.stream, 'messages:', reqBody.messages?.length, 'system length:', reqBody.system?.length || 0);
+
   const response = await fetch(getEndpoint(config), {
     method: 'POST',
-    headers: buildHeaders(config),
-    body: JSON.stringify(buildBody(config, { system, messages, maxTokens, stream: true })),
+    headers: reqHeaders,
+    body: JSON.stringify(reqBody),
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.error(`AI API error (${config.provider}):`, response.status, errorBody);
-    throw new Error(`AI API error: ${response.status}`);
+    console.error(`AI API stream error (${config.provider} / ${config.model}):`, response.status, errorBody);
+    throw new Error(`AI API error ${response.status}: ${errorBody.slice(0, 200)}`);
   }
 
   return { response, provider: config.provider };

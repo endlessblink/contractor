@@ -30,6 +30,12 @@ await build({
     'puppeteer', 'puppeteer-core', 'chrome-finder',
     'mammoth', 'docx', 'pdf-parse', 'open',
   ],
+  define: {
+    'import.meta.url': 'importMetaUrl',
+  },
+  banner: {
+    js: 'const importMetaUrl = require("url").pathToFileURL(__filename).href;',
+  },
 });
 
 console.log('✅ dist/bundle.cjs created');

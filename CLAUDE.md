@@ -6,33 +6,39 @@ Hebrew-first RTL document generator for quotes (הצעת מחיר) and contracts
 
 These rules exist because of past failures. Follow them exactly.
 
-### 1. Never declare "done" without output verification
+### 1. This is a packaged app — test like an end-user
+- **This project ships as a standalone executable** built via `npm run build` + `@yao-pkg/pkg`. End-users download a binary from GitHub Releases — they never clone the repo or run `npm install`.
+- **When testing installation/startup**, always test the executable first: build it, copy it to an isolated directory, run it. That's the real user experience.
+- `npm install` + `npm start` is the **developer** workflow, not the user workflow. Test both, but prioritize the executable path.
+- Never suggest "clone and npm install" as the end-user testing path.
+
+### 2. Never declare "done" without output verification
 - **Code compiling is NOT verification.** Syntax checks, `node --check`, "no errors" — none of this proves the feature works correctly.
 - **Verification means comparing actual output against the source of truth.** For document generation: generate a real document and compare its content against the reference documents in `document refrences - quotes/`.
 - If you can't verify output quality, say so explicitly. Never claim completion based on code-level checks alone.
 
-### 2. Never hardcode content that should come from data
+### 3. Never hardcode content that should come from data
 - All legal clauses, templates, payment patterns, and business terms come from `knowledge/clauses-db.json` — NEVER hardcode them in code or prompts.
 - If content exists in reference documents but not in the DB, the DB is incomplete — don't work around it by hardcoding.
 - The `learn-references` endpoint exists to extract content from documents. USE IT instead of manually copying content.
 
-### 3. Never treat quantity as completeness
+### 4. Never treat quantity as completeness
 - "31 clauses in 9 categories" means nothing if the reference documents contain 50+ distinct clauses.
 - Always compare extracted content against the actual source documents to check for gaps.
 - When building a knowledge DB from documents, process ALL documents systematically — don't cherry-pick from a few.
 
-### 4. Always verify against reference documents
+### 5. Always verify against reference documents
 - The 27 documents in `document refrences - quotes/` are the ground truth for what contracts should contain.
 - Before claiming any clause/template work is complete, extract text from at least 2-3 reference contracts and verify coverage.
 - Use `mammoth.extractRawText()` to read DOCX files and compare sections.
 
-### 5. Run the system, don't just build it
+### 6. Run the system, don't just build it
 - After implementing a feature, actually USE it end-to-end.
 - For learn-references: run the endpoint, check what it produces, compare against source.
 - For document generation: generate a document, read its content, compare against a real reference.
 - For the frontend: load the page, interact with it, verify the UI shows the right data.
 
-### 6. When the user says something isn't working, investigate before explaining
+### 7. When the user says something isn't working, investigate before explaining
 - Don't assume you know the issue. Look at what the user sees.
 - Check the actual running server, actual API responses, actual rendered page.
 - Browser cache, old server instances, stale data — verify the user is seeing current code.

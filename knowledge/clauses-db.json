@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-03-14T00:00:00.000Z",
-  "updatedAt": "2026-03-17T15:32:20.683Z",
+  "updatedAt": "2026-03-22T12:39:14.568Z",
   "source": "extracted from reference documents",
   "clauses": {
     "paymentTerms": {
@@ -320,6 +320,110 @@
           ],
           "required": false,
           "notes": "Third-party service costs are client responsibility"
+        },
+        {
+          "id": "payment-advance-45percent",
+          "text": "תחילת העבודה בכפוף לקבלת חוזה חתום, מקדמה בסך 45% מעלות הפרויקט וכל חומרי הגלם הנדרשים להשלמת הפרויקט.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Used for AI-generated video/image projects"
+        },
+        {
+          "id": "payment-invoice-approval-3days-extended",
+          "text": "הלקוח מתחייב לאשר קבלת דרישת תשלום תוך 3 ימי עסקים ולהודיע על מועד העברת התשלום המדויק.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Extended approval requirement for monthly billing"
+        },
+        {
+          "id": "payment-monthly-invoicing-workshops",
+          "text": "בסוף כל חודש תוגש ללקוח דרישת תשלום בגין שעות העבודה של אותו חודש. התשלום יועבר בשוטף +45.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Monthly invoicing for workshop/training services"
+        },
+        {
+          "id": "payment-revisions-excess-hourly-185",
+          "text": "עלות הפרויקט כוללת שני סיבובי תיקונים לתמונה בהיקף של שעת עבודה ושני סבבים לסרטון בהיקף של שלוש שעות עבודה. במידה ויש צורך בעבודת תיקונים מעבר למשך זה, כל שעת תיקונים תתומחר ב-185 ₪ לשעה לפני מע\"מ.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "AI-generated media revision structure"
+        },
+        {
+          "id": "payment-external-materials-separate",
+          "text": "עלות העבודה אינה כוללת רכישת קטעי וידאו, חומרים גרפיים, קריינות וכו'. במידה והלקוחה תהיה מעוניינת שרכישת החומרים תתבצע בידי מבצע העבודה, תישלח הצעת מחיר נפרדת ללקוחה עבור רכישת החומרים.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Separation of external materials costs for video/media projects"
+        },
+        {
+          "id": "payment-shortfall-invoicing-revisions",
+          "text": "בסיום העבודה, תוגש ללקוחה דרישת תשלום הכוללת שארית עלות הפרויקט בתוספת עלות היקף עבודת התיקונים, במידה וחרגו משני סבבי תיקונים בהיקף גבוה מ-4 שעות עבודה בסה\"כ.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Invoicing for revision overages in video/image projects"
+        },
+        {
+          "id": "payment-invoice-approval-3days-workshops",
+          "text": "הלקוח מתחייב לאשר קבלת דרישת תשלום תוך 3 ימי עסקים ולהודיע על מועד העברת התשלום המדויק.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Invoice confirmation timeline for workshop payments"
+        },
+        {
+          "id": "payment-suspension-on-delay-14days-workshops",
+          "text": "במקרה של איחור בתשלום מעבר ל-14 יום מהמועד שנקבע, רשאי מבצע העבודה להשעות את מתן השיעורים עד להסדרת התשלום.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Extended payment delay suspension (14 days) for workshop contracts"
+        },
+        {
+          "id": "payment-specification-accuracy-dependent-scope",
+          "text": "המחיר הסופי והקבוע לביצוע הפרויקט ייקבע ויינעל אך ורק לאחר קבלת ואישור מסמך אפיון טכני מפורט.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Fixed price contingent on final specifications approval"
+        },
+        {
+          "id": "payment-scoping-service-separate-cost",
+          "text": "למשגת מסמך האפיון הנדרש, עומדות בפניך שתי אפשרויות: אפשרות א': אספקת אפיון קיים על ידך. אפשרות ב': ביצוע אפיון ו-Design על ידי נותן השירות בתשלום. עלות: 4,000 ₪ לפני מע\"מ.",
+          "appliesTo": [
+            "quote"
+          ],
+          "required": false,
+          "notes": "Separate scoping/specification service as optional upfront cost"
+        },
+        {
+          "id": "payment-fixed-price-scope-contingent",
+          "text": "עבודה גלובלית בעלות קבועה: המחיר הספק משיג את כל המטרות המפורטות בטווח הלו\"ז המוגדר בעלות קבועה. כל שינוי שנמצא בתחום ההזמנה המקורי כלול בעלות – ללא תמחור נוסף. כל תקלה טכנית, debug, fine-tuning, troubleshooting כלים ו-integrations – כלול בעלות. תמחור נוסף יחול אך ורק אם הלקוח מוסיף דרישות שאינן בתחום האפיון המקורי.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Fixed price with scope limitations and external scope change fees"
         }
       ]
     },
@@ -440,6 +544,44 @@
           ],
           "required": false,
           "notes": "Large group training excluded"
+        },
+        {
+          "id": "client-equipment-requirements-gpu",
+          "text": "חובה על הסטודנטים לתרגל במחשבים מבוססי ווינדוס עם כרטיס מסך תואם או לעבוד עם שירות אונליין שיאפשר להם להריץ Comfyui אונליין.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Hardware requirements for ComfyUI training"
+        },
+        {
+          "id": "client-materials-provision-raw-materials",
+          "text": "כל חומרי הגלם הנדרשים להשלמת הפרויקט חייבים להיות מסופקים על ידי הלקוח.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Required for AI-generated media projects"
+        },
+        {
+          "id": "client-equipment-requirements-comfyui",
+          "text": "חובה על הסטודנטים לתרגל במחשבים מבוססי ווינדוס עם כרטיס מסך תואם או לעבוד עם שירות אונליין שיאפשר להם להריץ Comfyui אונליין.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Technical equipment requirements specific to ComfyUI training"
+        },
+        {
+          "id": "client-materials-provision-specification",
+          "text": "יש צורך בקבלת הערות בנוגע לתיקונים, וכל חומר אחר שיש בו צורך בטווח של 2 ימי עבודה מהעברת גרסת הפרויקט ללקוחה, כדי לעמוד במועד הגשת הפרויקט.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Client feedback and materials provision on 2-day timeline for delivery"
         }
       ]
     },
@@ -476,6 +618,15 @@
           ],
           "required": false,
           "notes": "Specific to training/educational services"
+        },
+        {
+          "id": "termination-workshop-short-notice-50percent",
+          "text": "ביטול או דחיית שיעור: יש להודיע לפחות 48 שעות מראש. ביטול בהתראה קצרה יותר יחויב ב-50% מעלות השיעור.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Workshop-specific cancellation penalty"
         }
       ]
     },
@@ -541,6 +692,15 @@
           ],
           "required": false,
           "notes": "For workshop/training delivery"
+        },
+        {
+          "id": "delivery-format-workflow-files",
+          "text": "מסירת קבצי ה-Workflow הסופיים לידי הלקוח וקבצים נוספים כנדרש.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Delivery format for workflow-based projects"
         }
       ]
     },
@@ -703,6 +863,16 @@
           ],
           "required": false,
           "notes": "Provider portfolio rights for AI-generated content"
+        },
+        {
+          "id": "ip-portfolio-usage-conditional",
+          "text": "מבצע העבודה רשאי להשתמש במוצר הסופי לשם הצגתו בתיק עבודות.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Portfolio usage rights for AI-generated content"
         }
       ]
     },
@@ -798,13 +968,13 @@
         },
         {
           "id": "ai-creative-flexibility-provider",
-          "text": "ספק השירות יעשה את מיטב יכולתו להגיע לתוצאה המיטבית תוך שיתוף פעולה מלא עם הלקוח, אך שומר לעצמו את הגמישות היצירתית הנדרשת בתהליך.",
+          "text": "ספק השירות יעשה את מיטב יכולתו להגיע לתוצאה המיטבית תוך שיתוף פעולה מלא עם הלקוחה, אך שומר לעצמו את הגמישות היצירתית הנדרשת בתהליך.",
           "appliesTo": [
             "quote",
             "contract"
           ],
           "required": false,
-          "notes": "Provider retains creative flexibility clause"
+          "notes": "Provider retains creative flexibility in AI processes"
         },
         {
           "id": "ai-technology-dependent-disclaimer",
@@ -825,6 +995,26 @@
           ],
           "required": false,
           "notes": "Shared responsibility for AI-generated content"
+        },
+        {
+          "id": "ai-copyright-disclaimer-shared-responsibility",
+          "text": "האחריות לשימוש מסחרי תהיה משותפת: ספק השירות אחראי לעמידה בתנאי הרישיון של הכלים, והלקוחה אחראית לאישור השימוש המסחרי הספציפי.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Shared responsibility for commercial AI tool usage"
+        },
+        {
+          "id": "ai-portfolio-usage-provider",
+          "text": "מבצע העבודה רשאי להשתמש במוצר הסופי לשם הצגתו בתיק עבודות.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Provider portfolio/case study usage rights"
         }
       ]
     },
@@ -880,6 +1070,15 @@
           ],
           "required": false,
           "notes": "Technology update clause for educational content"
+        },
+        {
+          "id": "warranty-exclusions-client-modifications",
+          "text": "תקופת אחריות זו אינה כוללת בקשות לשינויים, פיצ'רים חדשים, או תמיכה בשינויים שהלקוח ביצע בקבצים בעצמו.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Warranty excludes client-initiated modifications"
         }
       ]
     },
@@ -902,13 +1101,13 @@
         {
           "id": "revisions-excess-approval",
           "name": "תיקונים נוספים באישור",
-          "text": "כל חריגה מעבר באישור הלקוח בלבד. העלות הסופית תהיה בהתאם למשך העבודה בפועל.",
+          "text": "עלות הפרויקט כוללת שני סיבובי תיקונים בהיקף מוגדר. במידה ויש צורך בעבודת תיקונים מעבר למשך זה, כל שעת תיקונים תתומחר ב185 ₪ לשעה לפני מע\"מ.",
           "appliesTo": [
             "quote",
-            "contract",
-            "workOrder"
+            "contract"
           ],
-          "required": false
+          "required": false,
+          "notes": "Two revision rounds included, excess at hourly rate"
         },
         {
           "id": "revisions-concept-change",
@@ -949,6 +1148,35 @@
           ],
           "required": false,
           "notes": "Scope control for flexible projects"
+        },
+        {
+          "id": "revisions-feedback-timeline-2days",
+          "text": "יש צורך בקבלת הערות בנוגע לתיקונים, וכל חומר אחר שיש בו צורך בטווח של 2 ימי עבודה מהעברת גרסת הפרויקט ללקוח, כדי לעמוד במועד הגשת הפרויקט.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Feedback window for AI-generated media projects"
+        },
+        {
+          "id": "revisions-scope-change-approval-separate-quote",
+          "text": "כל חריגה מעבר באישור הלקוח בלבד. העלות הסופית תהיה בהתאם למשך העבודה בפועל.",
+          "appliesTo": [
+            "quote",
+            "contract"
+          ],
+          "required": false,
+          "notes": "Scope changes require explicit approval"
+        },
+        {
+          "id": "revisions-excess-hourly-rate-variable",
+          "text": "בנק שעות זה כולל את כל שלבי העבודה וכל סבבי התיקונים והשינויים שיידרשו על ידי הלקוח, ללא הגבלה למספר סבבי התיקונים כל עוד העבודה עליהם נכללת בבנק השעות המוגדר.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Unlimited revisions within hourly bank"
         }
       ]
     },
@@ -1078,12 +1306,13 @@
         },
         {
           "id": "general-content-variation-due-to-technology",
-          "text": "התוכן הנלמד או התוצרים עשויים להשתנות בהתאם לעדכונים טכנולוגיים וחידושים בכלים הנוסחים המשמשים.",
+          "text": "השירות מבוסס על כלי פיתוח AI מתקדמים (גנרטיביים); התוצרים כפופים ליכולות הטכנולוגיות והדינמיות של כלים אלו.",
           "appliesTo": [
+            "quote",
             "contract"
           ],
           "required": false,
-          "notes": "For training and AI-based services"
+          "notes": "AI tool capability disclaimers"
         },
         {
           "id": "general-vat-exclusion-standard",
@@ -1258,6 +1487,51 @@
           ],
           "required": false,
           "notes": "Creative content creation excluded"
+        },
+        {
+          "id": "general-scoping-service-optional-separate",
+          "text": "במידה ואין ברשותך מסמך אפיון, יש אפשרות לבצע את שלב האפיון כפרויקט נפרד בתשלום בסך 4,000 ₪ לפני מע\"מ.",
+          "appliesTo": [
+            "quote"
+          ],
+          "required": false,
+          "notes": "Optional separate specification/design service"
+        },
+        {
+          "id": "general-work-scope-fixed-price-terms",
+          "text": "עבודה גלובלית בעלות קבועה: הספק משיג את כל המטרות המפורטות בטווח הלו\"ז המוגדר בעלות קבועה. כל שינוי שנמצא בתחום ההזמנה המקורי (כפי שמוגדר באפיון) כלול בעלות – ללא תמחור נוסף. כל תקלה טכנית, debug, fine-tuning, troubleshooting כלים ו-integrations – כלול בעלות. זמן העבודה בפועל אינו משפיע על המחיר – העבודה מותנית בהשגת התוצאות המוגדרות.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Fixed-price global scope with detailed inclusions"
+        },
+        {
+          "id": "general-scope-change-additional-work-separate",
+          "text": "תמחור נוסף יחול אך ורק אם הלקוח (או הספק מטעמו) מוסיף דרישות שאינן בתחום האפיון המקורי (למשל: הטמעה בחטיבה נוספת, מערכת אחרת, או כלים לא מתוכננים).",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Out-of-scope work requires separate pricing"
+        },
+        {
+          "id": "general-milestone-based-approval",
+          "text": "כל milestone מהווה נקודת עצירה/אישור חובה להמשך התשלום. עיכובים בקבלת feedback מהספק העולים על 3 ימי עבודה יגררו הארכה בלו\"ז בהתאמה.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Milestone-based approval gates and delay extensions"
+        },
+        {
+          "id": "general-feedback-delay-extends-deadline",
+          "text": "עיכובים בקבלת feedback מהספק (צד ב') העולים על 3 ימי עבודה יגררו הארכה בלו\"ז בהתאמה.",
+          "appliesTo": [
+            "contract"
+          ],
+          "required": false,
+          "notes": "Timeline extension for delays over 3 business days"
         }
       ]
     },
@@ -1542,6 +1816,66 @@
         25
       ],
       "usage": "פרויקטים מורכבים עם אוטומציה ואינטגרציות"
+    },
+    {
+      "id": "payment-ai-media-45-55",
+      "name": "תשלום AI מדיה (45-55)",
+      "description": "מקדמה של 45% בתחילת העבודה, יתרת 55% בסיום",
+      "installments": [
+        45,
+        55
+      ],
+      "usage": "יצירת סרטונים ותמונות מבוססי AI"
+    },
+    {
+      "id": "payment-workshop-monthly",
+      "name": "תשלום חודשי לסדנות",
+      "description": "דרישת תשלום בסוף כל חודש בגין שעות העבודה של אותו חודש, תשלום בשוטף +45 ימים",
+      "installments": [
+        100
+      ],
+      "usage": "סדנות הדרכה ושיעורים חוזרים"
+    },
+    {
+      "id": "payment-automation-milestone-4",
+      "name": "תשלום קבוע עם מייל-סטונים (4 חלקים)",
+      "description": "4 תשלומים שווים בהתאם למייל-סטונים: מקדמה, M1 (Demo), M2 (תיקונים), M3 (סיום)",
+      "installments": [
+        25,
+        25,
+        25,
+        25
+      ],
+      "usage": "פרויקטי אוטומציה וGAI בעלות קבועה"
+    },
+    {
+      "id": "payment-pattern-45-55",
+      "name": "מקדמה 45% + יתרה 55%",
+      "description": "מקדמה בתחילת העבודה (45%) והיתרה בסיום",
+      "installments": [
+        45,
+        55
+      ],
+      "usage": "פרויקטי AI מהיום - וידאו, תמונות, תוכן שיווקי"
+    },
+    {
+      "id": "payment-pattern-milestone-4stages",
+      "name": "4 מייל סטונים",
+      "description": "מקדמה, M1 (Demo), M2 (תיקונים), M3 (סיום ותיעוד)",
+      "installments": [
+        25,
+        25,
+        25,
+        25
+      ],
+      "usage": "פרויקטים מורכבים של אוטומציה ו-Integration עם שלבי אישור"
+    },
+    {
+      "id": "payment-pattern-monthly-invoicing",
+      "name": "חיוב חודשי (בנק שעות)",
+      "description": "דרישת תשלום בסוף כל חודש בגין שעות העבודה בחודש זה",
+      "installments": [],
+      "usage": "חוזי בנק שעות חודשיים וסדנות מתמשכות"
     }
   ],
   "serviceTemplates": [
@@ -2414,16 +2748,265 @@
       "exampleClients": [
         "מאיה אור"
       ]
+    },
+    {
+      "type": "ai-image-generation",
+      "name": "יצירת תמונות מבוססות AI",
+      "typicalPricing": [
+        {
+          "desc": "תמונה אחת",
+          "qty": 1,
+          "price": 2200
+        },
+        {
+          "desc": "10 תמונות",
+          "qty": 10,
+          "price": 2200
+        }
+      ],
+      "typicalTimeline": "1-2 שבועות",
+      "typicalDeliverables": "תמונות בפורמט גבוה, שני סבבי תיקונים כלולים (עד שעה נוסף)",
+      "relevantClauses": [
+        "payment-advance-45percent",
+        "payment-revisions-excess-hourly-185",
+        "payment-external-materials-separate",
+        "client-materials-provision-raw-materials",
+        "ai-copyright-disclaimer-shared-responsibility"
+      ],
+      "exampleClients": [
+        "מאיה אור"
+      ]
+    },
+    {
+      "type": "workshop-training",
+      "name": "סדנת הדרכה בנושא ComfyUI",
+      "typicalPricing": [
+        {
+          "desc": "שיעור בן 2 שעות ורבע (6 משתתפים)",
+          "qty": 1,
+          "price": 834
+        },
+        {
+          "desc": "סדרה של 6 שיעורים",
+          "qty": 6,
+          "price": 5004
+        }
+      ],
+      "typicalTimeline": "6-8 שבועות (שיעור בשבועיים)",
+      "typicalDeliverables": "6 שיעורים מוקלטים, חומרי הדרכה, גישה לסרטונים מוקלטים",
+      "relevantClauses": [
+        "payment-monthly-invoicing-workshops",
+        "payment-suspension-on-delay-14days",
+        "client-equipment-requirements-gpu",
+        "termination-workshop-short-notice-50percent",
+        "warranty-content-variation-technology"
+      ],
+      "exampleClients": [
+        "פוסט סטודיו"
+      ]
+    },
+    {
+      "type": "mvp-application-development",
+      "name": "פיתוח MVP עם שילוב API",
+      "typicalPricing": [
+        {
+          "desc": "MVP ראשוני עם Hey Gen API",
+          "qty": 1,
+          "price": 4500
+        },
+        {
+          "desc": "שעה נוספת",
+          "qty": 1,
+          "price": 185
+        }
+      ],
+      "typicalTimeline": "2-3 שבועות",
+      "typicalDeliverables": "טופס עלייה, יצירת אווטאר ויוידאו, פגישת סיכום, walkthrough",
+      "relevantClauses": [
+        "payment-advance-35percent",
+        "payment-extra-hours",
+        "client-feedback-timeline",
+        "client-5day-delay-suspend",
+        "delivery-walkthrough-included",
+        "warranty-grace-period"
+      ],
+      "exampleClients": [
+        "רועי בלחנס"
+      ]
+    },
+    {
+      "type": "automation-gai-implementation",
+      "name": "יישום אוטומציה עם GAI",
+      "typicalPricing": [
+        {
+          "desc": "אפיון וdesign (שלבים 1-2)",
+          "qty": 1,
+          "price": 4000
+        },
+        {
+          "desc": "יישום פרויקט (שלב 3)",
+          "qty": 1,
+          "price": 29000
+        }
+      ],
+      "typicalTimeline": "8-10 שבועות (אפיון 2 שבועות + ביצוע 6-7 שבועות)",
+      "typicalDeliverables": "מסמך אפיון מלא, Design Document, אוטומציות חיבורים, דוחות KPI, תיעוד וAPI Docs",
+      "relevantClauses": [
+        "general-specification-required-pricing",
+        "general-scoping-service-optional-separate",
+        "general-work-scope-fixed-price-terms",
+        "general-scope-change-additional-work-separate",
+        "general-milestone-based-approval",
+        "general-feedback-delay-extends-deadline",
+        "general-maintenance-support-separate"
+      ],
+      "exampleClients": [
+        "ecosup"
+      ]
+    },
+    {
+      "type": "mvp-development-heygen",
+      "name": "פיתוח MVP מבוסס HeyGen",
+      "typicalPricing": [
+        {
+          "desc": "עבודה בבנק שעות (MVP ראשוני)",
+          "qty": 1,
+          "price": 4500
+        }
+      ],
+      "typicalTimeline": "2-3 שבועות",
+      "typicalDeliverables": "2 קבצי Workflow סופיים, פגישת Walkthrough",
+      "relevantClauses": [
+        "payment-advance-start",
+        "payment-extra-hours",
+        "client-feedback-timeline",
+        "delivery-walkthrough-included",
+        "ip-file-ownership",
+        "ip-knowledge-retention",
+        "ai-copyright-notice",
+        "ai-dynamic-results"
+      ],
+      "exampleClients": [
+        "רועי בלחנס"
+      ]
+    },
+    {
+      "type": "ai-video-and-images",
+      "name": "סרטונים ותמונות מבוססי AI",
+      "typicalPricing": [
+        {
+          "desc": "סרטון AI (10-20 שניות)",
+          "qty": 1,
+          "price": 850
+        },
+        {
+          "desc": "תמונה AI",
+          "qty": 1,
+          "price": 2200
+        }
+      ],
+      "typicalTimeline": "5-7 ימי עבודה",
+      "typicalDeliverables": "סרטונים/תמונות מעובדות, 2 סבבי תיקונים",
+      "relevantClauses": [
+        "payment-advance-45percent",
+        "client-feedback-timeline",
+        "ip-shared-responsibility-commercial",
+        "ai-creative-flexibility-provider",
+        "ai-portfolio-usage-provider",
+        "payment-external-materials-separate",
+        "revisions-excess-approval"
+      ],
+      "exampleClients": [
+        "מאיה אור",
+        "טל הררי"
+      ]
+    },
+    {
+      "type": "development-hourly-bank",
+      "name": "בנק שעות לפיתוח",
+      "typicalPricing": [
+        {
+          "desc": "50 שעות עבודה חודשיות",
+          "qty": 1,
+          "price": 12500
+        }
+      ],
+      "typicalTimeline": "חודש",
+      "typicalDeliverables": "עבודה מתמשכת כמוגדר, דוחות חודשיים",
+      "relevantClauses": [
+        "payment-advance-start",
+        "payment-monthly-invoicing-detailed",
+        "payment-advanced-development-hours",
+        "client-feedback-timeline-extended-development",
+        "client-delay-extends-deadline",
+        "payment-delay-suspension"
+      ],
+      "exampleClients": [
+        "איציק עזרא"
+      ]
+    },
+    {
+      "type": "ai-automation-implementation",
+      "name": "מערכת אוטומציה וIntegration AI",
+      "typicalPricing": [
+        {
+          "desc": "אפיון ו-Design (אופציונלי)",
+          "qty": 1,
+          "price": 4000
+        },
+        {
+          "desc": "ביצוע פרויקט - טווח קבוע",
+          "qty": 1,
+          "price": 29000
+        }
+      ],
+      "typicalTimeline": "6-7 שבועות",
+      "typicalDeliverables": "מערכות אוטומציה חכמות, דוחות KPI, תיעוד",
+      "relevantClauses": [
+        "payment-specification-accuracy-dependent-scope",
+        "payment-scoping-service-separate-cost",
+        "payment-milestone-based-4stages",
+        "payment-fixed-price-scope-contingent",
+        "general-milestone-based-approval",
+        "delivery-extra-documentation"
+      ],
+      "exampleClients": [
+        "ecosup"
+      ]
+    },
+    {
+      "type": "workshop-comfyui",
+      "name": "סדנת ComfyUI (6 שיעורים)",
+      "typicalPricing": [
+        {
+          "desc": "שיעור (שעתיים ורבע)",
+          "qty": 6,
+          "price": 834
+        }
+      ],
+      "typicalTimeline": "4-6 שבועות",
+      "typicalDeliverables": "6 שיעורים מוקלטים, חומרי הדרכה, Workflows לדוגמה",
+      "relevantClauses": [
+        "payment-monthly-invoicing-workshops",
+        "payment-invoice-approval-3days-workshops",
+        "payment-suspension-on-delay-14days-workshops",
+        "client-equipment-requirements-comfyui",
+        "termination-workshop-short-notice-50percent",
+        "general-technology-content-variation"
+      ],
+      "exampleClients": [
+        "תמיר נעים",
+        "פוסט סטודיו"
+      ]
     }
   ],
   "standardTerms": {
-    "quoteValidity": "30 ימים",
-    "vatNote": "המחיר אינו כולל מע״מ",
+    "quoteValidity": "30 יום",
+    "vatNote": "המחיר אינו כולל מע\"מ",
     "hourlyRates": {
       "standard": 185,
       "development": 250,
-      "senior": 600,
-      "workshop": 834
+      "senior": 600
     },
     "revisionRounds": 2,
     "feedbackWindow": "2 ימי עבודה",
@@ -2454,7 +3037,7 @@
     "approvalTimeline": "3 ימי עבודה",
     "responseTimeForCriticalIssues": "2 ימי עבודה",
     "workshopCancellationNotice": "48 שעות",
-    "workshopCancellationPenalty": "50%",
+    "workshopCancellationPenalty": "50% מעלות השיעור",
     "invoiceApprovalWindow": "3 ימי עסקים",
     "paymentSuspensionThreshold": "14 יום עיכוב בתשלום",
     "advancePercentage": {
@@ -2463,6 +3046,11 @@
       "video": 45,
       "workshop": 100
     },
-    "finalPaymentPercentage": 65
+    "finalPaymentPercentage": 65,
+    "suspensionThresholdWorkshop": "14 ימים בתשלום",
+    "paymentDelayCap": "3 ימי עסקים לאישור",
+    "maintenanceSupport": "3000 ש\"ח לחודש (עד 4 שעות)",
+    "cancellationNoticeWorkshop": "48 שעות מראש",
+    "cancellationPenaltyWorkshop": "50%"
   }
 }
