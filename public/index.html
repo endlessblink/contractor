@@ -3318,6 +3318,9 @@
          TAB 1: CHAT
     ══════════════════════════════════════ -->
     <div class="tab-panel active" id="panel-chat">
+      <div class="chat-toolbar" style="display:flex;justify-content:flex-end;padding:4px 12px 0;min-height:28px;">
+        <button id="clearChatBtn" title="נקה צ'אט" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;line-height:1;" onmouseover="this.style.color='#e2e8f0';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='#94a3b8';this.style.background='none'">🗑</button>
+      </div>
       <div class="chat-body">
         <div class="messages" id="messages">
           <div class="welcome" id="welcome">
@@ -4001,7 +4004,23 @@
 
           <div class="form-group" style="margin-bottom: 14px;">
             <label for="settingsAiModel" style="display: block; color: #94a3b8; font-size: 13px; margin-bottom: 6px;">Model</label>
-            <input type="text" id="settingsAiModel" placeholder="claude-haiku-4-5-20251001" style="width: 100%; padding: 10px 12px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e2e8f0; font-size: 14px;">
+            <select id="settingsAiModel" style="width: 100%; padding: 10px 12px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e2e8f0; font-size: 14px;">
+              <optgroup label="Anthropic" data-provider="anthropic">
+                <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (Recommended)</option>
+                <option value="claude-opus-4-6">Claude Opus 4.6</option>
+                <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Fast/Cheap)</option>
+              </optgroup>
+              <optgroup label="OpenAI" data-provider="openai">
+                <option value="gpt-4o">GPT-4o</option>
+                <option value="gpt-4o-mini">GPT-4o Mini (Fast/Cheap)</option>
+                <option value="gpt-4.1">GPT-4.1</option>
+              </optgroup>
+              <optgroup label="OpenRouter" data-provider="openrouter">
+                <option value="anthropic/claude-sonnet-4-6">Claude Sonnet 4.6</option>
+                <option value="anthropic/claude-opus-4-6">Claude Opus 4.6</option>
+                <option value="openai/gpt-4o">GPT-4o</option>
+              </optgroup>
+            </select>
           </div>
 
           <div class="form-group" style="margin-bottom: 14px;">
@@ -4141,6 +4160,20 @@
     });
 
     sendBtn.addEventListener('click', sendMessage);
+
+    function clearChat() {
+      conversation.length = 0;
+      messagesEl.innerHTML = '';
+      const welcome = document.createElement('div');
+      welcome.className = 'welcome';
+      welcome.id = 'welcome';
+      welcome.innerHTML = '<div class="icon">&#128196;</div><p>שלום! אני יכול לעזור לך ליצור הצעות מחיר, חוזים והזמנות עבודה. ספר לי מה אתה צריך.</p>';
+      messagesEl.appendChild(welcome);
+      // Persist cleared chat to project
+      if (typeof saveProjectChat === 'function') saveProjectChat();
+    }
+
+    document.getElementById('clearChatBtn')?.addEventListener('click', clearChat);
 
     // Image upload button opens file picker
     imageUploadBtn.addEventListener('click', () => {
@@ -6221,25 +6254,33 @@
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+        console.log('[Learn] Sending request...');
         const res = await fetch('/api/learn-references', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
         });
         clearTimeout(timeout);
+        console.log('[Learn] Response status:', res.status);
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
+          console.error('[Learn] Error response:', err);
           throw new Error(err.error || `Error ${res.status}`);
         }
 
         const data = await res.json();
+        console.log('[Learn] Success:', data);
         const count = data.documentsAnalyzed || 0;
         const added = data.addedClauses || 0;
         const updated = data.updatedClauses || 0;
         const total = data.totalClauses || 0;
-        learnStatus.innerHTML = `<div class="learn-context-badge">&#10003; נלמדו ${count} מסמכים — ${added} סעיפים חדשים, ${updated} עודכנו (סה"כ ${total} במאגר). רענן את הדף כדי לעדכן את הצ'אט.</div>`;
+        const profileMsg = data.profileUpdated ? ' · הפרופיל עודכן אוטומטית!' : '';
+        learnStatus.innerHTML = `<div class="learn-context-badge">&#10003; נלמדו ${count} מסמכים — ${added} סעיפים חדשים, ${updated} עודכנו (סה"כ ${total} במאגר)${profileMsg}. רענן את הדף כדי לעדכן את הצ'אט.</div>`;
         learnStatus.className = 'learn-status success';
+        if (data.profileUpdated) {
+          try { const pRes = await fetch('/api/user-profile'); if (pRes.ok) currentProfile = await pRes.json(); updateHeaderFromProfile(); } catch {}
+        }
 
         // Refresh templates from the updated clauses DB
         try {
@@ -7217,25 +7258,63 @@
       if (currentProfile.aiApiKey) aiApiKeyEl.value = currentProfile.aiApiKey;
       if (currentProfile.useClaudeOAuth) useClaudeOAuthEl.checked = currentProfile.useClaudeOAuth;
 
-      // Show/hide Claude OAuth option based on provider
-      function updateOAuthVisibility() {
+      // Show/hide Claude OAuth option and filter model list based on provider
+      function updateProviderUI() {
         claudeOAuthGroup.style.display = aiProviderEl.value === 'anthropic' ? 'block' : 'none';
+        // Show only optgroups matching the selected provider
+        aiModelEl.querySelectorAll('optgroup').forEach(g => {
+          g.style.display = g.dataset.provider === aiProviderEl.value ? '' : 'none';
+        });
+        // If current model doesn't match provider, select first visible option
+        const currentOpt = aiModelEl.querySelector(`option[value="${aiModelEl.value}"]`);
+        if (currentOpt && currentOpt.closest('optgroup')?.dataset.provider !== aiProviderEl.value) {
+          const firstVisible = aiModelEl.querySelector(`optgroup[data-provider="${aiProviderEl.value}"] option`);
+          if (firstVisible) aiModelEl.value = firstVisible.value;
+        }
       }
-      aiProviderEl.addEventListener('change', updateOAuthVisibility);
-      updateOAuthVisibility();
+      aiProviderEl.addEventListener('change', updateProviderUI);
+      updateProviderUI();
 
-      // Update model placeholder based on provider selection
-      const placeholders = {
-        anthropic: 'claude-haiku-4-5-20251001',
-        openai: 'gpt-4o-mini',
-        openrouter: 'anthropic/claude-3.5-sonnet',
-      };
-      aiProviderEl.addEventListener('change', () => {
-        aiModelEl.placeholder = placeholders[aiProviderEl.value] || '';
-      });
+      // Fetch available models from API and populate dropdown dynamically
+      (async () => {
+        try {
+          const modelsRes = await fetch('/api/ai-models');
+          const { models } = await modelsRes.json();
+          if (models && models.length > 0) {
+            const currentVal = aiModelEl.value;
+            // Replace only the anthropic optgroup with fresh data
+            const existingAnthropicGroup = aiModelEl.querySelector('optgroup[data-provider="anthropic"]');
+            const group = document.createElement('optgroup');
+            group.label = 'Anthropic';
+            group.dataset.provider = 'anthropic';
+            models.forEach(m => {
+              const opt = document.createElement('option');
+              opt.value = m.id;
+              opt.textContent = m.name;
+              group.appendChild(opt);
+            });
+            if (existingAnthropicGroup) {
+              aiModelEl.replaceChild(group, existingAnthropicGroup);
+            } else {
+              aiModelEl.appendChild(group);
+            }
+            // Restore previous selection if still valid
+            if (currentVal && aiModelEl.querySelector(`option[value="${currentVal}"]`)) {
+              aiModelEl.value = currentVal;
+            }
+            updateProviderUI();
+          }
+        } catch (e) {
+          console.log('[Settings] Could not fetch model list, using defaults');
+        }
+      })();
     }
 
-    function openSettings() {
+    async function openSettings() {
+      try {
+        const res = await fetch('/api/user-profile');
+        if (res.ok) currentProfile = await res.json();
+      } catch {}
       populateForm();
       settingsOverlay.style.display = 'flex';
     }

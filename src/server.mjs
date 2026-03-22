@@ -1,4 +1,18 @@
+// Load .env file if present
+import { readFileSync as _readFileSync } from 'fs';
+import { join as _join, dirname as _dirname } from 'path';
+import { fileURLToPath as _fileURLToPath } from 'url';
+try {
+  const _envPath = _join(_dirname(_fileURLToPath(import.meta.url)), '..', '.env');
+  const _envContent = _readFileSync(_envPath, 'utf-8');
+  for (const line of _envContent.split('\n')) {
+    const match = line.match(/^\s*([^#=]+?)\s*=\s*(.*?)\s*$/);
+    if (match && match[2]) process.env[match[1]] = process.env[match[1]] || match[2];
+  }
+} catch { /* no .env file */ }
+
 import express from 'express';
+import serveStatic from 'serve-static';
 import { fileURLToPath } from 'url';
 import { dirname, join, extname } from 'path';
 import { readFileSync, readdirSync, statSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
@@ -40,21 +54,27 @@ mkdirSync(join(DATA_DIR, 'knowledge', 'pending-extractions'), { recursive: true 
 mkdirSync(join(DATA_DIR, 'references'), { recursive: true });
 mkdirSync(join(DATA_DIR, 'projects'), { recursive: true });
 
-// New data-based paths with fallback to old locations
-// Fallback checks for actual content (key files), not just empty directories
-const REFERENCES_DIR = readdirSync(join(DATA_DIR, 'references')).length > 0
-  ? join(DATA_DIR, 'references') : join(PROJECT_DIR, 'document refrences - quotes');
-const PROJECTS_DIR = readdirSync(join(DATA_DIR, 'projects')).length > 0
-  ? join(DATA_DIR, 'projects') : join(PROJECT_DIR, 'projects');
-const KNOWLEDGE_DIR = existsSync(join(DATA_DIR, 'knowledge', 'clauses-db.json'))
-  ? join(DATA_DIR, 'knowledge') : join(PROJECT_DIR, 'knowledge');
+// New data-based paths with fallback to old locations (dev mode only)
+// When running as pkg, always use DATA_DIR paths — snapshot is read-only
+const REFERENCES_DIR = IS_PKG
+  ? join(DATA_DIR, 'references')
+  : (readdirSync(join(DATA_DIR, 'references')).length > 0
+    ? join(DATA_DIR, 'references') : join(PROJECT_DIR, 'document refrences - quotes'));
+const PROJECTS_DIR = IS_PKG
+  ? join(DATA_DIR, 'projects')
+  : (readdirSync(join(DATA_DIR, 'projects')).length > 0
+    ? join(DATA_DIR, 'projects') : join(PROJECT_DIR, 'projects'));
+const KNOWLEDGE_DIR = IS_PKG
+  ? join(DATA_DIR, 'knowledge')
+  : (existsSync(join(DATA_DIR, 'knowledge', 'clauses-db.json'))
+    ? join(DATA_DIR, 'knowledge') : join(PROJECT_DIR, 'knowledge'));
 const USER_PROFILE_PATH = join(DATA_DIR, 'user-profile.json');
 
-// Ensure remaining directories exist
+// Ensure remaining directories exist (never mkdir inside the snapshot)
 mkdirSync(OUTPUT_DIR, { recursive: true });
 mkdirSync(UPLOADS_DIR, { recursive: true });
-mkdirSync(PROJECTS_DIR, { recursive: true });
-mkdirSync(KNOWLEDGE_DIR, { recursive: true });
+if (!PROJECTS_DIR.startsWith('/snapshot/')) mkdirSync(PROJECTS_DIR, { recursive: true });
+if (!KNOWLEDGE_DIR.startsWith('/snapshot/')) mkdirSync(KNOWLEDGE_DIR, { recursive: true });
 
 // ─── Load clause database on startup ─────────────────────────────────────────
 let clausesDb = null;
@@ -66,13 +86,43 @@ try {
   console.log(`Loaded clauses DB: ${clauseCount} clauses in ${categoryCount} categories`);
 } catch { /* no clauses DB yet */ }
 
+// ─── Robust JSON extractor ───────────────────────────────────────────────────
+function extractJSON(rawText) {
+  if (!rawText) {
+    console.error('[extractJSON] rawText is empty/null');
+    return null;
+  }
+  const text = rawText.trim();
+  console.log(`[extractJSON] input length: ${text.length}, first 200 chars: ${text.slice(0, 200)}`);
+  // 1. Already clean JSON
+  try { return JSON.parse(text); } catch (e) { console.log('[extractJSON] strategy 1 (direct) failed:', e.message); }
+  // 2. Strip markdown code fences
+  const stripped = text.replace(/^[\s\S]*?```(?:json)?\s*\n?/i, '').replace(/\n?\s*```[\s\S]*$/, '').trim();
+  if (stripped && stripped !== text) {
+    try { return JSON.parse(stripped); } catch (e) { console.log('[extractJSON] strategy 2 (fences) failed:', e.message); }
+  }
+  // 3. Extract first { ... } or [ ... ] substring
+  const objStart = text.indexOf('{');
+  const objEnd = text.lastIndexOf('}');
+  if (objStart !== -1 && objEnd > objStart) {
+    try { return JSON.parse(text.slice(objStart, objEnd + 1)); } catch (e) { console.log('[extractJSON] strategy 3 (braces) failed:', e.message); }
+  }
+  const arrStart = text.indexOf('[');
+  const arrEnd = text.lastIndexOf(']');
+  if (arrStart !== -1 && arrEnd > arrStart) {
+    try { return JSON.parse(text.slice(arrStart, arrEnd + 1)); } catch (e) { console.log('[extractJSON] strategy 4 (brackets) failed:', e.message); }
+  }
+  console.error('[extractJSON] ALL strategies failed. Full text:', text.slice(0, 1000));
+  return null;
+}
+
 // ─── Load user profile ──────────────────────────────────────────────────────
 function loadUserProfile() {
   const defaults = {
     name: '', nameEn: '', company: '', companyHe: '',
     title: '', titleEn: '', email: '', website: '', phone: '',
     logoPath: '', language: 'he', currency: '₪', setupComplete: false,
-    aiProvider: 'anthropic', aiModel: 'claude-haiku-4-5-20251001',
+    aiProvider: 'anthropic', aiModel: 'claude-sonnet-4-6',
     aiApiKey: '', useClaudeOAuth: false,
   };
   try {
@@ -199,17 +249,12 @@ function buildClausesPromptSection() {
   let section = '\n\n## מאגר סעיפים משפטיים מלא\n';
   section += 'להלן כל הסעיפים המשפטיים הזמינים, מאורגנים לפי קטגוריה. השתמש בסעיפים אלו בעת יצירת מסמכים — בחר את הסעיפים הרלוונטיים לפי סוג המסמך וסוג הפרויקט.\n';
 
-  // Add all clause categories with full text
+  // Add clause categories with IDs and short preview (full text used at generation time)
   for (const [key, category] of Object.entries(clausesDb.clauses)) {
-    section += `\n### ${category.category}\n`;
+    section += `\n### ${category.category} (${category.clauses.length} סעיפים)\n`;
     for (const clause of category.clauses) {
-      const docTypes = clause.appliesTo.map(t => {
-        if (t === 'quote') return 'הצעת מחיר';
-        if (t === 'contract') return 'חוזה';
-        if (t === 'workOrder') return 'הזמנת עבודה';
-        return t;
-      }).join(', ');
-      section += `- **[${clause.id}]** (${docTypes}${clause.required ? ' | חובה' : ' | אופציונלי'}): ${clause.text}\n`;
+      const docTypes = clause.appliesTo.join('/');
+      section += `- [${clause.id}] (${docTypes}${clause.required ? ' | חובה' : ''}): ${clause.text.slice(0, 80)}...\n`;
     }
   }
 
@@ -279,14 +324,43 @@ ${langNote}
 ## מסמכי עזר זמינים במערכת
 המשתמש יכול לנתח מסמכים קיימים דרך לשונית "מסמכים" באפליקציה.
 
+## תפקידך
+אתה **עוזר** שמסייע למשתמש ליצור מסמכים. אתה לא כותב את המסמך בצ'אט — המערכת מייצרת מסמכי DOCX מקצועיים.
+**לעולם אל תכתוב הצעת מחיר, חוזה או הזמנת עבודה בתוך הצ'אט.** המסמכים נוצרים דרך הטופס בלשונית "יצירת מסמך".
+
 ## האפליקציה
 המשתמש עובד עם אפליקציית יצירת מסמכים שכוללת:
-- לשונית צ'אט (כאן) — לשאלות, עזרה, ייעוץ
+- לשונית צ'אט (כאן) — לשאלות, עזרה, ייעוץ, והכנת מסמכים
 - לשונית יצירת מסמך — טופס למילוי פרטים ויצירת DOCX
 - לשונית מסמכים — צפייה במסמכים שנוצרו, העלאת קבצים, ניתוח מסמכים קיימים
 
-כשהמשתמש מבקש ליצור מסמך, עזור לו למלא את הפרטים או הפנה אותו ללשונית "יצירת מסמך".
-כשהמשתמש שואל על תמחור, תנאים, או מבנה — השתמש בידע למעלה.
+## כשהמשתמש מבקש ליצור מסמך (הצעת מחיר / חוזה / הזמנת עבודה)
+
+### שלב 1: שאל שאלות קריטיות
+אם חסר מידע קריטי, שאל **רק** את מה שחסר מתוך:
+- שם הלקוח / חברה (חובה)
+- פריטי תמחור — מה השירות ומה המחיר (חובה)
+- לוח זמנים (אם לא צוין)
+
+**אל תשאל על:** תנאי תשלום (ברירת מחדל: 35%/65%), תוקף הצעה (ברירת מחדל: 30 יום), סעיפי חוזה (ייבחרו אוטומטית).
+
+### שלב 2: סכם בקצרה
+הצג סיכום קצר (3-5 שורות) של מה שיכלל במסמך — זה לא המסמך עצמו, רק אישור שהבנת נכון.
+
+### שלב 3: מלא את הטופס
+הוסף בסוף התשובה בלוק FORM_DATA מוסתר כדי למלא את הטופס אוטומטית, ואמור למשתמש לעבור ללשונית "יצירת מסמך" וללחוץ "צור מסמך".
+
+## פורמט FORM_DATA
+כשיש מידע מספיק, הוסף בסוף התשובה (בשורה חדשה):
+<!--FORM_DATA:{"clientName":"...","clientCompany":"...","docType":"quote","projectDescription":"...","serviceDetails":"...","pricingItems":[{"desc":"...","qty":1,"price":0}],"paymentStructure":"two","customInstallments":[50,50,0],"timeline":"...","notes":"..."}-->
+
+כללים:
+- docType: "quote" | "order" | "contract"
+- paymentStructure: "two" (35/65) | "three" (40/30/30) | "custom"
+- customInstallments: מערך של 3 אחוזים (רק כש-paymentStructure הוא "custom")
+- מחירים: מספרים בלבד (ללא ₪ או פסיקים)
+- שדה ריק = מחרוזת ריקה
+- הוסף FORM_DATA רק כשיש מידע מספיק
 
 ## ניתוח תמונות וצילומי מסך
 
@@ -298,21 +372,17 @@ ${langNote}
 - לוחות זמנים
 - הערות נוספות
 
-כשאתה מזהה מידע שניתן למלא בטופס יצירת מסמך, הוסף בסוף התשובה בלוק JSON מוסתר בפורמט הבא (בשורה חדשה, אחרי שסיימת את התשובה הרגילה):
-<!--FORM_DATA:{"clientName":"...","clientCompany":"...","docType":"quote","projectDescription":"...","serviceDetails":"...","pricingItems":[{"desc":"...","qty":1,"price":0}],"paymentStructure":"two","customInstallments":[50,50,0],"timeline":"...","notes":"..."}-->
+לאחר הניתוח, מלא את הטופס באמצעות FORM_DATA.
 
-חשוב:
-- docType יכול להיות: "quote", "order", "contract"
-- paymentStructure יכול להיות: "two", "three", "custom"
-- customInstallments הוא מערך של אחוזים (3 מספרים) — רלוונטי רק כשpaymentStructure הוא "custom"
-- מחירים צריכים להיות מספרים בלבד (ללא ₪ או פסיקים)
-- אם שדה לא נמצא, השאר מחרוזת ריקה
-- הוסף את הבלוק הזה רק כשיש מידע מספיק לטופס — לא בכל הודעה`;
+## חשוב
+- **לעולם אל תדבר בגוף ראשון רבים ("אנחנו מציעים", "אנו שמחים").** אתה עוזר — לא כותב המסמך.
+- **לעולם אל תכתוב מסמך מלא בצ'אט.** הטופס + המערכת יוצרים את ה-DOCX.
+- כשהמשתמש שואל על תמחור, תנאים, או מבנה — השתמש בידע מהסעיפים למטה.`;
 
   prompt += buildClausesPromptSection();
 
   if (learnedContext) {
-    prompt += `\n\n## ידע שנלמד ממסמכי עזר\n${JSON.stringify(learnedContext, null, 2)}\nשים לב: השתמש בסעיפי החוזה, תבניות השירות, ומבנה התשלומים שלמעלה כשאתה עוזר ליצור מסמכים.`;
+    prompt += `\n\n## ידע נלמד\nנלמדו ${learnedContext.documentsAnalyzed || 0} מסמכי עזר. הסעיפים, תבניות השירות ומבנה התשלומים זמינים למעלה.`;
   }
 
   return prompt;
@@ -366,6 +436,17 @@ function buildExtractionPrompt(existingClauseIds) {
     "warrantyPeriod": "5 ימי עבודה",
     "cancellationNotice": "7 ימים בכתב",
     "suspensionThreshold": "5 ימי עבודה עיכוב"
+  },
+  "providerProfile": {
+    "name": "שם מלא של הספק/נותן השירות בעברית",
+    "nameEn": "Full name in English (if found)",
+    "company": "שם העסק/חברה באנגלית",
+    "companyHe": "שם העסק/חברה בעברית",
+    "title": "תפקיד בעברית",
+    "titleEn": "Title in English",
+    "email": "כתובת אימייל",
+    "website": "אתר אינטרנט",
+    "phone": "טלפון"
   }
 }
 
@@ -388,7 +469,8 @@ ${existingClauseIds.join(', ')}
 2. זהה סעיפים חדשים שלא ברשימה הקיימת
 3. אם סעיף קיים אבל בגרסה מפורטת יותר, כלול אותו עם ה-id הקיים
 4. appliesTo: "quote" = הצעת מחיר, "contract" = חוזה, "workOrder" = הזמנת עבודה
-5. required = true לסעיפים שמופיעים בכל המסמכים מסוג זה`;
+5. required = true לסעיפים שמופיעים בכל המסמכים מסוג זה
+6. providerProfile: חלץ את פרטי הספק/נותן השירות (לא הלקוח!) מהמסמכים — שם, חברה, טלפון, אימייל, אתר. זה בדרך כלל מופיע בכותרת או בתחתית המסמך.`;
 }
 
 // ─── Multer config ────────────────────────────────────────────────────────────
@@ -425,7 +507,7 @@ const dynamicUpload = multer({
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(express.json({ limit: '20mb' }));
-app.use(express.static(join(__dirname, '..', 'public')));
+app.use(serveStatic(join(__dirname, '..', 'public')));
 
 // ─── User Profile API ────────────────────────────────────────────────────────
 
@@ -1443,18 +1525,15 @@ app.post('/api/analyze-document', async (req, res) => {
     }
 
     const rawText = apiData.text;
+    console.log(`[analyze-document] AI response length: ${rawText?.length || 0}`);
 
-    // Strip markdown code fences if present
-    const jsonText = rawText.replace(/^[\s\S]*?```(?:json)?\s*\n?/i, '').replace(/\n?\s*```[\s\S]*$/, '').trim() || rawText.trim();
-
-    let extracted;
-    try {
-      extracted = JSON.parse(jsonText);
-    } catch {
-      console.error('Failed to parse Claude response as JSON:', rawText);
-      return res.status(502).json({ error: 'Claude did not return valid JSON', raw: rawText.slice(0, 500) });
+    const extracted = extractJSON(rawText);
+    if (!extracted) {
+      console.error('[analyze-document] Failed to parse JSON. Raw:', rawText?.slice(0, 500));
+      return res.status(502).json({ error: 'Claude did not return valid JSON', raw: rawText?.slice(0, 500) });
     }
 
+    console.log('[analyze-document] Successfully parsed JSON');
     res.json({ success: true, data: extracted, filename });
   } catch (err) {
     console.error('Analyze document error:', err);
@@ -1654,16 +1733,12 @@ app.post('/api/learn-references', async (req, res) => {
     }
 
     const rawText = apiData.text;
+    console.log(`[learn-references] AI response length: ${rawText?.length || 0}`);
 
-    // Strip markdown code fences if present
-    const jsonText = rawText.replace(/^[\s\S]*?```(?:json)?\s*\n?/i, '').replace(/\n?\s*```[\s\S]*$/, '').trim() || rawText.trim();
-
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonText);
-    } catch {
-      console.error('Failed to parse learn-references response as JSON:', rawText.slice(0, 500));
-      return res.status(502).json({ error: 'Claude did not return valid JSON', raw: rawText.slice(0, 500) });
+    const parsed = extractJSON(rawText);
+    if (!parsed) {
+      console.error('[learn-references] Failed to parse JSON. Raw:', rawText?.slice(0, 500));
+      return res.status(502).json({ error: 'Claude did not return valid JSON', raw: rawText?.slice(0, 500) });
     }
 
     // Merge new clauses into existing DB
@@ -1768,6 +1843,28 @@ app.post('/api/learn-references', async (req, res) => {
     // Update in-memory clausesDb
     clausesDb = db;
 
+    // Auto-populate user profile from extracted provider info
+    let profileUpdated = false;
+    if (parsed.providerProfile) {
+      const pp = parsed.providerProfile;
+      const profileFields = ['name', 'nameEn', 'company', 'companyHe', 'title', 'titleEn', 'email', 'website', 'phone'];
+      for (const field of profileFields) {
+        const val = (pp[field] || '').trim();
+        // Skip placeholder values from AI
+        if (!val || /not found|לא נמצא|unknown|N\/A/i.test(val)) continue;
+        if (!userProfile[field]) {
+          userProfile[field] = val;
+          profileUpdated = true;
+        }
+      }
+      if (profileUpdated) {
+        userProfile.setupComplete = true;
+        writeFileSync(USER_PROFILE_PATH, JSON.stringify(userProfile, null, 2), 'utf-8');
+        console.log('[learn-references] Auto-populated user profile from documents:',
+          profileFields.filter(f => pp[f]).join(', '));
+      }
+    }
+
     res.json({
       success: true,
       documentsAnalyzed: extractedDocs.length,
@@ -1777,6 +1874,7 @@ app.post('/api/learn-references', async (req, res) => {
       addedPatterns,
       totalClauses: Object.values(db.clauses).reduce((sum, cat) => sum + cat.clauses.length, 0),
       totalCategories: Object.keys(db.clauses).length,
+      profileUpdated,
     });
   } catch (err) {
     console.error('Learn references error:', err);
@@ -2085,6 +2183,42 @@ app.get('/api/ai-status', (req, res) => {
     });
   } catch (err) {
     res.json({ configured: false, error: err.message });
+  }
+});
+
+// ─── AI models list ──────────────────────────────────────────────────────────
+app.get('/api/ai-models', async (req, res) => {
+  try {
+    const config = getProviderConfig();
+    if (!config.configured) {
+      return res.json({ models: [] });
+    }
+
+    const headers = { 'anthropic-version': '2023-06-01' };
+    if (config.useClaudeOAuth && config.accessToken) {
+      headers['Authorization'] = `Bearer ${config.accessToken}`;
+      headers['anthropic-beta'] = 'oauth-2025-04-20,claude-code-20250219';
+    } else {
+      headers['x-api-key'] = config.apiKey;
+    }
+
+    const response = await fetch('https://api.anthropic.com/v1/models', { headers });
+    if (!response.ok) {
+      const body = await response.text();
+      console.error('[ai-models] API error:', response.status, body);
+      return res.json({ models: [] });
+    }
+
+    const data = await response.json();
+    const models = (data.data || [])
+      .filter(m => /^claude-/.test(m.id))
+      .map(m => ({ id: m.id, name: m.display_name || m.id }))
+      .sort((a, b) => b.id.localeCompare(a.id));
+
+    res.json({ models });
+  } catch (err) {
+    console.error('[ai-models] Error:', err.message);
+    res.json({ models: [] });
   }
 });
 
