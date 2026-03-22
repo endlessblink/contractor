@@ -362,6 +362,30 @@ ${langNote}
 - שדה ריק = מחרוזת ריקה
 - הוסף FORM_DATA רק כשיש מידע מספיק
 
+## פורמט FORM_UPDATE (תיקונים נקודתיים)
+כשאתה בודק טופס קיים ומזהה בעיות, השתמש ב-FORM_UPDATE (לא FORM_DATA).
+FORM_DATA מחליף את כל הטופס. FORM_UPDATE מתקן רק את מה שצריך.
+
+הוסף בסוף התשובה:
+<!--FORM_UPDATE:{"actions":[...]}-->
+
+סוגי פעולות:
+- {"type":"addClause","clauseId":"..."}  — בחר סעיף חסר
+- {"type":"removeClause","clauseId":"..."}  — בטל בחירת סעיף לא רלוונטי
+- {"type":"editClause","clauseId":"...","text":"טקסט מתוקן"}  — ערוך טקסט סעיף
+- {"type":"updateField","field":"notes|timeline|serviceDetails|projectDescription","value":"..."}  — עדכן שדה (שלח ערך מלא חדש)
+- {"type":"addPricingRow","desc":"...","qty":1,"price":0,"option":""}  — הוסף שורת תמחור
+- {"type":"removePricingRow","index":0}  — הסר שורת תמחור (0 = ראשונה)
+- {"type":"updatePricingRow","index":0,"desc":"...","price":100}  — עדכן שורה קיימת
+- {"type":"setPayment","structure":"two|three|custom","installments":[40,30,30]}
+- {"type":"toggleSection","section":"timeline|notes","enabled":true}
+
+כללים:
+- השתמש ב-FORM_UPDATE בתשובה לבדיקת טופס או תיקון בעיות ספציפיות
+- אל תשלב FORM_DATA ו-FORM_UPDATE באותה תשובה
+- כשבודק טופס, תמיד כלול FORM_UPDATE עם תיקונים מומלצים
+- בעדכון שדות טקסט, שלח את הערך המלא החדש
+
 ## ניתוח תמונות וצילומי מסך
 
 כשמשתמש שולח צילום מסך של שיחה, הודעה, אימייל, או מסמך — נתח את התוכן וחלץ את המידע הרלוונטי:
@@ -377,6 +401,10 @@ ${langNote}
 ## חשוב
 - **לעולם אל תדבר בגוף ראשון רבים ("אנחנו מציעים", "אנו שמחים").** אתה עוזר — לא כותב המסמך.
 - **לעולם אל תכתוב מסמך מלא בצ'אט.** הטופס + המערכת יוצרים את ה-DOCX.
+- **אל תוסיף משפטי שיווק/נימוסין** כמו "אשמח להתאים", "נשמח לעמוד לרשותכם", "בואו נדבר". הערות צריכות להיות עובדתיות בלבד (תוקף, מע"מ, תנאים טכניים).
+- כשאתה בודק טופס (בעקבות "בדוק טופס"), דווח על בעיות **וגם** כלול בלוק FORM_UPDATE עם כל התיקונים. המשתמש יוכל ללחוץ "החל תיקונים" ישירות מהצ'אט.
+- **עברית תקינה בלבד.** בדוק כל טקסט בעברית לפני שליחה — ללא שגיאות כתיב, דקדוק, או ניסוח לא טבעי. פנה ללקוח בלשון זכר (ללקוח, עבורך) אלא אם צוין אחרת.
+- **כשמזכיר סעיפים בצ'אט, תמיד כתוב בעברית** — לא IDs באנגלית. למשל: "סעיף מקדמה 45%" ולא "payment-advance-45percent". ה-IDs הם פנימיים — המשתמש לא צריך לראות אותם. השתמש ב-IDs רק בבלוקים טכניים (FORM_UPDATE, FORM_DATA).
 - כשהמשתמש שואל על תמחור, תנאים, או מבנה — השתמש בידע מהסעיפים למטה.`;
 
   prompt += buildClausesPromptSection();
@@ -1766,6 +1794,16 @@ app.post('/api/learn-references', async (req, res) => {
     let addedClauses = 0;
     let updatedClauses = 0;
 
+    // Pre-compute text fingerprints for dedup
+    const textFingerprints = {};
+    for (const [catKey, catData] of Object.entries(db.clauses)) {
+      textFingerprints[catKey] = new Map();
+      for (const c of catData.clauses) {
+        const fp = c.text.replace(/\s+/g, ' ').trim().slice(0, 100);
+        textFingerprints[catKey].set(fp, c.id);
+      }
+    }
+
     // Merge new clauses
     if (parsed.newClauses && Array.isArray(parsed.newClauses)) {
       for (const clause of parsed.newClauses) {
@@ -1773,6 +1811,13 @@ app.post('/api/learn-references', async (req, res) => {
         if (!db.clauses[clause.category]) continue;
 
         const existing = db.clauses[clause.category].clauses.find(c => c.id === clause.id);
+        // Also check for text similarity to prevent near-duplicate clauses
+        const normText = clause.text.replace(/\s+/g, ' ').trim().slice(0, 100);
+        const catFingerprints = textFingerprints[clause.category];
+        if (catFingerprints) {
+          const existingId = catFingerprints.get(normText);
+          if (existingId && existingId !== clause.id) continue; // skip near-duplicate
+        }
         if (existing) {
           // Update if text is longer/more detailed
           if (clause.text.length > existing.text.length) {

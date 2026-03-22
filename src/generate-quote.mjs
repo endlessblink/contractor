@@ -27,7 +27,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PROJECT_DIR = path.resolve(__dirname, "..");
-const DEFAULT_LOGO_PATH = path.join(PROJECT_DIR, "logo-2026_768p.png");
+const DEFAULT_LOGO_PATH = path.join(PROJECT_DIR, "assets", "logo.png");
 
 const FONT = "Heebo";
 const FONT_OBJ = { ascii: FONT, cs: FONT, eastAsia: FONT, hAnsi: FONT };
@@ -170,7 +170,7 @@ function bulletParagraph(text) {
 /** Create a dash-style paragraph */
 function dashParagraph(text) {
   return rtlParagraph([
-    rtlRun("- " + text),
+    rtlRun("• " + text),
   ], { spacing: { after: 80 }, alignment: AlignmentType.BOTH });
 }
 
@@ -624,7 +624,11 @@ export async function generateDocument(data) {
   // General notes section
   if (generalNotes) {
     bodyChildren.push(sectionHeader("הערות כלליות"));
-    const noteLines = generalNotes.split("\n").filter(l => l.trim());
+    let noteLines = generalNotes.split("\n").filter(l => l.trim());
+    // If all notes are on one line, split by period/sentence
+    if (noteLines.length === 1 && noteLines[0].includes('. ')) {
+      noteLines = noteLines[0].split(/\.\s+/).filter(l => l.trim()).map(l => l.endsWith('.') ? l : l + '.');
+    }
     for (const line of noteLines) {
       bodyChildren.push(dashParagraph(line.replace(/^[•\-]\s*/, "")));
     }

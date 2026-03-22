@@ -232,8 +232,9 @@
       gap: 14px;
       transition: background-color 0.3s;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      position: relative;
-      z-index: 10;
+      position: sticky;
+      top: 0;
+      z-index: 20;
     }
 
     .header-text h1 {
@@ -380,6 +381,9 @@
       display: flex;
       gap: 0;
       flex-shrink: 0;
+      position: sticky;
+      top: 68px;
+      z-index: 19;
       transition: background-color 0.3s, border-color 0.3s;
     }
 
@@ -785,6 +789,120 @@
       height: 15px;
     }
 
+    /* FORM_UPDATE fix cards */
+    .form-update-card {
+      margin-top: 10px;
+      background: rgba(99,102,241,0.08);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 10px;
+      padding: 10px;
+      direction: rtl;
+    }
+    .form-update-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: var(--text-primary);
+      transition: opacity 0.3s;
+    }
+    .form-update-row:hover { background: rgba(255,255,255,0.05); }
+    .form-update-row.applied {
+      opacity: 0.4;
+      text-decoration: line-through;
+    }
+    .form-update-row .fu-icon {
+      width: 16px; height: 16px; flex-shrink: 0; opacity: 0.7;
+    }
+    .form-update-row .fu-text { flex: 1; }
+    .form-update-row .fu-apply-btn {
+      background: none; border: 1px solid rgba(99,102,241,0.3); border-radius: 4px;
+      color: var(--accent); cursor: pointer; padding: 2px 8px; font-size: 0.75rem;
+      font-family: inherit; transition: all 0.15s;
+    }
+    .form-update-row .fu-apply-btn:hover { background: rgba(99,102,241,0.15); }
+    .form-update-row .fu-apply-btn:disabled { opacity: 0.3; cursor: default; }
+    .form-update-apply-all {
+      display: block; width: 100%; margin-top: 8px; padding: 8px;
+      background: var(--accent); color: white; border: none; border-radius: 8px;
+      font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .form-update-apply-all:hover { opacity: 0.9; }
+    .form-update-apply-all:disabled { opacity: 0.4; cursor: default; }
+
+    /* Visual marker for AI-changed fields */
+    .ai-changed-wrapper {
+      box-shadow: 0 0 0 2px rgba(99,102,241,0.5);
+      border-radius: 6px;
+      position: relative;
+      display: inline-block;
+    }
+    .ai-changed-wrapper::after {
+      content: attr(data-ai-tooltip);
+      position: absolute;
+      top: -24px;
+      right: 0;
+      background: var(--accent);
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .ai-changed-wrapper:hover::after { opacity: 1; }
+    /* For non-input elements that support ::after directly */
+    .ai-changed {
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.7), 0 0 12px rgba(99,102,241,0.3);
+      animation: ai-pulse 1.5s ease-in-out 3;
+      border-radius: 6px;
+    }
+    @keyframes ai-pulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(99,102,241,0.7), 0 0 12px rgba(99,102,241,0.3); }
+      50% { box-shadow: 0 0 0 5px rgba(99,102,241,0.9), 0 0 20px rgba(99,102,241,0.5); }
+    }
+
+    /* Copy button on chat messages */
+    .msg-copy-btn {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 4px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 3px 6px;
+      font-size: 0.7rem;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .bubble:hover .msg-copy-btn { opacity: 0.7; }
+    .msg-copy-btn:hover { opacity: 1 !important; background: rgba(255,255,255,0.2); }
+
+    /* Regenerate button on assistant messages */
+    .msg-regen-btn {
+      position: absolute;
+      top: 6px;
+      left: 36px;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 4px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 3px 6px;
+      font-size: 0.7rem;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .bubble:hover .msg-regen-btn { opacity: 0.7; }
+    .msg-regen-btn:hover { opacity: 1 !important; background: rgba(255,255,255,0.2); }
+
     /* Error toast */
     .error-toast {
       display: none;
@@ -960,6 +1078,7 @@
     .pricing-table th.col-total  { width: 110px; text-align: left; }
     .pricing-table th.col-price  { width: 110px; }
     .pricing-table th.col-qty    { width: 80px; }
+    .pricing-table th.col-option { width: 90px; }
 
     .pricing-table td {
       padding: 6px 4px;
@@ -1263,16 +1382,18 @@
     }
     .clause-item-text {
       font-size: 0.8rem;
-      color: var(--nav-text);
+      color: var(--text-primary);
       line-height: 1.5;
       direction: rtl;
     }
     .clause-item-text .clause-id {
-      font-size: 0.7rem;
-      color: var(--muted);
+      font-size: 0.72rem;
+      color: var(--accent);
       font-family: 'Heebo', sans-serif;
       direction: rtl;
-      display: inline;
+      display: block;
+      font-weight: 600;
+      margin-bottom: 2px;
     }
     .clause-item.required .clause-item-text {
       color: var(--nav-text-active);
@@ -1420,6 +1541,36 @@
     .generate-btn.loading .btn-spinner { display: block; }
     .generate-btn.loading .btn-icon { display: none; }
 
+    /* Review button */
+    .review-form-btn {
+      width: 100%;
+      margin-block-end: 10px;
+      padding-block: 11px;
+      font-family: 'Heebo', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: transparent;
+      color: var(--accent-text);
+      border: 1.5px solid var(--accent);
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: none;
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .review-form-btn:hover {
+      background: var(--btn-frost);
+      border-color: var(--accent);
+      box-shadow: 0 3px 14px var(--btn-glow);
+      transform: translateY(-1px);
+    }
+    .review-form-btn:active { transform: translateY(0); box-shadow: 0 1px 4px var(--btn-glow); }
+    .review-form-btn svg { width: 16px; height: 16px; }
+    .review-form-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
     /* Save button */
     .save-form-btn {
       display: none;
@@ -1489,6 +1640,11 @@
       align-items: center;
       gap: 10px;
       transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .doc-error svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
     }
 
     .doc-error.visible { display: flex; }
@@ -3475,6 +3631,7 @@
                 <thead>
                   <tr>
                     <th>פירוט</th>
+                    <th class="col-option">אופציה</th>
                     <th class="col-qty">כמות</th>
                     <th class="col-price">מחיר ליחידה</th>
                     <th class="col-total">סה"כ</th>
@@ -3493,6 +3650,7 @@
                 הוסף שורה
               </button>
               <div class="pricing-totals" id="pricingTotals">
+                <div id="optionSubtotals" style="display:none; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--border);"></div>
                 <div class="total-item">
                   <div class="total-label">סה"כ לפני מע"מ</div>
                   <div class="total-value highlight" id="grandTotal">₪ 0.00</div>
@@ -3640,6 +3798,13 @@
                 </svg>
               </span>
               <span class="save-btn-label">שמור</span>
+            </button>
+            <button type="button" class="review-form-btn" id="reviewFormBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+              בדוק טופס
             </button>
             <button type="submit" class="generate-btn" id="generateBtn">
               <span class="btn-icon">
@@ -4105,6 +4270,10 @@
     ══════════════════════════════════════ */
     const errorToast = document.getElementById('errorToast');
 
+    function stripEmbeddedBlocks(text) {
+      return text.replace(/<!--FORM_DATA:[\s\S]*?-->/g, '').replace(/<!--SAVE_CLAUSE:[\s\S]*?-->/g, '').replace(/<!--FORM_UPDATE:[\s\S]*?-->/g, '').trimEnd();
+    }
+
     function showError(msg) {
       errorToast.textContent = msg;
       errorToast.classList.add('visible');
@@ -4316,8 +4485,53 @@
       // Add text content (may be empty for streaming start)
       const textNode = document.createElement('span');
       textNode.className = 'bubble-text';
-      textNode.innerHTML = renderMarkdown(text);
+      textNode.innerHTML = renderMarkdown(text.replace(/<!--(?:FORM_DATA|SAVE_CLAUSE|FORM_UPDATE):[\s\S]*?-->/g, ''));
       bubble.appendChild(textNode);
+
+      // Add copy button
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'msg-copy-btn';
+      copyBtn.textContent = '📋';
+      copyBtn.title = 'העתק';
+      copyBtn.addEventListener('click', () => {
+        const textContent = textNode.innerText || textNode.textContent || '';
+        navigator.clipboard.writeText(textContent).then(() => {
+          copyBtn.textContent = '✓';
+          setTimeout(() => { copyBtn.textContent = '📋'; }, 1500);
+        });
+      });
+      bubble.style.position = 'relative';
+      bubble.appendChild(copyBtn);
+
+      // Add regenerate button for assistant messages only
+      if (role === 'assistant') {
+        const regenBtn = document.createElement('button');
+        regenBtn.className = 'msg-regen-btn';
+        regenBtn.textContent = '🔄';
+        regenBtn.title = 'יצר מחדש';
+        regenBtn.addEventListener('click', () => {
+          wrapper.remove();
+          // Pop the assistant message
+          if (conversation.length && conversation[conversation.length - 1].role === 'assistant') {
+            conversation.pop();
+          }
+          // Get the last user message and re-send it
+          const lastUser = [...conversation].reverse().find(m => m.role === 'user');
+          if (lastUser) {
+            const lastUserText = typeof lastUser.content === 'string' ? lastUser.content : '(regenerate)';
+            // Remove the last user message too (sendMessage will re-add it)
+            const lastUserIdx = conversation.lastIndexOf(lastUser);
+            if (lastUserIdx >= 0) conversation.splice(lastUserIdx, 1);
+            // Also remove the user message bubble from DOM
+            const userBubbles = messagesEl.querySelectorAll('.message.user');
+            if (userBubbles.length) userBubbles[userBubbles.length - 1].remove();
+            // Put text in input and send
+            inputEl.value = lastUserText;
+            sendMessage();
+          }
+        });
+        bubble.appendChild(regenBtn);
+      }
 
       wrapper.appendChild(label);
       wrapper.appendChild(bubble);
@@ -4381,6 +4595,130 @@
             }
           });
           bubble.appendChild(btn);
+        },
+        addFormUpdateCard(actions) {
+          const card = document.createElement('div');
+          card.className = 'form-update-card';
+
+          const title = document.createElement('div');
+          title.style.cssText = 'font-weight:600; font-size:0.85rem; margin-bottom:8px; color:var(--accent);';
+          title.textContent = `תיקונים מומלצים (${actions.length})`;
+          card.appendChild(title);
+
+          const appliedSet = new Set();
+
+          actions.forEach((action, index) => {
+            const row = document.createElement('div');
+            row.className = 'form-update-row';
+
+            const iconMap = {
+              addClause: '➕', removeClause: '➖', editClause: '✏️',
+              updateField: '📝', addPricingRow: '➕', removePricingRow: '🗑',
+              updatePricingRow: '✏️', setPayment: '💳', toggleSection: '🔘'
+            };
+
+            // Look up Hebrew clause name from DB
+            function clauseLabel(id) {
+              if (!clausesDbCache || !clausesDbCache.clauses) return id;
+              for (const cat of Object.values(clausesDbCache.clauses)) {
+                const c = cat.clauses.find(c => c.id === id);
+                if (c) return c.text.slice(0, 50) + (c.text.length > 50 ? '...' : '');
+              }
+              return id;
+            }
+
+            const descMap = {
+              addClause: `הוסף סעיף: ${clauseLabel(action.clauseId)}`,
+              removeClause: `הסר סעיף: ${clauseLabel(action.clauseId)}`,
+              editClause: `ערוך סעיף: ${clauseLabel(action.clauseId)}`,
+              updateField: `עדכן ${({notes:'הערות',timeline:'לוח זמנים',serviceDetails:'פרטי שירות',projectDescription:'תיאור פרויקט'})[action.field] || action.field}`,
+              addPricingRow: `הוסף שורת תמחור: ${action.desc || ''}`,
+              removePricingRow: `הסר שורת תמחור #${(action.index||0)+1}`,
+              updatePricingRow: `עדכן שורת תמחור #${(action.index||0)+1}`,
+              setPayment: `שנה מבנה תשלומים`,
+              toggleSection: `${action.enabled ? 'הפעל' : 'כבה'}: ${({timeline:'לוח זמנים',notes:'הערות כלליות',pricing:'תמחור',payment:'תשלום'})[action.section] || action.section}`
+            };
+
+            // Build full detail text for expandable section
+            function clauseFullText(id) {
+              if (!clausesDbCache || !clausesDbCache.clauses) return '';
+              for (const cat of Object.values(clausesDbCache.clauses)) {
+                const c = cat.clauses.find(c => c.id === id);
+                if (c) return c.text;
+              }
+              return '';
+            }
+            let detailText = '';
+            if (action.type === 'addClause') detailText = clauseFullText(action.clauseId);
+            else if (action.type === 'removeClause') detailText = `סעיף שיוסר:\n${clauseFullText(action.clauseId)}`;
+            else if (action.type === 'editClause') detailText = `טקסט חדש:\n${action.text}`;
+            else if (action.type === 'updateField') detailText = `ערך חדש:\n${action.value || ''}`;
+            else if (action.type === 'addPricingRow') detailText = `${action.desc || ''} — כמות: ${action.qty || 1}, מחיר: ${action.price || 0} ₪${action.option ? ', אופציה: ' + action.option : ''}`;
+            else if (action.type === 'updatePricingRow') detailText = `${action.desc ? 'תיאור: ' + action.desc : ''}${action.price !== undefined ? ' מחיר: ' + action.price + ' ₪' : ''}`;
+            else if (action.type === 'setPayment') detailText = `מבנה: ${({two:'2 תשלומים (35%/65%)',three:'3 תשלומים (40%/30%/30%)',custom:'מותאם אישית'})[action.structure] || action.structure}${action.installments ? ' — ' + action.installments.join('%/') + '%' : ''}`;
+            else if (action.type === 'toggleSection') detailText = `${action.enabled ? 'הפעלת' : 'כיבוי'} סקציית ${({timeline:'לוח זמנים',notes:'הערות כלליות',pricing:'תמחור',payment:'תשלום'})[action.section] || action.section} בטופס`;
+
+            const rowWrapper = document.createElement('div');
+            rowWrapper.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.05);';
+
+            row.innerHTML = `
+              <span class="fu-icon">${iconMap[action.type] || '•'}</span>
+              <span class="fu-text" style="cursor:${detailText ? 'pointer' : 'default'}">${descMap[action.type] || action.type}${detailText ? ' ▾' : ''}</span>
+            `;
+
+            // Add expandable detail
+            let detailEl = null;
+            if (detailText) {
+              detailEl = document.createElement('div');
+              detailEl.style.cssText = 'display:none; padding: 6px 28px 8px; font-size:0.78rem; color:var(--text-secondary); line-height:1.5; direction:rtl; white-space:pre-wrap; max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.15); border-radius:6px; margin:2px 8px 6px;';
+              detailEl.textContent = detailText;
+              row.querySelector('.fu-text').addEventListener('click', () => {
+                const visible = detailEl.style.display !== 'none';
+                detailEl.style.display = visible ? 'none' : 'block';
+                const arrow = visible ? ' ▾' : ' ▴';
+                const textSpan = row.querySelector('.fu-text');
+                textSpan.innerHTML = textSpan.innerHTML.replace(/ [▾▴]/, arrow);
+              });
+            }
+
+            const applyBtn = document.createElement('button');
+            applyBtn.className = 'fu-apply-btn';
+            applyBtn.textContent = 'החל';
+            applyBtn.addEventListener('click', () => {
+              applyFormUpdate(actions, new Set([index]));
+              row.classList.add('applied');
+              applyBtn.disabled = true;
+              applyBtn.textContent = '✓';
+              appliedSet.add(index);
+              if (appliedSet.size === actions.length) {
+                applyAllBtn.disabled = true;
+                applyAllBtn.textContent = '✓ הוחלו כל התיקונים';
+              }
+            });
+            row.appendChild(applyBtn);
+            rowWrapper.appendChild(row);
+            if (detailEl) rowWrapper.appendChild(detailEl);
+            card.appendChild(rowWrapper);
+          });
+
+          const applyAllBtn = document.createElement('button');
+          applyAllBtn.className = 'form-update-apply-all';
+          applyAllBtn.textContent = `החל הכל (${actions.length} תיקונים)`;
+          applyAllBtn.addEventListener('click', () => {
+            const remaining = new Set();
+            actions.forEach((_, i) => { if (!appliedSet.has(i)) remaining.add(i); });
+            applyFormUpdate(actions, remaining);
+            card.querySelectorAll('.form-update-row').forEach(r => r.classList.add('applied'));
+            card.querySelectorAll('.fu-apply-btn').forEach(b => { b.disabled = true; b.textContent = '✓'; });
+            applyAllBtn.disabled = true;
+            applyAllBtn.textContent = '✓ הוחלו כל התיקונים';
+            actions.forEach((_, i) => appliedSet.add(i));
+            // Switch to form tab so user sees the changes
+            setTimeout(() => switchTab('create'), 300);
+          });
+          card.appendChild(applyAllBtn);
+
+          bubble.appendChild(card);
         }
       };
     }
@@ -4514,7 +4852,7 @@
                 }
                 fullText += parsed.text;
                 // Strip hidden FORM_DATA block from display
-                const displayText = fullText.replace(/<!--FORM_DATA:[\s\S]*?-->/g, '').replace(/<!--SAVE_CLAUSE:[\s\S]*?-->/g, '').trimEnd();
+                const displayText = stripEmbeddedBlocks(fullText);
                 assistantMsgObj.setHTML(renderMarkdown(displayText));
                 scrollToBottom();
               } else if (parsed.type === 'error') {
@@ -4525,9 +4863,8 @@
         }
 
         if (fullText) {
-          // Save to conversation (strip form data block from history content)
-          const cleanText = fullText.replace(/<!--FORM_DATA:[\s\S]*?-->/g, '').replace(/<!--SAVE_CLAUSE:[\s\S]*?-->/g, '').trimEnd();
-          conversation.push({ role: 'assistant', content: cleanText });
+          // Save raw fullText (with hidden blocks) so they can be restored on reload
+          conversation.push({ role: 'assistant', content: fullText });
 
           // Check for embedded form data
           const formMatch = fullText.match(/<!--FORM_DATA:([\s\S]*?)-->/);
@@ -4548,6 +4885,21 @@
               assistantMsgObj.addSaveClauseBtn(clauseData);
             } catch (e) {
               console.warn('Failed to parse SAVE_CLAUSE:', e);
+            }
+          }
+
+          // Check for embedded form update actions
+          const formUpdateMatch = fullText.match(/<!--FORM_UPDATE:([\s\S]*?)-->/);
+          console.log('[FORM_UPDATE] match found:', !!formUpdateMatch, formUpdateMatch ? formUpdateMatch[1].slice(0, 200) : 'none');
+          if (formUpdateMatch && assistantMsgObj) {
+            try {
+              const updateData = JSON.parse(formUpdateMatch[1]);
+              console.log('[FORM_UPDATE] parsed actions:', updateData.actions?.length);
+              if (updateData.actions && Array.isArray(updateData.actions)) {
+                assistantMsgObj.addFormUpdateCard(updateData.actions);
+              }
+            } catch (e) {
+              console.warn('[FORM_UPDATE] Failed to parse:', e, formUpdateMatch[1].slice(0, 500));
             }
           }
         }
@@ -4571,14 +4923,18 @@
     const grandTotalEl = document.getElementById('grandTotal');
     const vatTotalEl   = document.getElementById('vatTotal');
     const totalWithVatEl = document.getElementById('totalWithVat');
+    const optionSubtotalsEl = document.getElementById('optionSubtotals');
+    const grandTotalRow = grandTotalEl.closest('.total-item');
+    const vatRow = vatTotalEl.closest('.total-item');
+    const withVatRow = totalWithVatEl.closest('.total-item');
 
     function formatCurrency(n) {
       return '₪ ' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
-    function addPricingRow(desc = '', qty = 1, price = 0) {
+    function addPricingRow(desc = '', qty = 1, price = 0, option = '') {
       const id = Date.now() + Math.random();
-      pricingRows.push({ id, desc, qty, price });
+      pricingRows.push({ id, desc, qty, price, option });
       renderPricingRows();
     }
 
@@ -4590,7 +4946,7 @@
     function updatePricingRow(id, field, value) {
       const row = pricingRows.find(r => r.id === id);
       if (row) {
-        row[field] = field === 'desc' ? value : (parseFloat(value) || 0);
+        row[field] = (field === 'desc' || field === 'option') ? value : (parseFloat(value) || 0);
       }
       updateTotals();
     }
@@ -4600,7 +4956,7 @@
 
       if (pricingRows.length === 0) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="5" style="padding:16px; text-align:center; color:#94a3b8; font-size:0.85rem;">
+        tr.innerHTML = `<td colspan="6" style="padding:16px; text-align:center; color:#94a3b8; font-size:0.85rem;">
           לחץ על "הוסף שורה" להוספת פריט תמחור
         </td>`;
         pricingBody.appendChild(tr);
@@ -4615,6 +4971,9 @@
         tr.innerHTML = `
           <td>
             <input type="text" placeholder="תיאור הפריט" value="${escapeAttr(row.desc)}" data-id="${row.id}" data-field="desc">
+          </td>
+          <td>
+            <input type="text" placeholder="—" value="${escapeAttr(row.option)}" data-id="${row.id}" data-field="option" style="font-size:0.8rem; text-align:center;">
           </td>
           <td>
             <input type="number" placeholder="1" value="${row.qty}" min="0" step="0.5" data-id="${row.id}" data-field="qty">
@@ -4640,10 +4999,10 @@
       pricingBody.querySelectorAll('input[data-id]').forEach(inp => {
         inp.addEventListener('input', () => {
           updatePricingRow(parseFloat(inp.dataset.id), inp.dataset.field, inp.value);
-          if (inp.dataset.field !== 'desc') renderPricingRows();
+          if (inp.dataset.field !== 'desc' && inp.dataset.field !== 'option') renderPricingRows();
         });
         inp.addEventListener('change', () => {
-          if (inp.dataset.field !== 'desc') renderPricingRows();
+          if (inp.dataset.field !== 'desc' && inp.dataset.field !== 'option') renderPricingRows();
         });
       });
 
@@ -4667,9 +5026,60 @@
       const vat     = total * 0.17;
       const withVat = total + vat;
 
-      grandTotalEl.textContent  = formatCurrency(total);
-      vatTotalEl.textContent    = formatCurrency(vat);
-      totalWithVatEl.textContent = formatCurrency(withVat);
+      // Check if options are in use
+      const rowsWithOptions = pricingRows.filter(r => r.option && r.option.trim());
+      const hasOptions = rowsWithOptions.length > 0;
+
+      if (hasOptions && optionSubtotalsEl) {
+        // Group by option — show full breakdown per option
+        const grouped = {};
+        pricingRows.forEach(r => {
+          const key = (r.option && r.option.trim()) || '_shared';
+          grouped[key] = (grouped[key] || 0) + (r.qty || 0) * (r.price || 0);
+        });
+
+        // Add shared items to each option
+        const shared = grouped['_shared'] || 0;
+        delete grouped['_shared'];
+
+        optionSubtotalsEl.innerHTML = Object.entries(grouped).map(([opt, subtotal]) => {
+          const optTotal = subtotal + shared;
+          const optVat = optTotal * 0.17;
+          const optWithVat = optTotal + optVat;
+          return `<div style="margin-bottom:12px;">
+            <div class="total-item">
+              <div class="total-label" style="font-weight:600;">אופציה ${escapeAttr(opt)}</div>
+              <div class="total-value highlight">${formatCurrency(optTotal)}</div>
+            </div>
+            <div class="total-item" style="opacity:0.7;">
+              <div class="total-label" style="font-size:0.8rem;">מע"מ (17%)</div>
+              <div class="total-value" style="font-size:0.85rem;">${formatCurrency(optVat)}</div>
+            </div>
+            <div class="total-item" style="opacity:0.7;">
+              <div class="total-label" style="font-size:0.8rem;">סה"כ כולל מע"מ</div>
+              <div class="total-value" style="font-size:0.85rem;">${formatCurrency(optWithVat)}</div>
+            </div>
+          </div>`;
+        }).join('');
+        optionSubtotalsEl.style.display = '';
+
+        // Hide grand totals when options are used
+        if (grandTotalRow) grandTotalRow.style.display = 'none';
+        if (vatRow) vatRow.style.display = 'none';
+        if (withVatRow) withVatRow.style.display = 'none';
+      } else {
+        // No options — show regular grand totals
+        grandTotalEl.textContent  = formatCurrency(total);
+        vatTotalEl.textContent    = formatCurrency(vat);
+        totalWithVatEl.textContent = formatCurrency(withVat);
+        if (grandTotalRow) grandTotalRow.style.display = '';
+        if (vatRow) vatRow.style.display = '';
+        if (withVatRow) withVatRow.style.display = '';
+        if (optionSubtotalsEl) {
+          optionSubtotalsEl.innerHTML = '';
+          optionSubtotalsEl.style.display = 'none';
+        }
+      }
 
       updateInstallmentsPreview();
     }
@@ -4690,7 +5100,7 @@
 
       // Pricing rows
       if (data.pricingItems) {
-        data.pricingItems.forEach(item => addPricingRow(item.desc, item.qty, item.price));
+        data.pricingItems.forEach(item => addPricingRow(item.desc, item.qty, item.price, item.option || ''));
       }
 
       // Payment
@@ -4851,7 +5261,9 @@
 
           const idSpan = document.createElement('span');
           idSpan.className = 'clause-id';
-          idSpan.textContent = clause.name || clause.id;
+          // Show Hebrew title: first ~6 words of clause text, or name, or ID as last resort
+          const heTitle = clause.name || (clause.text ? clause.text.split(/\s+/).slice(0, 6).join(' ') + (clause.text.split(/\s+/).length > 6 ? '...' : '') : clause.id);
+          idSpan.textContent = heTitle;
 
           const editedBadge = document.createElement('span');
           editedBadge.className = 'clause-edited-badge';
@@ -4968,6 +5380,171 @@
       });
     }
 
+    // ── Apply incremental form updates from AI ──
+    function applyFormUpdate(actions, filterIndices) {
+      const clauseAdds = [];
+      const clauseRemoves = [];
+      const pendingClauseEdits = {};
+
+      for (let i = 0; i < actions.length; i++) {
+        if (filterIndices && !filterIndices.has(i)) continue;
+        const action = actions[i];
+        console.log(`[applyFormUpdate] action ${i}:`, action.type, action);
+
+        try { switch (action.type) {
+          case 'addClause':
+            clauseAdds.push(action.clauseId);
+            break;
+          case 'removeClause':
+            clauseRemoves.push(action.clauseId);
+            break;
+          case 'editClause':
+            pendingClauseEdits[action.clauseId] = action.text;
+            break;
+          case 'updateField': {
+            const fieldMap = {
+              notes: '[name="notes"]',
+              timeline: '[name="timeline"]',
+              serviceDetails: '[name="serviceDetails"]',
+              projectDescription: '[name="projectDescription"]',
+              clientName: '[name="clientName"]',
+              clientCompany: '[name="clientCompany"]',
+            };
+            const selector = fieldMap[action.field];
+            if (selector) {
+              const el = docForm.querySelector(selector);
+              if (el) {
+                el.value = action.value;
+                markAiChanged(el, 'עודכן ע"י AI');
+                console.log(`[applyFormUpdate] updated field "${action.field}"`);
+              } else {
+                console.warn(`[applyFormUpdate] field element not found: ${selector}`);
+              }
+            } else {
+              console.warn(`[applyFormUpdate] unknown field: ${action.field}`);
+            }
+            break;
+          }
+          case 'addPricingRow':
+            addPricingRow(action.desc || '', action.qty || 1, action.price || 0, action.option || '');
+            break;
+          case 'removePricingRow': {
+            const idx = action.index;
+            if (idx >= 0 && idx < pricingRows.length) {
+              deletePricingRow(pricingRows[idx].id);
+            }
+            break;
+          }
+          case 'updatePricingRow': {
+            const idx = action.index;
+            if (idx >= 0 && idx < pricingRows.length) {
+              const row = pricingRows[idx];
+              if (action.desc !== undefined) row.desc = action.desc;
+              if (action.qty !== undefined) row.qty = parseFloat(action.qty) || 0;
+              if (action.price !== undefined) row.price = parseFloat(action.price) || 0;
+              if (action.option !== undefined) row.option = action.option;
+              renderPricingRows();
+            }
+            break;
+          }
+          case 'setPayment': {
+            const paySelect = document.getElementById('paymentStructure');
+            if (paySelect && action.structure) {
+              paySelect.value = action.structure;
+              paySelect.dispatchEvent(new Event('change'));
+              if (action.structure === 'custom' && action.installments) {
+                const c1 = document.getElementById('custom1');
+                const c2 = document.getElementById('custom2');
+                const c3 = document.getElementById('custom3');
+                if (c1) c1.value = action.installments[0] || 0;
+                if (c2) c2.value = action.installments[1] || 0;
+                if (c3) c3.value = action.installments[2] || 0;
+              }
+              updateInstallmentsPreview();
+              markAiChanged(paySelect, 'שונה ע"י AI');
+            }
+            break;
+          }
+          case 'toggleSection': {
+            const toggles = document.querySelectorAll('.section-toggle input[type="checkbox"]');
+            toggles.forEach(toggle => {
+              const sectionEl = toggle.closest('.form-section');
+              if (sectionEl) {
+                const sectionName = sectionEl.querySelector('.section-label')?.textContent?.trim();
+                const sectionMap = {timeline:'לוח זמנים',notes:'הערות כלליות'};
+                if (sectionMap[action.section] && sectionName?.includes(sectionMap[action.section])) {
+                  toggle.checked = action.enabled;
+                  toggle.dispatchEvent(new Event('change'));
+                }
+              }
+            });
+            break;
+          }
+        } } catch (e) { console.error(`[applyFormUpdate] action ${i} (${action.type}) failed:`, e); }
+      }
+
+      // Apply batched clause changes
+      console.log('[applyFormUpdate] clause adds:', clauseAdds, 'removes:', clauseRemoves, 'edits:', Object.keys(pendingClauseEdits));
+      if (clauseAdds.length || clauseRemoves.length || Object.keys(pendingClauseEdits).length) {
+        const currentSelected = new Set();
+        document.querySelectorAll('.clause-item input[type="checkbox"]:checked').forEach(cb => {
+          currentSelected.add(cb.dataset.clauseId);
+        });
+        clauseAdds.forEach(id => currentSelected.add(id));
+        clauseRemoves.forEach(id => currentSelected.delete(id));
+
+        // Merge current edits with new ones
+        const currentEditsMap = {};
+        document.querySelectorAll('.clause-full-text').forEach(el => {
+          if (el.closest('.clause-item')?.querySelector('input')?.dataset?.clauseId) {
+            const cid = el.closest('.clause-item').querySelector('input').dataset.clauseId;
+            if (el.classList.contains('edited')) {
+              currentEditsMap[cid] = el.textContent;
+            }
+          }
+        });
+        Object.assign(currentEditsMap, pendingClauseEdits);
+
+        applyClauseState([...currentSelected], currentEditsMap);
+
+        // Mark changed clause items
+        [...clauseAdds, ...clauseRemoves].forEach(id => {
+          const cb = document.querySelector(`.clause-item input[data-clause-id="${id}"]`);
+          if (cb) {
+            const item = cb.closest('.clause-item');
+            if (item) markAiChanged(item, clauseAdds.includes(id) ? 'נוסף ע"י AI' : 'הוסר ע"י AI');
+          }
+        });
+      }
+
+      updateTotals();
+      if (typeof saveProjectForm === 'function') saveProjectForm();
+      if (typeof saveProjectChat === 'function') saveProjectChat();
+    }
+
+    function markAiChanged(el, tooltip) {
+      // For input/select/textarea elements, wrap with a span since ::after doesn't work on them
+      const isFormControl = el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA';
+      if (isFormControl) {
+        // Use box-shadow directly on the element and title for tooltip
+        el.classList.add('ai-changed');
+        el.title = tooltip;
+        setTimeout(() => {
+          el.classList.remove('ai-changed');
+          el.title = '';
+        }, 30000);
+      } else {
+        // For divs and other elements, use a wrapper approach for ::after tooltip
+        el.classList.add('ai-changed');
+        el.dataset.aiTooltip = tooltip;
+        el.style.position = 'relative';
+        setTimeout(() => {
+          el.classList.remove('ai-changed');
+          delete el.dataset.aiTooltip;
+        }, 30000);
+      }
+    }
+
     // Auto-check relevant clauses when template is selected
     function autoCheckClausesForTemplate(serviceType) {
       if (!clausesDbCache || !clausesDbCache.serviceTemplates) return;
@@ -5016,10 +5593,20 @@
       addPricingRow();
     });
 
-    function updateInstallmentsPreview() {
-      const total = getGrandTotal();
-      const mode  = paymentSelect.value;
+    function getOptionTotals() {
+      const rowsWithOptions = pricingRows.filter(r => r.option && r.option.trim());
+      if (rowsWithOptions.length === 0) return null;
+      const grouped = {};
+      const shared = pricingRows.filter(r => !r.option || !r.option.trim()).reduce((s, r) => s + (r.qty || 0) * (r.price || 0), 0);
+      pricingRows.forEach(r => {
+        const key = (r.option && r.option.trim());
+        if (key) grouped[key] = (grouped[key] || 0) + (r.qty || 0) * (r.price || 0);
+      });
+      return Object.entries(grouped).map(([opt, sub]) => ({ option: opt, total: sub + shared }));
+    }
 
+    function updateInstallmentsPreview() {
+      const mode  = paymentSelect.value;
       installmentsPreview.innerHTML = '';
 
       const structures = {
@@ -5027,27 +5614,55 @@
         three: [{ pct: 40, label: 'תשלום ראשון — מקדמה' }, { pct: 30, label: 'תשלום שני — אמצע פרויקט' }, { pct: 30, label: 'תשלום שלישי — עם סיום' }],
       };
 
+      const optTotals = getOptionTotals();
+
       if (mode === 'custom') {
         installmentsPreview.classList.remove('visible');
         customInstallments.classList.add('visible');
-        updateCustomAmounts(total);
+        if (optTotals) {
+          updateCustomAmountsPerOption(optTotals);
+        } else {
+          updateCustomAmounts(getGrandTotal());
+        }
         return;
       }
 
       customInstallments.classList.remove('visible');
-
       const items = structures[mode] || [];
-      items.forEach(item => {
-        const amount = (total * item.pct) / 100;
-        const chip = document.createElement('div');
-        chip.className = 'installment-chip';
-        chip.innerHTML = `
-          <div class="chip-label">${item.label}</div>
-          <div class="chip-amount">${formatCurrency(amount)}</div>
-          <div class="chip-pct">${item.pct}% מסך העסקה</div>
-        `;
-        installmentsPreview.appendChild(chip);
-      });
+
+      if (optTotals) {
+        // Show per-option installments
+        optTotals.forEach(({ option, total }) => {
+          const header = document.createElement('div');
+          header.style.cssText = 'font-weight:600; font-size:0.82rem; margin-top:8px; margin-bottom:4px; color:var(--accent);';
+          header.textContent = `אופציה ${option}`;
+          installmentsPreview.appendChild(header);
+          items.forEach(item => {
+            const amount = (total * item.pct) / 100;
+            const chip = document.createElement('div');
+            chip.className = 'installment-chip';
+            chip.innerHTML = `
+              <div class="chip-label">${item.label}</div>
+              <div class="chip-amount">${formatCurrency(amount)}</div>
+              <div class="chip-pct">${item.pct}% מסך העסקה</div>
+            `;
+            installmentsPreview.appendChild(chip);
+          });
+        });
+      } else {
+        const total = getGrandTotal();
+        items.forEach(item => {
+          const amount = (total * item.pct) / 100;
+          const chip = document.createElement('div');
+          chip.className = 'installment-chip';
+          chip.innerHTML = `
+            <div class="chip-label">${item.label}</div>
+            <div class="chip-amount">${formatCurrency(amount)}</div>
+            <div class="chip-pct">${item.pct}% מסך העסקה</div>
+          `;
+          installmentsPreview.appendChild(chip);
+        });
+      }
 
       installmentsPreview.classList.add('visible');
     }
@@ -5062,6 +5677,26 @@
         const el = document.getElementById(id);
         const amt = (total * pcts[i]) / 100;
         el.textContent = pcts[i] > 0 ? formatCurrency(amt) : '';
+      });
+    }
+
+    function updateCustomAmountsPerOption(optTotals) {
+      const pcts = [
+        parseFloat(document.getElementById('custom1').value) || 0,
+        parseFloat(document.getElementById('custom2').value) || 0,
+        parseFloat(document.getElementById('custom3').value) || 0,
+      ];
+      // Show per-option amounts
+      ['customAmt1', 'customAmt2', 'customAmt3'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (pcts[i] > 0) {
+          el.innerHTML = optTotals.map(({ option, total }) => {
+            const amt = (total * pcts[i]) / 100;
+            return `<span style="font-size:0.78rem;">אופציה ${option}: ${formatCurrency(amt)}</span>`;
+          }).join(' | ');
+        } else {
+          el.textContent = '';
+        }
       });
     }
 
@@ -5140,7 +5775,7 @@
         docType:            formData.get('docType'),
         projectDescription: projectDescription.trim(),
         serviceDetails:     (formData.get('serviceDetails') || '').trim(),
-        pricing:            pricingRows.map(r => ({ desc: r.desc, qty: r.qty, price: r.price })),
+        pricing:            pricingRows.map(r => ({ desc: r.desc, qty: r.qty, price: r.price, option: r.option || '' })),
         grandTotal:         getGrandTotal(),
         paymentTerms,
         timeline:           (formData.get('timeline') || '').trim(),
@@ -5212,6 +5847,21 @@
         generateBtn.classList.remove('loading');
         generateBtn.disabled = false;
       }
+    });
+
+    // ── Review Form button ──
+    const reviewFormBtn = document.getElementById('reviewFormBtn');
+    reviewFormBtn.addEventListener('click', async () => {
+      // Switch to chat tab
+      switchTab('chat');
+
+      // Build the review message
+      const reviewMsg = 'בדוק את הטופס לפני יצירת מסמך. דווח על:\n1. שדות חסרים או חובה\n2. סעיפים שנבחרו שלא רלוונטיים או סעיפים חסרים שכדאי להוסיף\n3. בעיות תמחור (מחיר נמוך/גבוה מדי, פריטים חסרים)\n4. בעיות בעברית (שגיאות, ניסוח לא מקצועי)\n\nחשוב: בסוף התשובה, חובה לכלול בלוק <!--FORM_UPDATE:{"actions":[...]}-->  עם כל התיקונים המומלצים כדי שאוכל ללחוץ "החל תיקונים" ולהחיל אותם ישירות.\nאל תכתוב מסמך — רק דווח על בעיות + FORM_UPDATE.';
+
+      // Wait a tick for tab switch to render, then inject into input and send
+      await new Promise(r => setTimeout(r, 50));
+      inputEl.value = reviewMsg;
+      sendMessage();
     });
 
     /* ══════════════════════════════════════
@@ -5448,9 +6098,10 @@
         projectDescription: d.projectDescription || '',
         serviceDetails:     d.serviceDetails || '',
         pricingItems:       (d.pricingItems || []).map(item => ({
-          desc:  item.desc  || item.description || '',
-          qty:   parseFloat(item.qty  || item.quantity || 1) || 1,
-          price: parseFloat(item.price || item.unitPrice || 0) || 0,
+          desc:   item.desc  || item.description || '',
+          qty:    parseFloat(item.qty  || item.quantity || 1) || 1,
+          price:  parseFloat(item.price || item.unitPrice || 0) || 0,
+          option: item.option || '',
         })),
         paymentStructure:   d.paymentStructure || 'two',
         timeline:           d.timeline || '',
@@ -5919,7 +6570,23 @@
                 if (msg.role === 'user') {
                   addMessage('user', typeof msg.content === 'string' ? msg.content : '(תמונה + טקסט)');
                 } else if (msg.role === 'assistant') {
-                  addMessage('assistant', msg.content);
+                  const msgObj = addMessage('assistant', msg.content.replace(/<!--(?:FORM_DATA|SAVE_CLAUSE|FORM_UPDATE):[\s\S]*?-->/g, ''));
+                  // Re-parse hidden blocks so action cards are restored
+                  const fuMatch = msg.content.match(/<!--FORM_UPDATE:([\s\S]*?)-->/);
+                  if (fuMatch && msgObj) {
+                    try {
+                      const ud = JSON.parse(fuMatch[1]);
+                      if (ud.actions && Array.isArray(ud.actions)) msgObj.addFormUpdateCard(ud.actions);
+                    } catch {}
+                  }
+                  const fdMatch = msg.content.match(/<!--FORM_DATA:([\s\S]*?)-->/);
+                  if (fdMatch && msgObj) {
+                    try { msgObj.addFillFormBtn(JSON.parse(fdMatch[1])); } catch {}
+                  }
+                  const scMatch = msg.content.match(/<!--SAVE_CLAUSE:([\s\S]*?)-->/);
+                  if (scMatch && msgObj) {
+                    try { msgObj.addSaveClauseBtn(JSON.parse(scMatch[1])); } catch {}
+                  }
                 }
               });
             } else {
@@ -5981,7 +6648,7 @@
         docType: formData.get('docType') || 'quote',
         projectDescription: formData.get('projectDescription') || '',
         serviceDetails: formData.get('serviceDetails') || '',
-        pricingItems: pricingRows.map(r => ({ desc: r.desc, qty: r.qty, price: r.price })),
+        pricingItems: pricingRows.map(r => ({ desc: r.desc, qty: r.qty, price: r.price, option: r.option || '' })),
         paymentStructure: formData.get('paymentStructure') || 'two',
         customInstallments: [
           parseFloat(formData.get('custom1')) || 0,
@@ -6009,9 +6676,10 @@
       let pricingItems = state.pricingItems;
       if (!pricingItems && state.pricingRows && state.pricingRows.length) {
         pricingItems = state.pricingRows.map(r => ({
-          desc: r.description || r.desc || '',
-          qty:  r.qty  || 1,
-          price: r.unitPrice != null ? r.unitPrice : (r.price || 0),
+          desc:   r.description || r.desc || '',
+          qty:    r.qty  || 1,
+          price:  r.unitPrice != null ? r.unitPrice : (r.price || 0),
+          option: r.option || '',
         }));
       }
 
@@ -6314,11 +6982,25 @@
     function updateTemplateSelector(serviceTemplates) {
       learnedTemplates = serviceTemplates;
 
-      // Keep built-in templates, remove old learned ones, add new
+      // Remove old learned options
       const options = templateSelect.querySelectorAll('option[data-learned]');
       options.forEach(o => o.remove());
 
-      serviceTemplates.forEach((tmpl) => {
+      // Deduplicate by normalized name, keep first (most complete) entry
+      const seen = new Set();
+      const unique = [];
+      for (const tmpl of serviceTemplates) {
+        const key = (tmpl.name || tmpl.type || '').trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        unique.push(tmpl);
+      }
+
+      // Sort alphabetically and limit
+      unique.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'));
+      const limited = unique.slice(0, 12);
+
+      limited.forEach((tmpl) => {
         const opt = document.createElement('option');
         opt.value = tmpl.type || tmpl.name || '';
         opt.textContent = tmpl.name || tmpl.type;
