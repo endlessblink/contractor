@@ -4684,8 +4684,8 @@
             const applyBtn = document.createElement('button');
             applyBtn.className = 'fu-apply-btn';
             applyBtn.textContent = 'החל';
-            applyBtn.addEventListener('click', () => {
-              applyFormUpdate(actions, new Set([index]));
+            applyBtn.addEventListener('click', async () => {
+              await applyFormUpdate(actions, new Set([index]));
               row.classList.add('applied');
               applyBtn.disabled = true;
               applyBtn.textContent = '✓';
@@ -4704,10 +4704,10 @@
           const applyAllBtn = document.createElement('button');
           applyAllBtn.className = 'form-update-apply-all';
           applyAllBtn.textContent = `החל הכל (${actions.length} תיקונים)`;
-          applyAllBtn.addEventListener('click', () => {
+          applyAllBtn.addEventListener('click', async () => {
             const remaining = new Set();
             actions.forEach((_, i) => { if (!appliedSet.has(i)) remaining.add(i); });
-            applyFormUpdate(actions, remaining);
+            await applyFormUpdate(actions, remaining);
             card.querySelectorAll('.form-update-row').forEach(r => r.classList.add('applied'));
             card.querySelectorAll('.fu-apply-btn').forEach(b => { b.disabled = true; b.textContent = '✓'; });
             applyAllBtn.disabled = true;
@@ -5381,7 +5381,7 @@
     }
 
     // ── Apply incremental form updates from AI ──
-    function applyFormUpdate(actions, filterIndices) {
+    async function applyFormUpdate(actions, filterIndices) {
       const clauseAdds = [];
       const clauseRemoves = [];
       const pendingClauseEdits = {};
@@ -5486,6 +5486,14 @@
       // Apply batched clause changes
       console.log('[applyFormUpdate] clause adds:', clauseAdds, 'removes:', clauseRemoves, 'edits:', Object.keys(pendingClauseEdits));
       if (clauseAdds.length || clauseRemoves.length || Object.keys(pendingClauseEdits).length) {
+        // Ensure clauses panel is rendered before trying to read/write checkboxes
+        const clauseItemsExist = document.querySelectorAll('.clause-item').length > 0;
+        if (!clausesDbCache || !clauseItemsExist) {
+          console.log('[applyFormUpdate] clauses not rendered yet — loading and rendering first');
+          if (typeof loadClausesForForm === 'function') await loadClausesForForm();
+          if (typeof renderClauseCategories === 'function') renderClauseCategories();
+        }
+
         const currentSelected = new Set();
         document.querySelectorAll('.clause-item input[type="checkbox"]:checked').forEach(cb => {
           currentSelected.add(cb.dataset.clauseId);
