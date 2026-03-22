@@ -287,52 +287,78 @@ export async function generateDocument(data) {
   // ── Pricing Table ──
   const pricingHeaderShading = { type: ShadingType.CLEAR, color: "auto", fill: LIGHT_BLUE };
 
-  // Calculate totals
-  const totalBeforeVat = pricingItems.reduce((sum, item) => {
-    return sum + (item.quantity || 1) * (item.unitPrice || 0);
-  }, 0);
-
   const formatPrice = (n) => n.toLocaleString("he-IL") + " ₪";
 
-  const pricingRows = pricingItems.map((item) => {
-    const total = (item.quantity || 1) * (item.unitPrice || 0);
-    return new TableRow({
-      children: [
-        makeCell(item.description || "", { width: { size: 45, type: WidthType.PERCENTAGE } }),
-        makeCell(String(item.quantity || 1), { width: { size: 15, type: WidthType.PERCENTAGE } }),
-        makeCell(formatPrice(item.unitPrice || 0), { width: { size: 20, type: WidthType.PERCENTAGE } }),
-        makeCell(formatPrice(total), { width: { size: 20, type: WidthType.PERCENTAGE } }),
+  /** Build item rows for an array of pricing items */
+  function buildPricingRows(items) {
+    return items.map((item) => {
+      const total = (item.quantity || 1) * (item.unitPrice || 0);
+      return new TableRow({
+        children: [
+          makeCell(item.description || "", { width: { size: 45, type: WidthType.PERCENTAGE } }),
+          makeCell(String(item.quantity || 1), { width: { size: 15, type: WidthType.PERCENTAGE } }),
+          makeCell(formatPrice(item.unitPrice || 0), { width: { size: 20, type: WidthType.PERCENTAGE } }),
+          makeCell(formatPrice(total), { width: { size: 20, type: WidthType.PERCENTAGE } }),
+        ],
+      });
+    });
+  }
+
+  /** Build a complete pricing table (header + rows + total row) */
+  function buildPricingTable(items) {
+    const subtotal = items.reduce((sum, item) => sum + (item.quantity || 1) * (item.unitPrice || 0), 0);
+    return new Table({
+      visuallyRightToLeft: true,
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
+      columnWidths: [4500, 1500, 2000, 2000],
+      rows: [
+        new TableRow({
+          children: [
+            makeCell("פירוט", { bold: true, shading: pricingHeaderShading, width: { size: 45, type: WidthType.PERCENTAGE } }),
+            makeCell("כמות", { bold: true, shading: pricingHeaderShading, width: { size: 15, type: WidthType.PERCENTAGE } }),
+            makeCell("מחיר ליחידה", { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
+            makeCell('סה"כ', { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
+          ],
+        }),
+        ...buildPricingRows(items),
+        new TableRow({
+          children: [
+            makeCell("", { width: { size: 45, type: WidthType.PERCENTAGE } }),
+            makeCell("", { width: { size: 15, type: WidthType.PERCENTAGE } }),
+            makeCell('סה"כ לפני מע"מ', { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
+            makeCell(formatPrice(subtotal), { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
+          ],
+        }),
       ],
     });
-  });
+  }
 
-  const pricingTable = new Table({
-    visuallyRightToLeft: true,
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    layout: TableLayoutType.FIXED,
-    columnWidths: [4500, 1500, 2000, 2000],
-    rows: [
-      // Header row
-      new TableRow({
-        children: [
-          makeCell("פירוט", { bold: true, shading: pricingHeaderShading, width: { size: 45, type: WidthType.PERCENTAGE } }),
-          makeCell("כמות", { bold: true, shading: pricingHeaderShading, width: { size: 15, type: WidthType.PERCENTAGE } }),
-          makeCell("מחיר ליחידה", { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
-          makeCell('סה"כ', { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
-        ],
-      }),
-      ...pricingRows,
-      // Total row
-      new TableRow({
-        children: [
-          makeCell("", { width: { size: 45, type: WidthType.PERCENTAGE } }),
-          makeCell("", { width: { size: 15, type: WidthType.PERCENTAGE } }),
-          makeCell('סה"כ לפני מע"מ', { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
-          makeCell(formatPrice(totalBeforeVat), { bold: true, shading: pricingHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
-        ],
-      }),
-    ],
-  });
+  // Detect whether any items carry an option field
+  const hasOptions = pricingItems.some(item => item.option != null && String(item.option).trim() !== "");
+
+  // For single-table path: calculate total for use in payment terms section below
+  const totalBeforeVat = hasOptions
+    ? 0  // not used when options are present
+    : pricingItems.reduce((sum, item) => sum + (item.quantity || 1) * (item.unitPrice || 0), 0);
+
+  // Pre-build option groups (used further down in the body-children section)
+  let sharedItems = [];
+  let optionGroups = {}; // { "1": [...], "2": [...] }
+  if (hasOptions) {
+    for (const item of pricingItems) {
+      const opt = item.option != null ? String(item.option).trim() : "";
+      if (opt === "") {
+        sharedItems.push(item);
+      } else {
+        if (!optionGroups[opt]) optionGroups[opt] = [];
+        optionGroups[opt].push(item);
+      }
+    }
+  }
+
+  // Single-table (no options) — built once here for use in the body section
+  const pricingTable = hasOptions ? null : buildPricingTable(pricingItems);
 
   // ── Signature Section ──
   function signatureCell(label) {
@@ -501,7 +527,45 @@ export async function generateDocument(data) {
   // Pricing section
   if (pricingItems.length > 0) {
     bodyChildren.push(sectionHeader("עלות"));
-    bodyChildren.push(pricingTable);
+
+    if (hasOptions) {
+      // Shared (non-option) items first, if any
+      if (sharedItems.length > 0) {
+        bodyChildren.push(buildPricingTable(sharedItems));
+        bodyChildren.push(rtlParagraph([rtlRun("")], { spacing: { after: 40 } }));
+      }
+
+      // One section per option
+      for (const [optKey, optItems] of Object.entries(optionGroups)) {
+        // Use the first item's description as subtitle if available
+        const firstDesc = optItems[0] && optItems[0].description ? optItems[0].description : "";
+        const optionLabel = firstDesc
+          ? `אופציה ${optKey} — ${firstDesc}`
+          : `אופציה ${optKey}`;
+
+        bodyChildren.push(
+          new Paragraph({
+            bidirectional: true,
+            spacing: { before: 200, after: 120 },
+            children: [
+              rtlRun(optionLabel, {
+                bold: true,
+                boldComplexScript: true,
+                size: "12pt",
+                sizeComplexScript: "12pt",
+              }),
+            ],
+          })
+        );
+
+        // Include shared items in this option's table so the subtotal is complete
+        const tableItems = [...sharedItems, ...optItems];
+        bodyChildren.push(buildPricingTable(tableItems));
+        bodyChildren.push(rtlParagraph([rtlRun("")], { spacing: { after: 40 } }));
+      }
+    } else {
+      bodyChildren.push(pricingTable);
+    }
   }
 
   // Payment terms section
