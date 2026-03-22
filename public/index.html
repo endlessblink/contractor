@@ -4705,16 +4705,23 @@
           applyAllBtn.className = 'form-update-apply-all';
           applyAllBtn.textContent = `החל הכל (${actions.length} תיקונים)`;
           applyAllBtn.addEventListener('click', async () => {
-            const remaining = new Set();
-            actions.forEach((_, i) => { if (!appliedSet.has(i)) remaining.add(i); });
-            await applyFormUpdate(actions, remaining);
-            card.querySelectorAll('.form-update-row').forEach(r => r.classList.add('applied'));
-            card.querySelectorAll('.fu-apply-btn').forEach(b => { b.disabled = true; b.textContent = '✓'; });
-            applyAllBtn.disabled = true;
-            applyAllBtn.textContent = '✓ הוחלו כל התיקונים';
-            actions.forEach((_, i) => appliedSet.add(i));
-            // Switch to form tab so user sees the changes
-            setTimeout(() => switchTab('create'), 300);
+            try {
+              console.log('[Apply All] starting, actions:', actions.length, 'already applied:', appliedSet.size);
+              const remaining = new Set();
+              actions.forEach((_, i) => { if (!appliedSet.has(i)) remaining.add(i); });
+              console.log('[Apply All] remaining:', remaining.size);
+              await applyFormUpdate(actions, remaining);
+              console.log('[Apply All] done');
+              card.querySelectorAll('.form-update-row').forEach(r => r.classList.add('applied'));
+              card.querySelectorAll('.fu-apply-btn').forEach(b => { b.disabled = true; b.textContent = '✓'; });
+              applyAllBtn.disabled = true;
+              applyAllBtn.textContent = '✓ הוחלו כל התיקונים';
+              actions.forEach((_, i) => appliedSet.add(i));
+              setTimeout(() => switchTab('create'), 300);
+            } catch (e) {
+              console.error('[Apply All] ERROR:', e);
+              alert('שגיאה בהחלת תיקונים: ' + e.message);
+            }
           });
           card.appendChild(applyAllBtn);
 
