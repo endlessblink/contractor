@@ -28,6 +28,7 @@
 | **TASK-019** | **Button design tokens** — replace !important overrides with proper CSS custom properties for buttons | **P2** | TODO |
 | **TASK-013** | **AI learns user preferences** — track patterns (no timelines, payment splits, clause removals). Store in user-preferences.json | **P2** | TODO |
 | **TASK-014** | **Font selector in profile** — font picker in settings, apply to DOCX generation | **P2** | TODO |
+| **TASK-020** | **Hub-page navigation** — Replace sidebar tree with object hubs: Clients list → Client hub (details + projects) → Project hub (3 doc-type cards + history) → Chat+Form for selected doc. Breadcrumb in header for navigation. Icon-only sidebar rail for top-level sections (Home, Clients, Projects, Docs, Settings). Most impactful UX change. | **P0** | TODO |
 | **TASK-005** | **Collapsible sidebar** — CSS ready, needs toggle button | **P3** | TODO |
 | **TASK-006** | **Extract hardcoded fixes into doc-skills** — parse-service-options, strip-bullet-prefix, extend split-sentences | **P3** | TODO |
 | **TASK-008** | **Onboarding flow** — doc scan primary, chat-driven fallback for new users | **P3** | TODO |
