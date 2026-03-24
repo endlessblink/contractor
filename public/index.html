@@ -9605,6 +9605,15 @@
           if (settingsOverlay) settingsOverlay.style.display = 'flex';
           return;
         }
+        if (view === 'docs') {
+          var docsOverlay = document.getElementById('docsModalOverlay');
+          if (docsOverlay) docsOverlay.classList.add('visible');
+          return;
+        }
+        if (view === 'projects') {
+          navigate('home'); // Home view shows all projects
+          return;
+        }
         navigate(view);
       });
     });
@@ -9655,7 +9664,7 @@
       }
     });
 
-    // ── Restore from URL or default to home ──
+    // ── Restore from URL, last active project, or default to home ──
     var urlParams = new URLSearchParams(window.location.search);
     var urlView = urlParams.get('view');
     if (urlView) {
@@ -9665,7 +9674,27 @@
         docType: urlParams.get('doc'),
       });
     } else {
-      navigate('home');
+      // Auto-resume: try to load the last active project directly into document view
+      (async function() {
+        try {
+          var projRes = await fetch('/api/projects').then(function(r) { return r.json(); });
+          var activeId = projRes.activeProjectId;
+          var projects = projRes.projects || [];
+          if (activeId && projects.some(function(p) { return p.id === activeId; })) {
+            var proj = projects.find(function(p) { return p.id === activeId; });
+            var docType = proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote';
+            navigate('document', { clientId: proj.clientId, projectId: activeId, docType: docType });
+          } else if (projects.length > 0) {
+            // No active project — show home with recent docs
+            navigate('home');
+          } else {
+            // No projects at all — show clients or home
+            navigate('home');
+          }
+        } catch(e) {
+          navigate('home');
+        }
+      })();
     }
 
     // Expose for external use
