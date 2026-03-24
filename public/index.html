@@ -1496,6 +1496,32 @@
     .clause-item.ai-medium { border-right: 3px solid #ffc107; }
     .clause-item.ai-low { opacity: 0.5; }
 
+    /* Smart clause filtering */
+    .clause-item.clause-hidden { display: none; }
+    .clause-category.all-hidden { display: none; }
+
+    .show-all-clauses-btn {
+      font-size: 0.78rem;
+      padding: 5px 12px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 150ms;
+      direction: rtl;
+    }
+    .show-all-clauses-btn:hover { border-color: var(--accent); color: var(--accent-text); }
+
+    .clause-filter-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
     .clause-recommend-summary {
       font-size: 0.82rem;
       color: var(--text-secondary);
@@ -3998,14 +4024,18 @@
               <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">
                 בחר את הסעיפים שיכללו במסמך. סעיפי חובה מסומנים אוטומטית.
               </p>
-              <button type="button" id="recommendClausesBtn" class="recommend-btn" style="font-size:0.8rem; padding:6px 12px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="23 4 23 10 17 10"></polyline>
-                  <polyline points="1 20 1 14 7 14"></polyline>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                </svg>
-                רענן המלצות
-              </button>
+              <div class="clause-filter-bar">
+                <button type="button" id="recommendClausesBtn" class="recommend-btn" style="font-size:0.8rem; padding:6px 12px; margin-bottom:0;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                  </svg>
+                  רענן המלצות
+                </button>
+                <button type="button" id="showAllClausesToggle" class="show-all-clauses-btn">הצג את כל הסעיפים</button>
+                <span id="clauseCounter" style="font-size:0.78rem; color:var(--text-muted); direction:rtl;"></span>
+              </div>
               <!-- Categories will be populated by JS -->
             </div>
           </div>
@@ -5804,6 +5834,46 @@
         }
       });
 
+      // Hide low-relevance clauses (unless user toggled "show all")
+      const showAll = localStorage.getItem('showAllClauses') === 'true';
+      if (!showAll) {
+        allItems.forEach(item => {
+          const cb = item.querySelector('input[type="checkbox"]');
+          const clauseId = cb?.dataset?.clauseId;
+          const score = scores[clauseId];
+          const isRequired = item.classList.contains('required');
+
+          if (isRequired || (score != null && score >= 40)) {
+            item.classList.remove('clause-hidden');
+          } else if (score != null && score < 40) {
+            item.classList.add('clause-hidden');
+          }
+          // If no score yet, keep visible
+        });
+
+        // Hide categories where all items are hidden
+        document.querySelectorAll('#clausesCategoriesContainer .clause-category').forEach(cat => {
+          const visible = cat.querySelectorAll('.clause-item:not(.clause-hidden)').length;
+          cat.classList.toggle('all-hidden', visible === 0);
+        });
+      }
+
+      // Update counter
+      const totalItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item').length;
+      const visibleItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item:not(.clause-hidden)').length;
+      updateClauseCounter(visibleItems, totalItems);
+
+      // Update show-all button text
+      const showAllBtn = document.getElementById('showAllClausesToggle');
+      if (showAllBtn) {
+        if (showAll) {
+          showAllBtn.textContent = 'הסתר סעיפים לא רלוונטיים';
+        } else {
+          const hiddenCount = totalItems - visibleItems;
+          showAllBtn.textContent = hiddenCount > 0 ? `הצג את כל הסעיפים (${totalItems})` : 'הצג את כל הסעיפים';
+        }
+      }
+
       // Show summary
       let summary = document.querySelector('.clause-recommend-summary');
       if (!summary) {
@@ -5814,6 +5884,14 @@
       }
       summary.textContent = `AI: ${highCount} סעיפים מומלצים | ${mediumCount} אפשריים | ${lowCount} לא רלוונטיים`;
       summary.classList.add('visible');
+    }
+
+    // Clause counter helper
+    function updateClauseCounter(visible, total) {
+      const counter = document.getElementById('clauseCounter');
+      if (counter) {
+        counter.textContent = `מוצגים ${visible} מתוך ${total} סעיפים`;
+      }
     }
 
     // Backward compat alias
@@ -5841,6 +5919,36 @@
       recommendClausesBtn.addEventListener('click', () => {
         lastRecommendHash = ''; // Force re-fetch
         triggerAutoRecommend();
+      });
+    }
+
+    // Show-all clauses toggle
+    const showAllClausesToggle = document.getElementById('showAllClausesToggle');
+    if (showAllClausesToggle) {
+      // Initialize button text from saved state
+      if (localStorage.getItem('showAllClauses') === 'true') {
+        showAllClausesToggle.textContent = 'הסתר סעיפים לא רלוונטיים';
+      }
+
+      showAllClausesToggle.addEventListener('click', () => {
+        const isShowingAll = localStorage.getItem('showAllClauses') === 'true';
+        localStorage.setItem('showAllClauses', isShowingAll ? 'false' : 'true');
+
+        if (!isShowingAll) {
+          // Show all — remove hidden classes
+          document.querySelectorAll('.clause-item.clause-hidden').forEach(el => el.classList.remove('clause-hidden'));
+          document.querySelectorAll('.clause-category.all-hidden').forEach(el => el.classList.remove('all-hidden'));
+          showAllClausesToggle.textContent = 'הסתר סעיפים לא רלוונטיים';
+          // Update counter to show all
+          const total = document.querySelectorAll('#clausesCategoriesContainer .clause-item').length;
+          updateClauseCounter(total, total);
+        } else {
+          // Re-apply filtering from stored recommendations
+          if (window._clauseRecommendations) {
+            applySmartRecommendations(window._clauseRecommendations);
+          }
+          showAllClausesToggle.textContent = 'הצג את כל הסעיפים';
+        }
       });
     }
 
@@ -6065,29 +6173,54 @@
       }
     }
 
-    // Auto-check relevant clauses when template is selected
+    // Auto-check relevant clauses when template is selected + filter visibility
     function autoCheckClausesForTemplate(serviceType) {
       if (!clausesDbCache || !clausesDbCache.serviceTemplates) return;
       const template = clausesDbCache.serviceTemplates.find(t => t.type === serviceType);
       if (!template || !template.relevantClauses) return;
 
       const relevantSet = new Set(template.relevantClauses);
+      const showAll = localStorage.getItem('showAllClauses') === 'true';
 
-      // Check all relevant clauses
+      // Check relevant clauses + filter visibility
       clausesCategoriesContainer.querySelectorAll('.clause-item input[type="checkbox"]').forEach(cb => {
-        if (relevantSet.has(cb.dataset.clauseId) || cb.closest('.clause-item').classList.contains('required')) {
+        const item = cb.closest('.clause-item');
+        const isRequired = item.classList.contains('required');
+        const isRelevant = relevantSet.has(cb.dataset.clauseId);
+
+        if (isRelevant || isRequired) {
           cb.checked = true;
+          item.classList.remove('clause-hidden');
+        } else if (!showAll) {
+          item.classList.add('clause-hidden');
         }
       });
 
-      // Update master toggles
+      // Update master toggles + hide empty categories
       clausesCategoriesContainer.querySelectorAll('.clause-category').forEach(catDiv => {
         const master = catDiv.querySelector('.category-toggle');
         const allInCat = catDiv.querySelectorAll('.clause-item input[type="checkbox"]');
         const allChecked = Array.from(allInCat).every(c => c.checked);
         master.checked = allChecked;
         master.indeterminate = !allChecked && Array.from(allInCat).some(c => c.checked);
+
+        if (!showAll) {
+          const visibleInCat = catDiv.querySelectorAll('.clause-item:not(.clause-hidden)').length;
+          catDiv.classList.toggle('all-hidden', visibleInCat === 0);
+        }
       });
+
+      // Update counter
+      const totalItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item').length;
+      const visibleItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item:not(.clause-hidden)').length;
+      updateClauseCounter(visibleItems, totalItems);
+
+      // Update show-all button
+      const showAllBtn = document.getElementById('showAllClausesToggle');
+      if (showAllBtn && !showAll) {
+        const hiddenCount = totalItems - visibleItems;
+        showAllBtn.textContent = hiddenCount > 0 ? `הצג את כל הסעיפים (${totalItems})` : 'הצג את כל הסעיפים';
+      }
     }
 
     // Get selected clause IDs
@@ -7611,10 +7744,10 @@
             timeline: tmpl.typicalTimeline || '',
             notes: (tmpl.settings && tmpl.settings.defaultNotes) || 'ההצעה בתוקף ל-30 יום מתאריך הנפקתה.\nהמחיר אינו כולל מע"מ.',
           });
-          // Trigger AI recommendation instead of static template clause check
+          // Immediately filter clauses based on template's relevant list
+          autoCheckClausesForTemplate(tmpl.type || val);
+          // Then trigger AI recommendation for refined scoring
           triggerAutoRecommend();
-          // Fallback: if AI fails, template's fixed clause list applies via autoCheckClausesForTemplate
-          // (kept as a function but not called here — AI takes priority)
           // Apply payment structure from settings
           if (tmpl.settings && tmpl.settings.paymentStructure) {
             paymentSelect.value = tmpl.settings.paymentStructure;
