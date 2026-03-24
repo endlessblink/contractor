@@ -23,7 +23,10 @@
 | **TASK-004** | **Sidebar client tree not showing** — renderSidebarTree() from stash not in current code. Clients exist in API but sidebar shows old project list | **P1** | TODO |
 | **TASK-003** | **Preview panel not functional** — togglePreview button exists but no preview modal/renderer wired. render-preview.mjs built but not connected | **P2** | TODO |
 | **TASK-009** | **Light mode polish** — clause text invisible (white on white), form sections wrong colors, chat bubbles unreadable | **P2** | TODO |
-| **TASK-016** | **"החל הכל" button still bright in some contexts** — global dark override misses dynamically-created buttons. Need to ensure ALL generated buttons follow outline style | **P2** | TODO |
+| ~~**TASK-016**~~ | ~~**Buttons bright in dark mode**~~ — replaced class-by-class override with universal wildcard selector for all accent buttons | **P2** | ✅ **DONE** |
+| **TASK-017** | **Client edit/delete** — add right-click or edit/delete buttons on client dropdown items. Currently no way to edit client details or delete a client from the UI. | **P2** | TODO |
+| **TASK-018** | **Stale form on client switch** — switching to a different client in sidebar still shows the previous project's form data. Should clear or load the new client's first project. | **P1** | TODO |
+| **TASK-019** | **Button design tokens** — replace all individual button styles with CSS custom properties (--btn-bg, --btn-color, --btn-border) so theme changes propagate everywhere automatically. Currently using !important overrides. | **P2** | TODO |
 | **TASK-013** | **AI learns user preferences** — track user patterns (no timelines, preferred payment split, clause removals). Store in user-preferences.json, inject into system prompt | **P2** | TODO |
 | **TASK-014** | **Font selector in profile** — add font picker to settings. Apply to generated DOCX. Options: Heebo, Noto Sans Hebrew, Assistant, Rubik | **P2** | TODO |
 | **TASK-005** | **Collapsible sidebar** — CSS added but no toggle button in the UI | **P3** | TODO |
