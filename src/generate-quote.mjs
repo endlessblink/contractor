@@ -161,15 +161,12 @@ function getDirectionHelpers(language = 'he') {
   return { isRTL, dirRun, dirParagraph };
 }
 
-/** Create a bullet-style paragraph (with bullet character) */
-function bulletParagraph(text) {
-  return rtlParagraph([
-    rtlRun("• ", {}),
-    rtlRun(text),
-  ], { spacing: { after: 80 } });
+/** Strip any leading bullet/dash characters from text */
+function stripBullet(text) {
+  return text.replace(/^[\u2022\u2023\u2043\u25E6•·‣\-–—]\s*/, '').trim();
 }
 
-/** Create a dash-style paragraph */
+/** Create a bullet-style paragraph using native DOCX numbering */
 function dashParagraph(text) {
   return new Paragraph({
     bidirectional: true,
@@ -177,7 +174,7 @@ function dashParagraph(text) {
     spacing: { after: 80 },
     alignment: AlignmentType.BOTH,
     numbering: { reference: "bullet-list", level: 0 },
-    children: [rtlRun(text)],
+    children: [rtlRun(stripBullet(text))],
   });
 }
 
