@@ -196,40 +196,42 @@
       --shadow-lg: 0 8px 24px rgba(0,0,0,0.45);
     }
 
-    /* Dark mode: all accent buttons become outline/ghost */
-    html.dark button[style*="background"],
-    html.dark .generate-btn,
+    /* ── BUTTON TOKEN: Dark mode — ALL accent/primary buttons → outline/ghost ── */
+    /* Universal catch: any button whose computed bg is accent-like gets converted */
+    html.dark .btn-primary,
+    html.dark [class*="generate"],
+    html.dark [class*="save-btn"],
+    html.dark [class*="apply"],
+    html.dark [class*="approve"],
+    html.dark [class*="learn-btn"],
+    html.dark [class*="analyze"],
+    html.dark [class*="review-form"],
     html.dark .send-btn,
-    html.dark .save-btn,
-    html.dark .review-form-btn,
-    html.dark .fu-apply-all-btn,
     html.dark .form-update-apply-all,
-    html.dark .fu-apply-btn,
-    html.dark .analyze-bar-btn,
-    html.dark .modal-fill-btn,
-    html.dark .extraction-approve,
-    html.dark .learn-btn,
-    html.dark .client-save-btn,
-    html.dark .preview-generate-btn {
+    html.dark .sidebar-doc-chip.active,
+    html.dark .settings-overlay button[style*="background"],
+    html.dark .client-form-actions .client-save-btn,
+    html.dark .confirm-ok-btn:not(.danger) {
       background: transparent !important;
       color: var(--accent) !important;
       border: 1.5px solid var(--accent) !important;
       box-shadow: none !important;
+      background-image: none !important;
     }
-    html.dark button[style*="background"]:hover,
-    html.dark .generate-btn:hover:not(:disabled),
+    html.dark .btn-primary:hover,
+    html.dark [class*="generate"]:hover:not(:disabled),
+    html.dark [class*="save-btn"]:hover,
+    html.dark [class*="apply"]:hover:not(:disabled),
+    html.dark [class*="approve"]:hover,
+    html.dark [class*="learn-btn"]:hover,
+    html.dark [class*="analyze"]:hover,
+    html.dark [class*="review-form"]:hover,
     html.dark .send-btn:hover:not(:disabled),
-    html.dark .save-btn:hover,
-    html.dark .review-form-btn:hover,
-    html.dark .fu-apply-all-btn:hover,
     html.dark .form-update-apply-all:hover,
-    html.dark .fu-apply-btn:hover,
-    html.dark .analyze-bar-btn:hover,
-    html.dark .modal-fill-btn:hover,
-    html.dark .extraction-approve:hover,
-    html.dark .learn-btn:hover,
-    html.dark .client-save-btn:hover,
-    html.dark .preview-generate-btn:hover {
+    html.dark .sidebar-doc-chip.active:hover,
+    html.dark .settings-overlay button[style*="background"]:hover,
+    html.dark .client-form-actions .client-save-btn:hover,
+    html.dark .confirm-ok-btn:not(.danger):hover {
       background: var(--accent-subtle) !important;
       box-shadow: 0 0 12px rgba(0,210,180,0.15) !important;
     }
@@ -2555,7 +2557,7 @@
     }
     .sidebar-doc-chip:hover { border-color: var(--accent); color: var(--text-primary); }
     .sidebar-doc-chip.exists { color: var(--accent-text); border-color: var(--accent-border); }
-    .sidebar-doc-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .sidebar-doc-chip.active { background: var(--accent-subtle); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
 
     .sidebar-project-empty {
       padding: 24px 16px; text-align: center; color: var(--text-muted);
