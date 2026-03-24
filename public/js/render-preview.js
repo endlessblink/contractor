@@ -125,19 +125,36 @@ var DocPreview = (() => {
     failMode: "graceful",
     run(ctx) {
       const data = ctx.data;
-      if (!data || !Array.isArray(data.pricingItems)) return ctx;
+      if (!data) return ctx;
       let count = 0;
-      for (const item of data.pricingItems) {
-        if (!item || typeof item.description !== "string") continue;
-        const original = item.description;
-        const stripped = original.replace(OPTION_PREFIX_RE, "").trim();
-        if (stripped !== original) {
-          item.description = stripped;
-          count++;
+      if (Array.isArray(data.pricingItems)) {
+        for (const item of data.pricingItems) {
+          if (!item || typeof item.description !== "string") continue;
+          const original = item.description;
+          const stripped = original.replace(OPTION_PREFIX_RE, "").trim();
+          if (stripped !== original) {
+            item.description = stripped;
+            count++;
+          }
         }
       }
-      if (count > 0) {
-        ctx.logs.push(`[strip-option-prefix] Stripped option prefix from ${count} pricing item(s)`);
+      if (typeof data.serviceDetails === "string" && data.serviceDetails) {
+        const optionCount = new Set(
+          (data.pricingItems || []).map((i) => i.option).filter(Boolean)
+        ).size;
+        if (optionCount <= 1) {
+          const lines = data.serviceDetails.split("\n");
+          const cleaned = lines.map((line) => line.replace(OPTION_PREFIX_RE, "").trim()).filter((line) => !/אופציו?ת.*לבחירה|יש לבחור|המחיר.*לאופציה הנבחרת/i.test(line));
+          const result = cleaned.join("\n");
+          if (result !== data.serviceDetails) {
+            data.serviceDetails = result;
+            count++;
+            ctx.logs.push(`[strip-option-prefix] Cleaned option labels from serviceDetails (single option)`);
+          }
+        }
+      }
+      if (count > 0 && !ctx.logs.some((l) => l.includes("serviceDetails"))) {
+        ctx.logs.push(`[strip-option-prefix] Stripped option prefix from ${count} item(s)`);
       }
       return ctx;
     }
