@@ -196,6 +196,44 @@
       --shadow-lg: 0 8px 24px rgba(0,0,0,0.45);
     }
 
+    /* Dark mode: all accent buttons become outline/ghost */
+    html.dark button[style*="background"],
+    html.dark .generate-btn,
+    html.dark .send-btn,
+    html.dark .save-btn,
+    html.dark .review-form-btn,
+    html.dark .fu-apply-all-btn,
+    html.dark .form-update-apply-all,
+    html.dark .fu-apply-btn,
+    html.dark .analyze-bar-btn,
+    html.dark .modal-fill-btn,
+    html.dark .extraction-approve,
+    html.dark .learn-btn,
+    html.dark .client-save-btn,
+    html.dark .preview-generate-btn {
+      background: transparent !important;
+      color: var(--accent) !important;
+      border: 1.5px solid var(--accent) !important;
+      box-shadow: none !important;
+    }
+    html.dark button[style*="background"]:hover,
+    html.dark .generate-btn:hover:not(:disabled),
+    html.dark .send-btn:hover:not(:disabled),
+    html.dark .save-btn:hover,
+    html.dark .review-form-btn:hover,
+    html.dark .fu-apply-all-btn:hover,
+    html.dark .form-update-apply-all:hover,
+    html.dark .fu-apply-btn:hover,
+    html.dark .analyze-bar-btn:hover,
+    html.dark .modal-fill-btn:hover,
+    html.dark .extraction-approve:hover,
+    html.dark .learn-btn:hover,
+    html.dark .client-save-btn:hover,
+    html.dark .preview-generate-btn:hover {
+      background: var(--accent-subtle) !important;
+      box-shadow: 0 0 12px rgba(0,210,180,0.15) !important;
+    }
+
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -3984,13 +4022,21 @@
               </span>
               <span class="save-btn-label">שמור</span>
             </button>
-            <button type="button" class="review-form-btn" id="reviewFormBtn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 11l3 3L22 4"></path>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-              </svg>
-              בדוק טופס
-            </button>
+            <div style="display:flex;gap:8px;">
+              <button type="button" class="review-form-btn" id="reviewFormBtn" style="flex:1;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 11l3 3L22 4"></path>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+                בדוק טופס
+              </button>
+              <button type="button" class="review-form-btn" id="togglePreview" style="flex:1;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                תצוגה מקדימה
+              </button>
+            </div>
             <button type="submit" class="generate-btn" id="generateBtn">
               <span class="btn-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -8146,6 +8192,17 @@
     const today = new Date();
     const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
     document.getElementById('documentDate').value = todayStr;
+
+    // Save form state before page unload (refresh/close)
+    window.addEventListener('beforeunload', () => {
+      if (currentProjectId) {
+        // Use sendBeacon for reliable save on unload
+        const state = getFormState();
+        const docType = state.docType || window._activeDocType || 'quote';
+        navigator.sendBeacon('/api/projects/' + currentProjectId + '/form',
+          new Blob([JSON.stringify({ formState: state, docType })], { type: 'application/json' }));
+      }
+    });
 
     // Load projects on page load
     loadProjects();
