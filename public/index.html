@@ -7306,6 +7306,9 @@
         await saveProjectForm();
       }
 
+      // Reset form before loading new project to avoid stale data showing
+      if (typeof resetForm === 'function') resetForm();
+
       currentProjectId = projectId || null;
 
       // Update UI
@@ -9026,9 +9029,65 @@
         const projCount = allProjects.filter(p => p.clientId === client.id).length;
         btn.className = 'sidebar-dropdown-item' + (selectedClientId === client.id ? ' active' : '');
         btn.innerHTML = '<strong>' + esc(client.name) + '</strong><span class="dd-company">' + esc(client.company || '') + (client.company ? ' \u00b7 ' : '') + projCount + ' פרויקטים</span>';
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
         btn.addEventListener('click', () => selectClient(client.id));
+
+        const actions = document.createElement('span');
+        actions.style.cssText = 'display:inline-flex;gap:4px;margin-inline-start:auto;';
+
+        const editBtn = document.createElement('button');
+        editBtn.innerHTML = '✎';
+        editBtn.title = 'ערוך';
+        editBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;';
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          editClient(client);
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.innerHTML = '✕';
+        delBtn.title = 'מחק';
+        delBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteClient(client);
+        });
+
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+        btn.appendChild(actions);
+
         clientListEl.appendChild(btn);
       }
+    }
+
+    async function editClient(client) {
+      const name = prompt('שם לקוח:', client.name);
+      if (!name) return;
+      const company = prompt('חברה:', client.company || '');
+      try {
+        const res = await fetch('/api/clients/' + client.id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, company }),
+        });
+        if (res.ok) {
+          await loadSidebarData();
+          if (selectedClientId === client.id) selectClient(client.id);
+        }
+      } catch (err) { console.error('Edit client error:', err); }
+    }
+
+    async function deleteClient(client) {
+      if (!confirm('למחוק את הלקוח "' + client.name + '"? הפרויקטים שלו לא יימחקו.')) return;
+      try {
+        const res = await fetch('/api/clients/' + client.id, { method: 'DELETE' });
+        if (res.ok) {
+          if (selectedClientId === client.id) selectClient(null);
+          await loadSidebarData();
+        }
+      } catch (err) { console.error('Delete client error:', err); }
     }
 
     function esc(s) { return (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -9094,11 +9153,11 @@
         item.innerHTML = html;
 
         // Click project -> load it
-        item.addEventListener('click', (e) => {
+        item.addEventListener('click', async (e) => {
           if (e.target.closest('.sidebar-doc-chip')) return;
-          if (typeof window._switchProject === 'function') {
-            window._switchProject(proj.id).then(() => renderProjects());
-          }
+          const sp = window._switchProject || switchProject;
+          if (typeof sp === 'function') await sp(proj.id);
+          renderProjects();
         });
 
         projectsEl.appendChild(item);
