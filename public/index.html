@@ -2492,7 +2492,85 @@
     .sidebar-link { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; background: none; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text-secondary); transition: all 0.15s; text-align: right; }
     .sidebar-link:hover { background: var(--accent-subtle); color: var(--accent-text); }
     .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
-    .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 1px solid var(--border); }
+    .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 1px solid var(--border); display: flex; gap: 4px; }
+
+    /* Client picker dropdown */
+    .sidebar-client-picker { position: relative; border-bottom: 1px solid var(--border); }
+    .sidebar-client-btn {
+      width: 100%; padding: 14px 16px; background: none; border: none;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; direction: rtl; gap: 8px; transition: background 150ms;
+    }
+    .sidebar-client-btn:hover { background: var(--elevated-bg); }
+    .sidebar-client-info { text-align: right; }
+    .sidebar-client-name { display: block; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+    .sidebar-client-company { display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+    .sidebar-chevron { width: 16px; height: 16px; color: var(--text-muted); transition: transform 200ms; flex-shrink: 0; }
+    .sidebar-client-picker.open .sidebar-chevron { transform: rotate(180deg); }
+
+    .sidebar-client-dropdown {
+      display: none; position: absolute; top: 100%; right: 0; left: 0;
+      background: var(--card-bg); border: 1px solid var(--border-strong);
+      border-radius: 0 0 8px 8px; z-index: 100; max-height: 300px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3); overflow: hidden;
+    }
+    .sidebar-client-picker.open .sidebar-client-dropdown { display: block; }
+
+    .sidebar-dropdown-search { padding: 8px; border-bottom: 1px solid var(--border); }
+    .sidebar-dropdown-search input {
+      width: 100%; padding: 6px 10px; background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; font-family: inherit; direction: rtl; box-sizing: border-box;
+    }
+    .sidebar-dropdown-list { max-height: 200px; overflow-y: auto; }
+    .sidebar-dropdown-item {
+      display: block; width: 100%; padding: 10px 14px; background: none; border: none;
+      cursor: pointer; direction: rtl; text-align: right; transition: background 150ms;
+      color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
+    }
+    .sidebar-dropdown-item:hover { background: var(--elevated-bg); }
+    .sidebar-dropdown-item.active { color: var(--accent-text); background: var(--accent-subtle); }
+    .sidebar-dropdown-item .dd-company { font-size: 0.72rem; color: var(--text-muted); display: block; }
+    .sidebar-dropdown-add {
+      display: block; width: 100%; padding: 10px 14px; background: none; border: none;
+      border-top: 1px solid var(--border); cursor: pointer; direction: rtl; text-align: right;
+      color: var(--accent-text); font-family: inherit; font-size: 0.82rem; font-weight: 500;
+    }
+    .sidebar-dropdown-add:hover { background: var(--accent-subtle); }
+
+    /* Project list */
+    .sidebar-projects { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .sidebar-project-item {
+      padding: 10px 16px; cursor: pointer; direction: rtl; transition: background 150ms;
+      border-radius: 4px; margin: 0 6px;
+    }
+    .sidebar-project-item:hover { background: var(--elevated-bg); }
+    .sidebar-project-item.active { background: var(--accent-subtle); border-right: 3px solid var(--accent); padding-right: 13px; }
+    .sidebar-project-name { font-size: 0.85rem; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-project-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+    .sidebar-doc-chips { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+    .sidebar-doc-chip {
+      font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; cursor: pointer;
+      background: var(--elevated-bg); color: var(--text-muted); border: 1px solid var(--border);
+      transition: all 150ms; font-family: inherit;
+    }
+    .sidebar-doc-chip:hover { border-color: var(--accent); color: var(--text-primary); }
+    .sidebar-doc-chip.exists { color: var(--accent-text); border-color: var(--accent-border); }
+    .sidebar-doc-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .sidebar-project-empty {
+      padding: 24px 16px; text-align: center; color: var(--text-muted);
+      font-size: 0.82rem; direction: rtl;
+    }
+
+    /* Sidebar actions */
+    .sidebar-actions { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+    .sidebar-actions button {
+      width: 100%; padding: 8px 12px; background: var(--elevated-bg); border: 1px solid var(--border);
+      border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-family: inherit;
+      color: var(--text-primary); direction: rtl; text-align: right; transition: all 150ms;
+    }
+    .sidebar-actions button:hover { border-color: var(--accent-border); color: var(--accent-text); background: var(--accent-subtle); }
+
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 19; }
     .sidebar-toggle { display: none; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 6px; border-radius: 6px; }
     .sidebar-toggle svg { width: 20px; height: 20px; }
@@ -3577,40 +3655,48 @@
         <button class="sidebar-close" id="sidebarClose">&times;</button>
       </div>
 
-      <div class="sidebar-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
-        <div class="sidebar-section-header">
-          <span>פרויקטים</span>
-          <button class="sidebar-action-btn" id="sidebarNewProject">+ חדש</button>
-        </div>
-        <div class="sidebar-search">
-          <input type="text" id="sidebarProjectSearch" placeholder="חיפוש..." dir="rtl">
-        </div>
-        <div class="sidebar-project-list" id="sidebarProjectList">
-          <div class="sidebar-project-none">אין פרויקטים עדיין</div>
+      <!-- Client Dropdown -->
+      <div class="sidebar-client-picker" id="sidebarClientPicker">
+        <button class="sidebar-client-btn" id="sidebarClientBtn">
+          <div class="sidebar-client-info">
+            <span class="sidebar-client-name" id="sidebarClientName">כל הלקוחות</span>
+            <span class="sidebar-client-company" id="sidebarClientCompany"></span>
+          </div>
+          <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="sidebar-client-dropdown" id="sidebarClientDropdown">
+          <div class="sidebar-dropdown-search">
+            <input type="text" id="sidebarClientSearch" placeholder="חיפוש לקוח..." dir="rtl">
+          </div>
+          <div class="sidebar-dropdown-list" id="sidebarClientList"></div>
+          <button class="sidebar-dropdown-add" id="sidebarAddClient">+ לקוח חדש</button>
         </div>
       </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-section-header">סוג מסמך</div>
-        <div class="sidebar-doc-types" id="sidebarDocTypes"></div>
+      <!-- Search projects -->
+      <div class="sidebar-search">
+        <input type="text" id="sidebarProjectSearch" placeholder="חיפוש פרויקטים..." dir="rtl">
       </div>
 
-      <div class="sidebar-section sidebar-links">
+      <!-- Project list -->
+      <div class="sidebar-projects" id="sidebarProjects"></div>
+
+      <!-- Actions -->
+      <div class="sidebar-actions">
+        <button id="sidebarNewProject">+ פרויקט חדש</button>
+        <button id="sidebarManageClients">כל הלקוחות</button>
+      </div>
+
+      <!-- Footer links -->
+      <div class="sidebar-footer">
         <button class="sidebar-link" id="sidebarKnowledge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           בסיס ידע
         </button>
         <button class="sidebar-link" id="sidebarSettings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           הגדרות
         </button>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="autosave-indicator" id="sidebarAutosave" style="display:none">
-          <span class="autosave-dot"></span>
-          <span class="autosave-text">נשמר</span>
-        </div>
       </div>
     </div>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -7449,6 +7535,8 @@
     }
     // Expose for sidebar access
     window._resetForm = resetForm;
+    window._switchProject = switchProject;
+    Object.defineProperty(window, '_currentProjectId', { get() { return currentProjectId; } });
 
     // ── Auto-save helpers ──
     function showAutosave(text) {
@@ -8827,13 +8915,6 @@
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const sidebarClose = document.getElementById('sidebarClose');
     const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebarProjectList = document.getElementById('sidebarProjectList');
-    const sidebarProjectSearch = document.getElementById('sidebarProjectSearch');
-    const sidebarNewProject = document.getElementById('sidebarNewProject');
-    const sidebarDocTypes = document.getElementById('sidebarDocTypes');
-    const sidebarKnowledge = document.getElementById('sidebarKnowledge');
-    const sidebarSettings = document.getElementById('sidebarSettings');
-    const sidebarAutosave = document.getElementById('sidebarAutosave');
 
     if (!sidebar) return;
 
@@ -8845,144 +8926,10 @@
     if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
     if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
 
-    // ── Projects in sidebar ──
-    async function loadSidebarProjects() {
-      try {
-        const res = await fetch('/api/projects');
-        const data = await res.json();
-        const projects = data.projects || [];
-        const activeId = data.activeProjectId;
-
-        if (projects.length === 0) {
-          sidebarProjectList.innerHTML = '<div class="sidebar-project-none">אין פרויקטים עדיין</div>';
-          return;
-        }
-
-        const searchTerm = (sidebarProjectSearch.value || '').toLowerCase();
-        const filtered = searchTerm
-          ? projects.filter(p => (p.name || '').toLowerCase().includes(searchTerm))
-          : projects;
-
-        sidebarProjectList.innerHTML = '';
-        for (const p of filtered) {
-          const card = document.createElement('div');
-          card.className = 'sidebar-project-card' + (p.id === activeId ? ' active' : '');
-          card.dataset.projectId = p.id;
-          const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('he-IL') : '';
-          card.innerHTML = '<div class="sidebar-project-name">' + (p.name || 'ללא שם') + '</div>' +
-            '<div class="sidebar-project-meta">' + date + '</div>';
-          card.addEventListener('click', async () => {
-            try {
-              await fetch('/api/projects/active', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ projectId: p.id }),
-              });
-              location.reload();
-            } catch {}
-          });
-          sidebarProjectList.appendChild(card);
-        }
-      } catch {}
-    }
-
-    // Search projects
-    if (sidebarProjectSearch) {
-      sidebarProjectSearch.addEventListener('input', loadSidebarProjects);
-    }
-
-    // New project button
-    if (sidebarNewProject) {
-      sidebarNewProject.addEventListener('click', async () => {
-        const name = prompt('שם פרויקט חדש:');
-        if (!name) return;
-        try {
-          const res = await fetch('/api/projects', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name }),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            await fetch('/api/projects/active', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ projectId: data.id }),
-            });
-            location.reload();
-          }
-        } catch {}
-      });
-    }
-
-    // ── Document types in sidebar ──
-    async function loadSidebarDocTypes() {
-      try {
-        const res = await fetch('/api/document-types');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!data.types || data.types.length === 0) return;
-
-        const docTypeSelect = document.querySelector('[name="docType"]');
-        const currentValue = docTypeSelect ? docTypeSelect.value : 'quote';
-
-        sidebarDocTypes.innerHTML = '';
-        for (const type of data.types) {
-          const btn = document.createElement('button');
-          btn.className = 'sidebar-doc-type-btn';
-          const value = type.id === 'workOrder' ? 'order' : type.id;
-          btn.dataset.type = value;
-          btn.textContent = typeof type.name === 'object' ? (type.name.he || type.name.en) : type.name;
-          if (value === currentValue) btn.classList.add('active');
-
-          btn.addEventListener('click', () => {
-            const previousDocType = window._activeDocType || 'quote';
-
-            if (previousDocType !== value && currentProjectId) {
-              // Save current state to its slot before switching
-              window._projectFormStates[previousDocType] = getFormState();
-              saveProjectForm(); // fire-and-forget save to server
-            }
-
-            // Load saved state for target type, or reset to empty
-            const targetState = window._projectFormStates[value];
-            if (targetState) {
-              restoreFormState({ ...targetState, docType: value });
-            } else {
-              // No saved state — reset form to empty state
-              if (typeof window._resetForm === 'function') window._resetForm();
-            }
-
-            window._activeDocType = value;
-
-            // Set the document type
-            if (docTypeSelect) {
-              docTypeSelect.value = value;
-              docTypeSelect.dispatchEvent(new Event('change'));
-            }
-            // Update sidebar active state
-            sidebarDocTypes.querySelectorAll('.sidebar-doc-type-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            // Switch to create tab
-            const createTab = document.querySelector('.tab-btn[data-tab="create"]');
-            if (createTab) createTab.click();
-          });
-
-          sidebarDocTypes.appendChild(btn);
-        }
-
-        // Sync: when form select changes, update sidebar
-        if (docTypeSelect) {
-          docTypeSelect.addEventListener('change', () => {
-            sidebarDocTypes.querySelectorAll('.sidebar-doc-type-btn').forEach(b => {
-              b.classList.toggle('active', b.dataset.type === docTypeSelect.value);
-            });
-          });
-        }
-      } catch {}
-    }
-
     // ── Quick links ──
+    const sidebarKnowledge = document.getElementById('sidebarKnowledge');
+    const sidebarSettings = document.getElementById('sidebarSettings');
+
     if (sidebarKnowledge) {
       sidebarKnowledge.addEventListener('click', () => {
         const docsTab = document.querySelector('.tab-btn[data-tab="docs"]');
@@ -9002,20 +8949,245 @@
         closeSidebar();
       });
     }
+  })();
 
-    // ── Mirror autosave indicator ──
-    const origAutosave = document.getElementById('autosaveIndicator');
-    if (origAutosave && sidebarAutosave) {
-      const observer = new MutationObserver(() => {
-        sidebarAutosave.style.display = origAutosave.style.display || '';
-        sidebarAutosave.innerHTML = origAutosave.innerHTML;
-      });
-      observer.observe(origAutosave, { attributes: true, childList: true, subtree: true });
+  // ═══════════════════════════════════════
+  // SIDEBAR: Client Dropdown + Project List
+  // ═══════════════════════════════════════
+  (function() {
+    let allClients = [];
+    let allProjects = [];
+    let selectedClientId = null; // null = show all
+
+    const clientBtn = document.getElementById('sidebarClientBtn');
+    const clientPicker = document.getElementById('sidebarClientPicker');
+    const clientNameEl = document.getElementById('sidebarClientName');
+    const clientCompanyEl = document.getElementById('sidebarClientCompany');
+    const clientListEl = document.getElementById('sidebarClientList');
+    const clientSearchEl = document.getElementById('sidebarClientSearch');
+    const projectSearchEl = document.getElementById('sidebarProjectSearch');
+    const projectsEl = document.getElementById('sidebarProjects');
+    const addClientBtn = document.getElementById('sidebarAddClient');
+    const newProjectBtn = document.getElementById('sidebarNewProject');
+    const manageClientsBtn = document.getElementById('sidebarManageClients');
+
+    // Toggle dropdown
+    if (clientBtn) clientBtn.addEventListener('click', () => {
+      clientPicker.classList.toggle('open');
+      if (clientPicker.classList.contains('open') && clientSearchEl) {
+        setTimeout(() => clientSearchEl.focus(), 50);
+      }
+    });
+
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+      if (clientPicker && !clientPicker.contains(e.target)) {
+        clientPicker.classList.remove('open');
+      }
+    });
+
+    // Load all data
+    async function loadSidebarData() {
+      try {
+        const [clientsRes, projectsRes] = await Promise.all([
+          fetch('/api/clients').then(r => r.json()),
+          fetch('/api/projects').then(r => r.json()),
+        ]);
+        allClients = clientsRes.clients || [];
+        allProjects = projectsRes.projects || [];
+        renderClientDropdown();
+        renderProjects();
+      } catch (err) {
+        console.error('Sidebar load error:', err);
+      }
     }
 
-    // ── Init ──
-    loadSidebarProjects();
-    loadSidebarDocTypes();
+    // Render client dropdown list
+    function renderClientDropdown(filter) {
+      if (!clientListEl) return;
+      filter = filter || '';
+      const filtered = filter
+        ? allClients.filter(c => (c.name || '').includes(filter) || (c.company || '').includes(filter))
+        : allClients;
+
+      clientListEl.innerHTML = '';
+
+      // "All clients" option
+      const allBtn = document.createElement('button');
+      allBtn.className = 'sidebar-dropdown-item' + (selectedClientId === null ? ' active' : '');
+      allBtn.innerHTML = '<strong>כל הלקוחות</strong><span class="dd-company">' + allProjects.length + ' פרויקטים</span>';
+      allBtn.addEventListener('click', () => selectClient(null));
+      clientListEl.appendChild(allBtn);
+
+      for (const client of filtered) {
+        const btn = document.createElement('button');
+        const projCount = allProjects.filter(p => p.clientId === client.id).length;
+        btn.className = 'sidebar-dropdown-item' + (selectedClientId === client.id ? ' active' : '');
+        btn.innerHTML = '<strong>' + esc(client.name) + '</strong><span class="dd-company">' + esc(client.company || '') + (client.company ? ' \u00b7 ' : '') + projCount + ' פרויקטים</span>';
+        btn.addEventListener('click', () => selectClient(client.id));
+        clientListEl.appendChild(btn);
+      }
+    }
+
+    function esc(s) { return (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    // Select a client
+    function selectClient(clientId) {
+      selectedClientId = clientId;
+      if (clientId === null) {
+        clientNameEl.textContent = 'כל הלקוחות';
+        clientCompanyEl.textContent = allProjects.length + ' פרויקטים';
+      } else {
+        const client = allClients.find(c => c.id === clientId);
+        clientNameEl.textContent = client ? client.name : '';
+        clientCompanyEl.textContent = client ? (client.company || '') : '';
+      }
+      clientPicker.classList.remove('open');
+      renderProjects();
+    }
+
+    // Render project list
+    function renderProjects(filter) {
+      if (!projectsEl) return;
+      filter = filter || '';
+      const currentProjectId = window._currentProjectId;
+      let projects = selectedClientId === null
+        ? allProjects
+        : allProjects.filter(p => p.clientId === selectedClientId);
+
+      if (filter) {
+        projects = projects.filter(p => (p.name || '').includes(filter) || (p.clientName || '').includes(filter));
+      }
+
+      projectsEl.innerHTML = '';
+
+      if (projects.length === 0) {
+        projectsEl.innerHTML = '<div class="sidebar-project-empty">\u05D0\u05D9\u05DF \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD' + (selectedClientId ? ' \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D6\u05D4' : '') + '</div>';
+        return;
+      }
+
+      var docTypeLabels = { quote: '\u05D4\u05E6\u05E2\u05D4', contract: '\u05D7\u05D5\u05D6\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05D4' };
+
+      for (const proj of projects) {
+        const item = document.createElement('div');
+        item.className = 'sidebar-project-item' + (proj.id === currentProjectId ? ' active' : '');
+
+        var html = '<div class="sidebar-project-name">' + esc(proj.name || '\u05DC\u05DC\u05D0 \u05E9\u05DD') + '</div>';
+
+        // Show client name when viewing all clients
+        if (selectedClientId === null && proj.clientName) {
+          html += '<div class="sidebar-project-meta">' + esc(proj.clientName) + '</div>';
+        }
+
+        // Doc type chips
+        var docTypes = proj.docTypes || (proj.docType ? [proj.docType] : []);
+        html += '<div class="sidebar-doc-chips">';
+        for (var dtKey of ['quote', 'contract', 'order']) {
+          var exists = docTypes.includes(dtKey);
+          var isActive = proj.id === currentProjectId && window._activeDocType === dtKey;
+          html += '<span class="sidebar-doc-chip' + (exists ? ' exists' : '') + (isActive ? ' active' : '') + '" data-project="' + proj.id + '" data-doctype="' + dtKey + '">' + docTypeLabels[dtKey] + (exists ? '\u2713' : '') + '</span>';
+        }
+        html += '</div>';
+
+        item.innerHTML = html;
+
+        // Click project -> load it
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.sidebar-doc-chip')) return;
+          if (typeof window._switchProject === 'function') {
+            window._switchProject(proj.id).then(() => renderProjects());
+          }
+        });
+
+        projectsEl.appendChild(item);
+      }
+
+      // Wire doc chip clicks
+      projectsEl.querySelectorAll('.sidebar-doc-chip').forEach(chip => {
+        chip.addEventListener('click', async () => {
+          var projId = chip.dataset.project;
+          var docType = chip.dataset.doctype;
+          if (typeof window._switchProject === 'function') await window._switchProject(projId);
+          // Switch doc type
+          var docTypeSelect = document.querySelector('[name="docType"]');
+          if (docTypeSelect) {
+            docTypeSelect.value = docType;
+            docTypeSelect.dispatchEvent(new Event('change'));
+          }
+          renderProjects();
+        });
+      });
+    }
+
+    // Search listeners
+    if (clientSearchEl) {
+      clientSearchEl.addEventListener('input', () => renderClientDropdown(clientSearchEl.value));
+    }
+    if (projectSearchEl) {
+      var searchTimer;
+      projectSearchEl.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => renderProjects(projectSearchEl.value), 200);
+      });
+    }
+
+    // New project button
+    if (newProjectBtn) {
+      newProjectBtn.addEventListener('click', async () => {
+        var name = prompt('\u05E9\u05DD \u05D4\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8:');
+        if (!name) return;
+        try {
+          var body = { name: name };
+          if (selectedClientId) body.clientId = selectedClientId;
+          var res = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          if (res.ok) {
+            var proj = await res.json();
+            if (typeof window._switchProject === 'function') await window._switchProject(proj.id);
+            await loadSidebarData();
+          }
+        } catch (err) { console.error('Create project error:', err); }
+      });
+    }
+
+    // Manage clients button
+    if (manageClientsBtn) {
+      manageClientsBtn.addEventListener('click', () => {
+        var settingsBtn = document.getElementById('sidebarSettings');
+        if (settingsBtn) settingsBtn.click();
+      });
+    }
+
+    // Add client button
+    if (addClientBtn) {
+      addClientBtn.addEventListener('click', async () => {
+        var name = prompt('\u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7:');
+        if (!name) return;
+        var company = prompt('\u05D7\u05D1\u05E8\u05D4 (\u05D0\u05D5\u05E4\u05E6\u05D9\u05D5\u05E0\u05DC\u05D9):') || '';
+        try {
+          var res = await fetch('/api/clients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, company: company }),
+          });
+          if (res.ok) {
+            var client = await res.json();
+            await loadSidebarData();
+            selectClient(client.id);
+          }
+        } catch (err) { console.error('Create client error:', err); }
+      });
+    }
+
+    // Expose for external calls
+    window._loadSidebarData = loadSidebarData;
+    window._renderSidebarProjects = renderProjects;
+
+    // Initial load
+    loadSidebarData();
   })();
 
   // ═══════════════════════════════════════
