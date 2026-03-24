@@ -9092,8 +9092,8 @@
 
     function esc(s) { return (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-    // Select a client
-    function selectClient(clientId) {
+    // Select a client — loads their most recent project (or clears form if none)
+    async function selectClient(clientId) {
       selectedClientId = clientId;
       if (clientId === null) {
         clientNameEl.textContent = 'כל הלקוחות';
@@ -9105,6 +9105,22 @@
       }
       clientPicker.classList.remove('open');
       renderProjects();
+
+      // Auto-load this client's most recent project (or clear if none)
+      const clientProjects = clientId === null
+        ? allProjects
+        : allProjects.filter(p => p.clientId === clientId);
+
+      const sp = window._switchProject;
+      if (sp) {
+        if (clientProjects.length > 0) {
+          const sorted = [...clientProjects].sort((a, b) => (b.lastModified || '').localeCompare(a.lastModified || ''));
+          await sp(sorted[0].id);
+        } else {
+          await sp(null); // clears form + chat
+        }
+        renderProjects(); // re-render active state
+      }
     }
 
     // Render project list
