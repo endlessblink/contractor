@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-03-14T00:00:00.000Z",
-  "updatedAt": "2026-03-22T12:39:14.568Z",
+  "updatedAt": "2026-03-24T15:04:21.905Z",
   "source": "extracted from reference documents",
   "clauses": {
     "paymentTerms": {
@@ -745,6 +745,15 @@
           ],
           "required": false,
           "notes": "Feedback window for AI-generated media projects"
+        },
+        {
+          "id": "revisions-two-stage-client-approval",
+          "text": "העבודה כוללת שני שלבי תיקונים:\n\nשלב א׳ — מול הלקוח הישיר: 1–2 סבבי תיקונים על בסיס צ׳קליסט קריטריונים מוסכם מראש (לדוגמה: תנועה, אווירת קיץ וכו׳). תמונה תיחשב מאושרת לאחר עמידה בכל הקריטריונים. בקשות לתיקונים מעבר לכך יחויבו בתעריף של 185 ₪ לשעה, לפני מע\"מ.\n\nשלב ב׳ — מול לקוח הקצה: 1–2 שינויים לכל תמונה — כלולים במחיר. בקשות לשינויים מעבר לכך יחויבו בתעריף של 185 ₪ לשעה, לפני מע\"מ.",
+          "appliesTo": [
+            "contract",
+            "workOrder"
+          ],
+          "required": false
         }
       ]
     },

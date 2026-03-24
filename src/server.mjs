@@ -53,7 +53,6 @@ const UPLOADS_DIR = IS_PKG ? resolveData('uploads') : join(PROJECT_DIR, 'uploads
 mkdirSync(join(DATA_DIR, 'knowledge', 'pending-extractions'), { recursive: true });
 mkdirSync(join(DATA_DIR, 'references'), { recursive: true });
 mkdirSync(join(DATA_DIR, 'projects'), { recursive: true });
-
 // New data-based paths with fallback to old locations (dev mode only)
 // When running as pkg, always use DATA_DIR paths — snapshot is read-only
 const REFERENCES_DIR = IS_PKG
@@ -233,6 +232,78 @@ try {
   learnedContext = JSON.parse(ctx);
   console.log(`Loaded learned context: ${learnedContext.documentsAnalyzed} documents analyzed`);
 } catch { /* no learned context yet */ }
+
+// ─── Load clients database on startup ─────────────────────────────────────────
+const CLIENTS_PATH = join(DATA_DIR, 'clients.json');
+let clientsDb = { clients: [] };
+try {
+  const raw = readFileSync(CLIENTS_PATH, 'utf-8');
+  clientsDb = JSON.parse(raw);
+  console.log(`Loaded clients DB: ${clientsDb.clients.length} clients`);
+} catch {
+  // First run — create empty clients file
+  writeFileSync(CLIENTS_PATH, JSON.stringify({ clients: [] }, null, 2), 'utf-8');
+}
+
+// ─── Client helper functions ──────────────────────────────────────────────────
+
+function loadClients() {
+  try {
+    const raw = readFileSync(CLIENTS_PATH, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return { clients: [] };
+  }
+}
+
+function saveClients(clientsData) {
+  writeFileSync(CLIENTS_PATH, JSON.stringify(clientsData, null, 2), 'utf-8');
+  clientsDb = clientsData;
+}
+
+function generateClientId(name) {
+  const slug = (name || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[\s]+/g, '-')
+    .replace(/[^\w\u0590-\u05ff-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return slug || `client-${Date.now()}`;
+}
+
+function fuzzyMatchClient(name, clients) {
+  if (!name || !clients || clients.length === 0) return [];
+  const normalized = name.trim().toLowerCase();
+
+  const matches = clients
+    .map(client => {
+      const clientName = (client.name || '').trim().toLowerCase();
+      // Exact match
+      if (clientName === normalized) {
+        return { ...client, score: 100 };
+      }
+      // Contains match (either direction)
+      if (clientName.includes(normalized) || normalized.includes(clientName)) {
+        return { ...client, score: 80 };
+      }
+      // Simple character overlap
+      const nameChars = new Set(normalized.replace(/[\s-]/g, '').split(''));
+      const clientChars = new Set(clientName.replace(/[\s-]/g, '').split(''));
+      const allChars = new Set([...nameChars, ...clientChars]);
+      const commonChars = [...nameChars].filter(c => clientChars.has(c)).length;
+      const overlap = allChars.size > 0 ? commonChars / allChars.size : 0;
+      if (overlap > 0.7) {
+        return { ...client, score: 60 };
+      }
+      return null;
+    })
+    .filter(m => m !== null && m.score >= 50)
+    .sort((a, b) => b.score - a.score);
+
+  return matches;
+}
 
 const app = express();
 const PORT = process.env.PORT || 6831;
@@ -990,6 +1061,199 @@ app.post('/api/extractions/:id/reject', (req, res) => {
   }
 });
 
+// ─── Client CRUD endpoints ────────────────────────────────────────────────────
+
+app.get('/api/clients', (_req, res) => {
+  try {
+    const data = loadClients();
+    data.clients.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'));
+    res.json(data);
+  } catch (err) {
+    console.error('Error reading clients:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/clients', (req, res) => {
+  try {
+    const { name, company, contactName, email, phone, notes, defaultPaymentStructure } = req.body;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'Client name is required' });
+    }
+
+    const data = loadClients();
+    const id = generateClientId(name);
+
+    // Check for duplicate ID
+    if (data.clients.find(c => c.id === id)) {
+      return res.status(409).json({ error: 'Client with this name already exists' });
+    }
+
+    const now = new Date().toISOString();
+    const client = {
+      id,
+      name: name.trim(),
+      company: company || '',
+      contactName: contactName || '',
+      email: email || '',
+      phone: phone || '',
+      notes: notes || '',
+      defaultPaymentStructure: defaultPaymentStructure || '',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    data.clients.push(client);
+    saveClients(data);
+
+    res.status(201).json(client);
+  } catch (err) {
+    console.error('Error creating client:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET match must be before /:id to avoid Express matching "match" as an id param
+app.get('/api/clients/match', (req, res) => {
+  try {
+    const q = (req.query.q || '').trim().toLowerCase();
+    if (!q) return res.json({ clients: [] });
+    const data = loadClients();
+    const matches = data.clients.filter(c =>
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.company || '').toLowerCase().includes(q)
+    ).slice(0, 10).map(c => ({ id: c.id, name: c.name, company: c.company }));
+    res.json({ clients: matches });
+  } catch (err) {
+    console.error('Error matching clients:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/clients/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid client ID' });
+    }
+
+    const data = loadClients();
+    const client = data.clients.find(c => c.id === id);
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+
+    // Include linked projects
+    const index = readIndex();
+    const projects = index.projects.filter(p => p.clientId === id);
+
+    res.json({ ...client, projects });
+  } catch (err) {
+    console.error('Error reading client:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/clients/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid client ID' });
+    }
+
+    const data = loadClients();
+    const idx = data.clients.findIndex(c => c.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+
+    const { name, company, contactName, email, phone, notes, defaultPaymentStructure } = req.body;
+    const existing = data.clients[idx];
+
+    data.clients[idx] = {
+      ...existing,
+      name: name !== undefined ? name.trim() : existing.name,
+      company: company !== undefined ? company : existing.company,
+      contactName: contactName !== undefined ? contactName : existing.contactName,
+      email: email !== undefined ? email : existing.email,
+      phone: phone !== undefined ? phone : existing.phone,
+      notes: notes !== undefined ? notes : existing.notes,
+      defaultPaymentStructure: defaultPaymentStructure !== undefined ? defaultPaymentStructure : existing.defaultPaymentStructure,
+      updatedAt: new Date().toISOString(),
+    };
+
+    saveClients(data);
+    res.json(data.clients[idx]);
+  } catch (err) {
+    console.error('Error updating client:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/clients/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid client ID' });
+    }
+
+    const data = loadClients();
+    const idx = data.clients.findIndex(c => c.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+
+    data.clients.splice(idx, 1);
+    saveClients(data);
+
+    // Unlink projects that reference this client
+    const index = readIndex();
+    let indexChanged = false;
+    for (const entry of index.projects) {
+      if (entry.clientId === id) {
+        delete entry.clientId;
+        indexChanged = true;
+        // Also update the project.json
+        try {
+          const project = readProject(entry.id);
+          if (project.clientId === id) {
+            delete project.clientId;
+            writeProject(entry.id, project);
+          }
+        } catch { /* project file missing, skip */ }
+      }
+    }
+    if (indexChanged) writeIndex(index);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting client:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/clients/match', (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+
+    const data = loadClients();
+    const matches = fuzzyMatchClient(name, data.clients).map(m => ({
+      id: m.id,
+      name: m.name,
+      company: m.company,
+      score: m.score,
+    }));
+
+    res.json({ matches });
+  } catch (err) {
+    console.error('Error matching client:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Project CRUD endpoints ───────────────────────────────────────────────────
 
 app.get('/api/projects', (_req, res) => {
@@ -1003,7 +1267,7 @@ app.get('/api/projects', (_req, res) => {
 
 app.post('/api/projects', (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, clientId } = req.body;
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ error: 'Project name is required' });
     }
@@ -1025,11 +1289,14 @@ app.post('/api/projects', (req, res) => {
       formStates: {},
       activeDocType: 'quote',
     };
+    if (clientId) project.clientId = clientId;
 
     writeProject(id, project);
 
     const index = readIndex();
-    index.projects.push({ id, name: name.trim(), createdAt: project.createdAt, clientName: '', docType: '', docCount: 0, lastModified: project.createdAt });
+    const entry = { id, name: name.trim(), createdAt: project.createdAt, clientName: '', docType: '', docCount: 0, lastModified: project.createdAt };
+    if (clientId) entry.clientId = clientId;
+    index.projects.push(entry);
     writeIndex(index);
 
     res.status(201).json(project);
@@ -1073,19 +1340,25 @@ app.put('/api/projects/:id', (req, res) => {
     if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
       return res.status(400).json({ error: 'Invalid project ID' });
     }
-    const { name } = req.body;
-    if (!name || typeof name !== 'string' || !name.trim()) {
-      return res.status(400).json({ error: 'Project name is required' });
-    }
+    const { name, clientId } = req.body;
 
     const project = readProject(id);
-    project.name = name.trim();
+    if (name && typeof name === 'string' && name.trim()) {
+      project.name = name.trim();
+    }
     writeProject(id, project);
 
     const index = readIndex();
     const entry = index.projects.find(p => p.id === id);
     if (entry) {
-      entry.name = name.trim();
+      if (name && typeof name === 'string' && name.trim()) entry.name = name.trim();
+      if (clientId !== undefined) {
+        if (clientId) {
+          entry.clientId = clientId;
+        } else {
+          delete entry.clientId;
+        }
+      }
       writeIndex(index);
     }
 
@@ -1177,7 +1450,56 @@ app.put('/api/projects/:id/form', (req, res) => {
       writeIndex(index);
     }
 
-    res.json({ success: true });
+    // Client auto-linking: if formState has clientName and project has no clientId
+    let clientLinked = false;
+    let suggestedClient = null;
+    const clientName = formState && formState.clientName;
+    if (clientName && !project.clientId) {
+      const clientsData = loadClients();
+      const matches = fuzzyMatchClient(clientName, clientsData.clients);
+      if (matches.length > 0 && matches[0].score === 100) {
+        // Exact match — auto-link
+        project.clientId = matches[0].id;
+        writeProject(id, project);
+        const idx2 = readIndex();
+        const e2 = idx2.projects.find(p => p.id === id);
+        if (e2) { e2.clientId = matches[0].id; writeIndex(idx2); }
+        clientLinked = true;
+      } else if (matches.length > 0 && matches[0].score >= 50) {
+        // Fuzzy match — suggest
+        suggestedClient = { id: matches[0].id, name: matches[0].name, company: matches[0].company, score: matches[0].score };
+      } else {
+        // No match — auto-create client
+        const newId = generateClientId(clientName);
+        if (!clientsData.clients.find(c => c.id === newId)) {
+          const now = new Date().toISOString();
+          const newClient = {
+            id: newId,
+            name: clientName.trim(),
+            company: (formState.clientCompany || '').trim(),
+            contactName: '',
+            email: '',
+            phone: '',
+            notes: '',
+            defaultPaymentStructure: '',
+            createdAt: now,
+            updatedAt: now,
+          };
+          clientsData.clients.push(newClient);
+          saveClients(clientsData);
+        }
+        project.clientId = newId;
+        writeProject(id, project);
+        const idx3 = readIndex();
+        const e3 = idx3.projects.find(p => p.id === id);
+        if (e3) { e3.clientId = newId; writeIndex(idx3); }
+        clientLinked = true;
+      }
+    }
+
+    const result = { success: true, clientLinked };
+    if (suggestedClient) result.suggestedClient = suggestedClient;
+    res.json(result);
   } catch (err) {
     console.error('Error saving form state:', err);
     res.status(500).json({ error: err.message });
@@ -1272,6 +1594,29 @@ app.post('/api/chat', async (req, res) => {
         }
       }
     } catch { /* project not found, skip */ }
+  }
+
+  // Add client context if project is linked to a client
+  if (projectId) {
+    try {
+      const project = readProject(projectId);
+      if (project && project.clientId) {
+        const clientsData = loadClients();
+        const client = clientsData.clients.find(c => c.id === project.clientId);
+        if (client) {
+          const projectIndex = readIndex();
+          const clientProjects = projectIndex.projects.filter(p => p.clientId === client.id);
+          systemPrompt += '\n\n## לקוח נוכחי\n';
+          systemPrompt += `- שם: ${client.name}\n`;
+          if (client.company) systemPrompt += `- חברה: ${client.company}\n`;
+          if (client.email) systemPrompt += `- אימייל: ${client.email}\n`;
+          if (client.phone) systemPrompt += `- טלפון: ${client.phone}\n`;
+          systemPrompt += `- פרויקטים קודמים: ${clientProjects.length}\n`;
+          if (client.defaultPaymentStructure) systemPrompt += `- מבנה תשלומים מועדף: ${client.defaultPaymentStructure}\n`;
+          if (client.notes) systemPrompt += `- הערות: ${client.notes}\n`;
+        }
+      }
+    } catch { /* client lookup failed, skip */ }
   }
 
   let streamResult;
@@ -2366,12 +2711,13 @@ app.post('/api/import', upload.single('backup'), (req, res) => {
     // Extract to project dir (overwrites data/ directory)
     execSync(`tar -xzf "${backupPath}" -C "${PROJECT_DIR}"`, { timeout: 30000 });
     rmSync(backupPath);
-    // Reload profile and clauses from restored data
+    // Reload profile, clauses, and clients from restored data
     userProfile = loadUserProfile();
     try {
       const dbRaw = readFileSync(join(KNOWLEDGE_DIR, 'clauses-db.json'), 'utf-8');
       clausesDb = JSON.parse(dbRaw);
     } catch {}
+    try { clientsDb = loadClients(); } catch {}
     res.json({ success: true, message: 'Backup restored successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
