@@ -8193,7 +8193,7 @@
     const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
     document.getElementById('documentDate').value = todayStr;
 
-    // Save form state before page unload (refresh/close)
+    // Save form + chat state before page unload (refresh/close)
     window.addEventListener('beforeunload', () => {
       if (currentProjectId) {
         // Use sendBeacon for reliable save on unload
@@ -8201,6 +8201,11 @@
         const docType = state.docType || window._activeDocType || 'quote';
         navigator.sendBeacon('/api/projects/' + currentProjectId + '/form',
           new Blob([JSON.stringify({ formState: state, docType })], { type: 'application/json' }));
+        // Also save chat history
+        if (conversation.length > 0) {
+          navigator.sendBeacon('/api/projects/' + currentProjectId + '/chat',
+            new Blob([JSON.stringify({ chatHistory: conversation })], { type: 'application/json' }));
+        }
       }
     });
 

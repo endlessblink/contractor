@@ -15,8 +15,9 @@
 
 | ID | Task | Priority | Status |
 |----|------|----------|--------|
-| **TASK-001** | **"רענן המלצות" button doesn't work** — recommend-clauses JS not wired after stash | **P1** | TODO |
-| **TASK-002** | **Chat history lost on refresh** — chat messages not restored on page reload for active project | **P1** | TODO |
+| ~~**TASK-001**~~ | ~~**"רענן המלצות" button doesn't work**~~ — was cached empty response, fixed by server restart | **P1** | ✅ **DONE** |
+| ~~**TASK-002**~~ | ~~**Chat history lost on refresh**~~ — added sendBeacon for chat + form on beforeunload | **P1** | ✅ **DONE** |
+| **TASK-011** | **Clauses show all non-relevant items** — form shows 100+ clauses, most irrelevant. Should hide low-relevance clauses by default. | **P1** | TODO |
 | **TASK-003** | **Preview panel not functional** — togglePreview button exists but no preview modal/renderer wired | **P2** | TODO |
 | **TASK-004** | **Sidebar client tree not showing** — renderSidebarTree() from stash not in current code | **P2** | TODO |
 | **TASK-005** | **Collapsible sidebar** — CSS added but no toggle button in the UI | **P3** | TODO |
