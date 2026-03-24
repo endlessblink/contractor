@@ -26,3 +26,6 @@
 | **TASK-008** | **Onboarding flow** — doc scan primary, chat-driven fallback for new users | **P3** | TODO |
 | **TASK-009** | **Light mode polish** — several elements still have wrong colors in light mode | **P2** | TODO |
 | **TASK-010** | **Mobile responsive** — three-panel layout needs mobile stacking | **P3** | TODO |
+| ~~**TASK-011**~~ | ~~**Clauses show all non-relevant items**~~ — smart filtering: hide <40%, show-all toggle, template-based filtering | **P1** | ✅ **DONE** |
+| **TASK-012** | **E2E tests for chat→form flow** — Playwright tests verifying AI commands (FORM_DATA/FORM_UPDATE) actually modify the form correctly, pricing rows, clauses, and generated DOCX | **P1** | TODO |
+| **TASK-013** | **AI learns user preferences** — track patterns (e.g., user never adds due dates → suggest less often, user always picks 35/65 payment → default to it). Store in user profile or learned-context. | **P2** | TODO |
