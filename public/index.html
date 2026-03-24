@@ -7122,7 +7122,7 @@
           const newName = await showPrompt('\u05E9\u05D9\u05E0\u05D5\u05D9 \u05E9\u05DD', '\u05E9\u05DD \u05D7\u05D3\u05E9 \u05DC\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8:', name, '\u05E9\u05DE\u05D5\u05E8');
           if (!newName || newName === name) return;
           try {
-            const res = await fetch(`/api/projects/${id}`, {
+            const res = await fetch(`/api/projects/${encodeURIComponent(id)}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ name: newName }),
@@ -7145,7 +7145,7 @@
           const name = btn.dataset.name;
           if (!(await showConfirm('\u05DE\u05D7\u05D9\u05E7\u05EA \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8', '\u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA \u05D4\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8 "' + name + '" \u05D5\u05DB\u05DC \u05D4\u05E7\u05D1\u05E6\u05D9\u05DD \u05E9\u05DC\u05D5?', '\u05DE\u05D7\u05E7', true))) return;
           try {
-            const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/projects/${encodeURIComponent(id)}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed');
             if (id === currentProjectId) {
               await switchProject(null);
@@ -7251,7 +7251,7 @@
 
       if (hasProject) {
         try {
-          const res = await fetch(`/api/projects/${currentProjectId}`);
+          const res = await fetch(`/api/projects/${encodeURIComponent(currentProjectId)}`);
           if (res.ok) {
             const data = await res.json();
 
@@ -7490,7 +7490,7 @@
     async function saveProjectChat() {
       if (!currentProjectId) return;
       try {
-        await fetch(`/api/projects/${currentProjectId}/chat`, {
+        await fetch(`/api/projects/${encodeURIComponent(currentProjectId)}/chat`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ chatHistory: conversation }),
@@ -7505,7 +7505,7 @@
       try {
         const state = getFormState();
         const docType = state.docType || window._activeDocType || 'quote';
-        await fetch(`/api/projects/${currentProjectId}/form`, {
+        await fetch(`/api/projects/${encodeURIComponent(currentProjectId)}/form`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ formState: state, docType }),
@@ -8358,11 +8358,11 @@
         // Use sendBeacon for reliable save on unload
         const state = getFormState();
         const docType = state.docType || window._activeDocType || 'quote';
-        navigator.sendBeacon('/api/projects/' + currentProjectId + '/form',
+        navigator.sendBeacon('/api/projects/' + encodeURIComponent(currentProjectId) + '/form',
           new Blob([JSON.stringify({ formState: state, docType })], { type: 'application/json' }));
         // Also save chat history
         if (conversation.length > 0) {
-          navigator.sendBeacon('/api/projects/' + currentProjectId + '/chat',
+          navigator.sendBeacon('/api/projects/' + encodeURIComponent(currentProjectId) + '/chat',
             new Blob([JSON.stringify({ chatHistory: conversation })], { type: 'application/json' }));
         }
       }
@@ -9533,7 +9533,7 @@
       if (!projectId) { navigate('clients'); return; }
       navState.projectId = projectId;
 
-      fetch('/api/projects/' + projectId).then(function(r) { return r.json(); }).then(function(res) {
+      fetch('/api/projects/' + encodeURIComponent(projectId)).then(function(r) { return r.json(); }).then(function(res) {
         document.getElementById('projectHubName').textContent = res.name || '';
 
         var cardsEl = document.getElementById('projectHubCards');
