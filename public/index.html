@@ -3584,7 +3584,11 @@
       .confirm-modal { max-width: calc(100vw - 32px); }
     }
   </style>
-  <script src="js/skills-pipeline.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script src="js/skills-pipeline.js?v=20260325"></script>
+  <script src="js/render-preview.js?v=20260325"></script>
 </head>
 <body>
   <div class="app">
@@ -9664,38 +9668,34 @@
       }
     });
 
-    // ── Restore from URL, last active project, or default to home ──
+    // ── Restore from URL or auto-resume last project ──
     var urlParams = new URLSearchParams(window.location.search);
     var urlView = urlParams.get('view');
-    if (urlView) {
-      navigate(urlView, {
-        clientId: urlParams.get('client'),
-        projectId: urlParams.get('project'),
-        docType: urlParams.get('doc'),
-      });
-    } else {
-      // Auto-resume: try to load the last active project directly into document view
-      (async function() {
-        try {
-          var projRes = await fetch('/api/projects').then(function(r) { return r.json(); });
-          var activeId = projRes.activeProjectId;
-          var projects = projRes.projects || [];
-          if (activeId && projects.some(function(p) { return p.id === activeId; })) {
-            var proj = projects.find(function(p) { return p.id === activeId; });
-            var docType = proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote';
-            navigate('document', { clientId: proj.clientId, projectId: activeId, docType: docType });
-          } else if (projects.length > 0) {
-            // No active project — show home with recent docs
-            navigate('home');
-          } else {
-            // No projects at all — show clients or home
-            navigate('home');
-          }
-        } catch(e) {
+    var urlProject = urlParams.get('project');
+
+    // Always auto-resume to last active project on fresh load
+    // Only use URL view if explicitly navigating to a non-home hub page
+    (async function() {
+      try {
+        var projRes = await fetch('/api/projects').then(function(r) { return r.json(); });
+        var activeId = urlProject || projRes.activeProjectId;
+        var projects = projRes.projects || [];
+        if (activeId && projects.some(function(p) { return p.id === activeId; })) {
+          var proj = projects.find(function(p) { return p.id === activeId; });
+          var docType = urlParams.get('doc') || proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote';
+          navigate('document', { clientId: proj.clientId, projectId: activeId, docType: docType });
+        } else if (urlView && urlView !== 'home' && urlView !== 'document') {
+          // Explicit hub navigation from URL
+          navigate(urlView, { clientId: urlParams.get('client'), projectId: urlParams.get('project') });
+        } else if (projects.length > 0) {
+          navigate('home');
+        } else {
           navigate('home');
         }
-      })();
-    }
+      } catch(e) {
+        navigate('home');
+      }
+    })();
 
     // Expose for external use
     window._navigate = navigate;
