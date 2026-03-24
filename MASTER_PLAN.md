@@ -3,7 +3,7 @@
 ## Completed
 - [x] Skills pipeline (AI output + doc generation)
 - [x] Multi-doc projects (formStates per docType)
-- [x] Clients CRUD + fuzzy matching
+- [x] Clients CRUD + fuzzy matching + sidebar dropdown
 - [x] AI clause recommendations (auto-recommend on form fill)
 - [x] Three-panel layout (sidebar + chat + form)
 - [x] Dark theme redesign (Linear-inspired)
@@ -13,6 +13,9 @@
 - [x] Bullet indentation fix (native DOCX numbering)
 - [x] Form + chat save on refresh (sendBeacon)
 - [x] Option label cleanup for single-option contracts
+- [x] Client edit/delete in sidebar
+- [x] Stale form fix on project switch
+- [x] Universal button outline override for dark mode
 - [x] 122 tests passing
 
 ## Open Tasks
@@ -20,16 +23,12 @@
 | ID | Task | Priority | Status |
 |----|------|----------|--------|
 | **TASK-012** | **E2E tests for chat→form flow** — Playwright tests verifying FORM_DATA/FORM_UPDATE modify form correctly | **P1** | TODO |
-| **TASK-004** | **Sidebar client tree not showing** — renderSidebarTree() from stash not in current code. Clients exist in API but sidebar shows old project list | **P1** | TODO |
-| **TASK-003** | **Preview panel not functional** — togglePreview button exists but no preview modal/renderer wired. render-preview.mjs built but not connected | **P2** | TODO |
-| **TASK-009** | **Light mode polish** — clause text invisible (white on white), form sections wrong colors, chat bubbles unreadable | **P2** | TODO |
-| ~~**TASK-016**~~ | ~~**Buttons bright in dark mode**~~ — replaced class-by-class override with universal wildcard selector for all accent buttons | **P2** | ✅ **DONE** |
-| **TASK-017** | **Client edit/delete** — add right-click or edit/delete buttons on client dropdown items. Currently no way to edit client details or delete a client from the UI. | **P2** | TODO |
-| **TASK-018** | **Stale form on client switch** — switching to a different client in sidebar still shows the previous project's form data. Should clear or load the new client's first project. | **P1** | TODO |
-| **TASK-019** | **Button design tokens** — replace all individual button styles with CSS custom properties (--btn-bg, --btn-color, --btn-border) so theme changes propagate everywhere automatically. Currently using !important overrides. | **P2** | TODO |
-| **TASK-013** | **AI learns user preferences** — track user patterns (no timelines, preferred payment split, clause removals). Store in user-preferences.json, inject into system prompt | **P2** | TODO |
-| **TASK-014** | **Font selector in profile** — add font picker to settings. Apply to generated DOCX. Options: Heebo, Noto Sans Hebrew, Assistant, Rubik | **P2** | TODO |
-| **TASK-005** | **Collapsible sidebar** — CSS added but no toggle button in the UI | **P3** | TODO |
+| **TASK-003** | **Preview panel** — togglePreview button exists, render-preview.mjs built, but not wired as modal | **P2** | TODO |
+| **TASK-009** | **Light mode polish** — clause text, form sections, chat bubbles need color fixes in light mode | **P2** | TODO |
+| **TASK-019** | **Button design tokens** — replace !important overrides with proper CSS custom properties for buttons | **P2** | TODO |
+| **TASK-013** | **AI learns user preferences** — track patterns (no timelines, payment splits, clause removals). Store in user-preferences.json | **P2** | TODO |
+| **TASK-014** | **Font selector in profile** — font picker in settings, apply to DOCX generation | **P2** | TODO |
+| **TASK-005** | **Collapsible sidebar** — CSS ready, needs toggle button | **P3** | TODO |
 | **TASK-006** | **Extract hardcoded fixes into doc-skills** — parse-service-options, strip-bullet-prefix, extend split-sentences | **P3** | TODO |
 | **TASK-008** | **Onboarding flow** — doc scan primary, chat-driven fallback for new users | **P3** | TODO |
 | **TASK-010** | **Mobile responsive** — three-panel layout needs mobile stacking | **P3** | TODO |
