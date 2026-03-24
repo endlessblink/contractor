@@ -5,8 +5,10 @@
   "scripts": {
     "start": "node src/server.mjs",
     "generate": "node src/generate-quote.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node build.mjs",
+    "test": "node --test tests/",
+    "build:doc-skills": "npx esbuild src/shared/doc-skills/index.mjs --bundle --format=iife --global-name=DocSkillsPipeline --outfile=public/js/doc-skills-pipeline.js",
+    "build:skills": "npx esbuild src/shared/skills/index.mjs --bundle --format=iife --global-name=SkillsPipeline --outfile=public/js/skills-pipeline.js && npx esbuild src/shared/doc-skills/index.mjs --bundle --format=iife --global-name=DocSkillsPipeline --outfile=public/js/doc-skills-pipeline.js",
+    "build": "npm run build:skills && node build.mjs",
     "build:win": "node build.mjs --target win",
     "build:mac": "node build.mjs --target mac",
     "build:linux": "node build.mjs --target linux"

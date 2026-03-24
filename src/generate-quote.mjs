@@ -15,11 +15,13 @@ import {
   AlignmentType,
   VerticalAlign,
   TableLayoutType,
+  LevelFormat,
 } from "docx";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { IS_PKG, resolveData } from "./app-paths.mjs";
+import { processDocData } from "./shared/doc-skills/index.mjs";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -169,9 +171,14 @@ function bulletParagraph(text) {
 
 /** Create a dash-style paragraph */
 function dashParagraph(text) {
-  return rtlParagraph([
-    rtlRun("• " + text),
-  ], { spacing: { after: 80 }, alignment: AlignmentType.BOTH });
+  return new Paragraph({
+    bidirectional: true,
+    bidi: true,
+    spacing: { after: 80 },
+    alignment: AlignmentType.BOTH,
+    numbering: { reference: "bullet-list", level: 0 },
+    children: [rtlRun(text)],
+  });
 }
 
 // ─── Document Builder ─────────────────────────────────────────────────────────
@@ -182,6 +189,9 @@ function dashParagraph(text) {
  * @returns {Promise<Buffer>} DOCX file as a Buffer
  */
 export async function generateDocument(data) {
+  // Run doc-skills pipeline to clean/transform data before rendering
+  processDocData(data);
+
   const {
     clientName = "",
     clientCompany = "",
@@ -512,15 +522,109 @@ export async function generateDocument(data) {
   // Service details section
   if (serviceDetails) {
     bodyChildren.push(sectionHeader("פירוט השירות"));
-    // Split by newlines and create paragraphs
     const lines = serviceDetails.split("\n").filter(l => l.trim());
+
+    // Parse lines into options and plain text
+    const options = [];
+    const plainLines = [];
+    let currentOpt = null;
+
     for (const line of lines) {
+      const optMatch = line.match(/^אופציה\s*(\d+)\s*[–—\-:]\s*(.*)/);
+      if (optMatch) {
+        // Strip repeated "אופציה X – " from the title if present
+        let title = optMatch[2].trim();
+        title = title.replace(/^אופציה\s*\d+\s*[–—\-:]\s*/, '').trim();
+        // If title contains multiple sentences, first is title, rest are details
+        const titleSentences = title.split(/(?<=\.)\s+/).filter(s => s.trim());
+        const mainTitle = titleSentences[0] || title;
+        const extraDetails = titleSentences.slice(1);
+        currentOpt = { label: `אופציה ${optMatch[1]}`, title: mainTitle, details: [...extraDetails] };
+        options.push(currentOpt);
+      } else if (currentOpt) {
+        // Split long lines by sentence into separate detail bullets
+        const cleaned = line.replace(/^[•\-]\s*/, '');
+        const sentences = cleaned.split(/(?<=\.)\s+/).filter(s => s.trim());
+        if (sentences.length > 1) {
+          sentences.forEach(s => currentOpt.details.push(s.trim()));
+        } else {
+          currentOpt.details.push(cleaned);
+        }
+      } else {
+        plainLines.push(line);
+      }
+    }
+
+    // Render plain lines first (skip meta-sentences about options when options table follows)
+    for (const line of plainLines) {
+      if (options.length > 0 && /אופציו?ת.*לבחירה|יש לבחור/i.test(line)) continue;
       if (line.startsWith("•") || line.startsWith("-")) {
         bodyChildren.push(dashParagraph(line.replace(/^[•\-]\s*/, "")));
       } else {
-        bodyChildren.push(rtlParagraph([rtlRun(line)]));
+        bodyChildren.push(rtlParagraph([rtlRun(line)], { spacing: { after: 80 } }));
       }
     }
+
+    // Render options as a table
+    if (options.length > 0) {
+      const optHeaderShading = { type: ShadingType.CLEAR, color: "auto", fill: LIGHT_BLUE };
+      const optRows = [
+        new TableRow({
+          children: [
+            makeCell("אופציה", { bold: true, shading: optHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
+            makeCell("פירוט", { bold: true, shading: optHeaderShading, width: { size: 80, type: WidthType.PERCENTAGE } }),
+          ],
+        }),
+      ];
+
+      const cellMargins = { top: 80, bottom: 80, left: 120, right: 120 };
+
+      for (const opt of options) {
+        const descParagraphs = [];
+        if (opt.title) {
+          descParagraphs.push(rtlParagraph(
+            [rtlRun(opt.title, { bold: true, boldComplexScript: true })],
+            { spacing: { after: 100 } }
+          ));
+        }
+        for (const detail of opt.details) {
+          descParagraphs.push(rtlParagraph(
+            [rtlRun(detail)],
+            { spacing: { after: 80 }, numbering: { reference: "bullet-list", level: 0 } }
+          ));
+        }
+        if (descParagraphs.length === 0) {
+          descParagraphs.push(rtlParagraph([rtlRun('')]));
+        }
+
+        optRows.push(new TableRow({
+          children: [
+            new TableCell({
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              borders: cellBorders,
+              verticalAlign: VerticalAlign.CENTER,
+              margins: cellMargins,
+              children: [rtlParagraph([rtlRun(opt.label, { bold: true, boldComplexScript: true })])],
+            }),
+            new TableCell({
+              width: { size: 80, type: WidthType.PERCENTAGE },
+              borders: cellBorders,
+              verticalAlign: VerticalAlign.TOP,
+              margins: cellMargins,
+              children: descParagraphs,
+            }),
+          ],
+        }));
+      }
+
+      bodyChildren.push(new Table({
+        rows: optRows,
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        layout: TableLayoutType.FIXED,
+        visuallyRightToLeft: true,
+      }));
+    }
+
     bodyChildren.push(rtlParagraph([rtlRun("")], { spacing: { after: 40 } }));
   }
 
@@ -571,25 +675,74 @@ export async function generateDocument(data) {
   // Payment terms section
   if (paymentTerms && paymentTerms.installments && paymentTerms.installments.length > 0) {
     bodyChildren.push(sectionHeader("תמורה ותנאי תשלום"));
-    for (const inst of paymentTerms.installments) {
-      const amountStr = totalBeforeVat > 0
-        ? ` (${formatPrice(Math.round(totalBeforeVat * inst.percentage / 100))} + מע"מ)`
-        : "";
-      bodyChildren.push(dashParagraph(`${inst.description} – %${inst.percentage}${amountStr}`));
+
+    // Compute totals for amount display
+    const paymentTotals = [];
+    if (hasOptions) {
+      for (const [optKey, optItems] of Object.entries(optionGroups)) {
+        const shared = sharedItems.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
+        const optTotal = optItems.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0) + shared;
+        paymentTotals.push({ label: `אופציה ${optKey}`, total: optTotal });
+      }
+    } else if (totalBeforeVat > 0) {
+      paymentTotals.push({ label: null, total: totalBeforeVat });
     }
+
+    // Build installments as a table (side by side)
+    const installs = paymentTerms.installments;
+    const colWidth = Math.floor(100 / Math.max(installs.length, 1));
+
+    // For each total (per option or single), render a payment table
+    const totalsToShow = paymentTotals.length > 0 ? paymentTotals : [{ label: null, total: 0 }];
+
+    for (const pt of totalsToShow) {
+      if (pt.label && paymentTotals.length > 1) {
+        bodyChildren.push(rtlParagraph(
+          [rtlRun(pt.label, { bold: true, boldComplexScript: true })],
+          { spacing: { before: 160, after: 80 } }
+        ));
+      }
+
+      // Installment cells
+      const cells = installs.map(inst => {
+        const pct = inst.percentage;
+        const amount = pt.total > 0 ? Math.round(pt.total * pct / 100) : 0;
+        const amountStr = amount > 0 ? ` בסך של ${formatPrice(amount)} + מע"מ` : '';
+        const text = `${inst.description} – ${pct}%${amountStr}`;
+
+        return new TableCell({
+          width: { size: colWidth, type: WidthType.PERCENTAGE },
+          borders: cellBorders,
+          margins: { top: 60, bottom: 60, left: 100, right: 100 },
+          children: [
+            new Paragraph({
+              bidirectional: true,
+              numbering: { reference: "bullet-list", level: 0 },
+              children: [rtlRun(text)],
+            }),
+          ],
+        });
+      });
+
+      bodyChildren.push(new Table({
+        rows: [new TableRow({ children: cells })],
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        layout: TableLayoutType.FIXED,
+        visuallyRightToLeft: true,
+      }));
+
+      // Totals already shown in pricing tables — no duplication needed
+    }
+
     // Add contract-specific payment clauses
     if ((documentType === 'contract' || documentType === 'workOrder') && clausesDb) {
       const paymentClauses = getClauseTexts('paymentTerms');
-      // Skip the first clause (advance-start) since installments already cover that
-      // Add the rest: extra hours, invoice details, no VAT, external costs, infrastructure
       paymentClauses.forEach(text => {
-        // Don't duplicate the "no VAT" line if it's in generalNotes
         if (!text.includes('אינו כולל מע"מ') || !generalNotes.includes('מע"מ')) {
           bodyChildren.push(dashParagraph(text));
         }
       });
     }
-    // Only add hardcoded invoice line if payment-invoice clause wasn't already included
     const invoiceClauseSelected = selectedClauses && selectedClauses.includes('payment-invoice');
     if (!invoiceClauseSelected) {
       bodyChildren.push(dashParagraph('לאחר קבלת התשלום המלא תישלח חשבונית מס.'));
@@ -698,15 +851,41 @@ export async function generateDocument(data) {
     }
   }
 
-  // Signature — skip the title if general-signature-binding was already rendered above
-  const signatureBindingInTerms = selectedClauses && selectedClauses.includes('general-signature-binding');
-  if (!signatureBindingInTerms) {
-    bodyChildren.push(signatureTitle);
+  // Signature — controlled by doctype-sections skill (_sectionFlags.showSignature)
+  const showSignature = data._sectionFlags?.showSignature !== false
+    ? (documentType === 'contract' || documentType === 'workOrder')  // fallback if skill didn't run
+    : data._sectionFlags.showSignature;
+  if (showSignature) {
+    const signatureBindingInTerms = selectedClauses && selectedClauses.includes('general-signature-binding');
+    if (!signatureBindingInTerms) {
+      bodyChildren.push(signatureTitle);
+    }
+    bodyChildren.push(signatureTable);
   }
-  bodyChildren.push(signatureTable);
 
   // ── Build Document ──
   const doc = new Document({
+    numbering: {
+      config: [
+        {
+          reference: "bullet-list",
+          levels: [
+            {
+              level: 0,
+              format: LevelFormat.BULLET,
+              text: "\u2022",
+              alignment: AlignmentType.RIGHT,
+              style: {
+                paragraph: {
+                  indent: { left: convertInchesToTwip(0.35), hanging: convertInchesToTwip(0.25) },
+                },
+                run: { font: FONT_OBJ },
+              },
+            },
+          ],
+        },
+      ],
+    },
     styles: {
       default: {
         document: {

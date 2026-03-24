@@ -789,6 +789,28 @@
       height: 15px;
     }
 
+    .form-filled-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      margin: 0 0 16px;
+      background: linear-gradient(135deg, rgba(0, 210, 180, 0.15), rgba(0, 180, 220, 0.1));
+      border: 1px solid rgba(0, 210, 180, 0.3);
+      border-radius: 10px;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.9rem;
+      direction: rtl;
+      animation: bannerSlideIn 0.4s ease-out;
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    @keyframes bannerSlideIn {
+      from { opacity: 0; transform: translateY(-15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     /* FORM_UPDATE fix cards */
     .form-update-card {
       margin-top: 10px;
@@ -1381,14 +1403,18 @@
       flex-shrink: 0;
     }
     .clause-item-text {
-      font-size: 0.8rem;
-      color: var(--text-primary);
-      line-height: 1.5;
+      font-size: 0.9rem;
+      color: #fff;
+      line-height: 1.65;
       direction: rtl;
     }
+    html:not(.dark) .clause-item-text {
+      color: var(--text-primary);
+    }
     .clause-item-text .clause-id {
-      font-size: 0.72rem;
+      font-size: 0.82rem;
       color: var(--accent);
+      font-weight: 500;
       font-family: 'Heebo', sans-serif;
       direction: rtl;
       display: block;
@@ -1409,15 +1435,76 @@
       margin-top: 4px;
     }
 
+    /* Clause relevance badges */
+    .clause-relevance {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 8px;
+      margin-inline-start: 6px;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .clause-relevance.high { background: rgba(0, 210, 180, 0.2); color: #00d2b4; }
+    .clause-relevance.medium { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+    .clause-relevance.low { background: rgba(255, 82, 82, 0.15); color: #ff5252; }
+
+    .clause-item.ai-high { border-right: 3px solid var(--accent); }
+    .clause-item.ai-medium { border-right: 3px solid #ffc107; }
+    .clause-item.ai-low { opacity: 0.5; }
+
+    .clause-recommend-summary {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      padding: 8px 12px;
+      direction: rtl;
+      display: none;
+    }
+    .clause-recommend-summary.visible { display: block; }
+
+    .clause-section-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(0,210,180,0.3);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-inline-start: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Recommend button */
+    .recommend-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      margin-bottom: 12px;
+      background: rgba(0, 210, 180, 0.1);
+      border: 1px solid rgba(0, 210, 180, 0.3);
+      border-radius: 8px;
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      direction: rtl;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .recommend-btn:hover { background: rgba(0, 210, 180, 0.2); }
+    .recommend-btn.loading { opacity: 0.6; pointer-events: none; }
+
     /* Clause full text / editable area */
     .clause-full-text {
       margin-top: 6px;
       padding: 8px 10px;
-      font-size: 0.82em;
-      color: var(--text-secondary, var(--muted));
+      font-size: 0.92rem;
+      color: rgba(255, 255, 255, 0.9);
       direction: rtl;
       text-align: right;
-      line-height: 1.65;
+      line-height: 1.7;
       white-space: pre-wrap;
       border-right: 3px solid var(--accent);
       border-radius: 0 4px 4px 0;
@@ -1429,6 +1516,7 @@
     }
     html:not(.dark) .clause-full-text {
       background: rgba(0,0,0,0.025);
+      color: var(--text-primary);
     }
     .clause-full-text:focus {
       background: rgba(99,179,237,0.07);
@@ -1611,21 +1699,48 @@
     .doc-success {
       display: none;
       margin-block-start: 12px;
-      padding: 14px 16px;
-      background: var(--success-bg);
-      border: 1px solid var(--success-border);
-      border-radius: 10px;
-      font-size: 0.9rem;
-      color: var(--success-text);
-      font-weight: 500;
+      padding: 18px 22px;
+      background: linear-gradient(135deg, rgba(0, 210, 180, 0.15), rgba(0, 180, 220, 0.08));
+      border: 1px solid rgba(0, 210, 180, 0.35);
+      border-radius: 12px;
+      font-size: 1rem;
+      color: var(--accent);
+      font-weight: 600;
       align-items: center;
+      justify-content: center;
       gap: 10px;
-      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+      direction: rtl;
     }
 
-    .doc-success.visible { display: flex; }
+    .doc-success.visible {
+      display: flex;
+      animation: docSuccessIn 0.5s ease-out;
+    }
 
-    .doc-success svg { width: 20px; height: 20px; flex-shrink: 0; }
+    @keyframes docSuccessIn {
+      0% { opacity: 0; transform: scale(0.9) translateY(-10px); }
+      50% { transform: scale(1.02) translateY(0); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .doc-success svg { width: 22px; height: 22px; flex-shrink: 0; }
+
+    .doc-success .success-checkmark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: rgba(0, 210, 180, 0.2);
+      border-radius: 50%;
+      animation: checkPulse 0.6s ease-out 0.2s;
+    }
+
+    @keyframes checkPulse {
+      0% { box-shadow: 0 0 0 0 rgba(0, 210, 180, 0.4); }
+      70% { box-shadow: 0 0 0 12px rgba(0, 210, 180, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 210, 180, 0); }
+    }
 
     /* Form error */
     .doc-error {
@@ -3338,6 +3453,7 @@
       .confirm-modal { max-width: calc(100vw - 32px); }
     }
   </style>
+  <script src="js/skills-pipeline.js"></script>
 </head>
 <body>
   <div class="app">
@@ -3783,6 +3899,14 @@
               <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">
                 בחר את הסעיפים שיכללו במסמך. סעיפי חובה מסומנים אוטומטית.
               </p>
+              <button type="button" id="recommendClausesBtn" class="recommend-btn" style="font-size:0.8rem; padding:6px 12px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                רענן המלצות
+              </button>
               <!-- Categories will be populated by JS -->
             </div>
           </div>
@@ -3817,10 +3941,12 @@
               צור מסמך
             </button>
             <div class="doc-success" id="docSuccess">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>המסמך נוצר בהצלחה והורד למכשירך!</span>
+              <span class="success-checkmark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </span>
+              <span id="docSuccessText">המסמך נוצר בהצלחה והורד למכשירך!</span>
             </div>
             <div class="doc-error" id="docError">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -4548,8 +4674,52 @@
           btn.className = 'fill-form-btn';
           btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>מלא טופס`;
           btn.addEventListener('click', () => {
+            const targetDocType = formData.docType || 'quote';
+            const currentDocType = window._activeDocType || 'quote';
+
+            if (targetDocType !== currentDocType && currentProjectId) {
+              window._projectFormStates[currentDocType] = getFormState();
+              saveProjectForm();
+            }
+
             prefillForm(formData);
+
+            window._activeDocType = targetDocType;
+            if (currentProjectId) {
+              window._projectFormStates[targetDocType] = getFormState();
+            }
+
             switchTab('create');
+
+            // Visual feedback: flash the form to show it was filled
+            const formPanel = document.getElementById('panel-create');
+            if (formPanel) {
+              // Scroll to top
+              formPanel.scrollTop = 0;
+
+              // Show success banner
+              const docTypeLabels = { quote: 'הצעת מחיר', contract: 'חוזה עבודה', order: 'הזמנת עבודה' };
+              const banner = document.createElement('div');
+              banner.className = 'form-filled-banner';
+              banner.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><polyline points="20 6 9 17 4 12"/></svg> הטופס מולא — ${docTypeLabels[targetDocType] || targetDocType}`;
+              formPanel.prepend(banner);
+
+              // Animate form fields
+              formPanel.querySelectorAll('input, textarea, select').forEach((el, i) => {
+                if (el.value) {
+                  el.style.transition = 'background-color 0.4s ease';
+                  el.style.backgroundColor = 'rgba(0, 210, 180, 0.12)';
+                  setTimeout(() => { el.style.backgroundColor = ''; }, 1200 + i * 50);
+                }
+              });
+
+              // Remove banner after animation
+              setTimeout(() => {
+                banner.style.opacity = '0';
+                banner.style.transform = 'translateY(-10px)';
+                setTimeout(() => banner.remove(), 300);
+              }, 2500);
+            }
           });
           bubble.appendChild(btn);
         },
@@ -4826,7 +4996,7 @@
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: cleanMessages, formContext: getFormState() }),
+          body: JSON.stringify({ messages: cleanMessages, formContext: getFormState(), projectId: currentProjectId || '' }),
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
@@ -4877,8 +5047,9 @@
           const formMatch = fullText.match(/<!--FORM_DATA:([\s\S]*?)-->/);
           if (formMatch && assistantMsgObj) {
             try {
-              const formData = JSON.parse(formMatch[1]);
-              assistantMsgObj.addFillFormBtn(formData);
+              const pipeResult = await SkillsPipeline.processAIOutput(formMatch[1], 'FORM_DATA');
+              if (pipeResult.failed) { console.error('[skills]', pipeResult.failReason); }
+              else { assistantMsgObj.addFillFormBtn(pipeResult.json); }
             } catch (e) {
               console.warn('Failed to parse FORM_DATA:', e);
             }
@@ -4900,10 +5071,10 @@
           console.log('[FORM_UPDATE] match found:', !!formUpdateMatch, formUpdateMatch ? formUpdateMatch[1].slice(0, 200) : 'none');
           if (formUpdateMatch && assistantMsgObj) {
             try {
-              const updateData = JSON.parse(formUpdateMatch[1]);
-              console.log('[FORM_UPDATE] parsed actions:', updateData.actions?.length);
-              if (updateData.actions && Array.isArray(updateData.actions)) {
-                assistantMsgObj.addFormUpdateCard(updateData.actions);
+              const updateResult = await SkillsPipeline.processAIOutput(formUpdateMatch[1], 'FORM_UPDATE');
+              console.log('[FORM_UPDATE] parsed actions:', updateResult.json?.actions?.length);
+              if (!updateResult.failed && updateResult.json?.actions && Array.isArray(updateResult.json.actions)) {
+                assistantMsgObj.addFormUpdateCard(updateResult.json.actions);
               }
             } catch (e) {
               console.warn('[FORM_UPDATE] Failed to parse:', e, formUpdateMatch[1].slice(0, 500));
@@ -4956,6 +5127,7 @@
         row[field] = (field === 'desc' || field === 'option') ? value : (parseFloat(value) || 0);
       }
       updateTotals();
+      debouncedAutoRecommend();
     }
 
     function renderPricingRows() {
@@ -5091,6 +5263,9 @@
       updateInstallmentsPreview();
     }
 
+    // Post-processing is now handled by SkillsPipeline (public/js/skills-pipeline.js)
+    // See src/shared/skills/ for individual skill implementations
+
     // ── Prefill helper ──
     function prefillForm(data) {
       // Clear existing rows
@@ -5141,6 +5316,13 @@
     let clausesDbCache = null;
     const clauseEdits = new Map(); // clauseId -> edited text (only stores modified clauses)
 
+    // Auto-recommend state
+    let userClauseOverrides = new Set();
+    let lastRecommendHash = '';
+    let recommendDebounceTimer = null;
+    let recommendAbortController = null;
+    let isRecommending = false;
+
     // Populate docType select from API
     (async function populateDocTypes() {
       try {
@@ -5174,8 +5356,30 @@
       if (!clausesDbCache) loadClausesForForm();
     }
     docTypeSelect.addEventListener('change', () => {
+      const previousDocType = window._activeDocType || 'quote';
+      const newDocType = docTypeSelect.value;
+
+      if (previousDocType !== newDocType && currentProjectId) {
+        // Save current state to its slot
+        window._projectFormStates[previousDocType] = getFormState();
+        saveProjectForm(); // fire-and-forget save to server
+
+        // Load target state if it exists
+        const targetState = window._projectFormStates[newDocType];
+        if (targetState) {
+          restoreFormState({ ...targetState, docType: newDocType });
+        }
+        // If no saved state for target, keep form as-is but with new docType
+      }
+
+      window._activeDocType = newDocType;
+
+      // Existing clause filtering logic
       updateClausesSectionVisibility();
       if (clausesDbCache) renderClauseCategories();
+      // Immediate re-recommend on doc type change
+      clearTimeout(recommendDebounceTimer);
+      setTimeout(triggerAutoRecommend, 300);
     });
     updateClausesSectionVisibility();
 
@@ -5255,6 +5459,10 @@
             const allChecked = Array.from(allInCat).every(c => c.checked);
             masterToggle.checked = allChecked;
             masterToggle.indeterminate = !allChecked && Array.from(allInCat).some(c => c.checked);
+            // Track manual overrides if AI recommendations exist
+            if (window._clauseRecommendations) {
+              userClauseOverrides.add(clause.id);
+            }
           });
 
           const textRow = document.createElement('div');
@@ -5343,7 +5551,184 @@
         window._pendingClauseState = null;
         applyClauseState(pending.selectedClauses, pending.clauseEdits);
       }
+
+      // Re-apply stored recommendations after re-render
+      if (window._clauseRecommendations) {
+        setTimeout(() => applySmartRecommendations(window._clauseRecommendations), 50);
+      }
     }
+
+    // ── Clause Recommendations (Auto + Manual) ──
+
+    function computeRecommendHash() {
+      const state = getFormState();
+      const pricingDescs = (state.pricingItems || pricingRows || []).map(r => r.desc || r.description || '').join('|');
+      return `${state.docType || 'quote'}::${(state.serviceDetails || '').slice(0, 200)}::${(state.projectDescription || '').slice(0, 200)}::${pricingDescs.slice(0, 200)}`;
+    }
+
+    async function triggerAutoRecommend() {
+      const hash = computeRecommendHash();
+      if (hash === lastRecommendHash) return;
+
+      // Check minimum content
+      const state = getFormState();
+      const content = (state.serviceDetails || '') + (state.projectDescription || '');
+      if (content.length < 15) return;
+
+      // Abort previous request
+      if (recommendAbortController) recommendAbortController.abort();
+      recommendAbortController = new AbortController();
+
+      lastRecommendHash = hash;
+      isRecommending = true;
+
+      // Show spinner on clauses section header
+      const clausesHeader = document.querySelector('#clausesCategoriesContainer')?.closest('.form-section')?.querySelector('.section-title, h3, .form-section-title');
+      let spinner = document.querySelector('.clause-section-spinner');
+      if (!spinner && clausesHeader) {
+        spinner = document.createElement('span');
+        spinner.className = 'clause-section-spinner';
+        clausesHeader.appendChild(spinner);
+      }
+
+      try {
+        const res = await fetch('/api/recommend-clauses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ formContext: state }),
+          signal: recommendAbortController.signal,
+        });
+
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+
+        if (data.recommendations) {
+          window._clauseRecommendations = data.recommendations;
+          applySmartRecommendations(data.recommendations);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.warn('[auto-recommend] Failed:', err.message);
+        }
+      } finally {
+        isRecommending = false;
+        if (spinner) spinner.remove();
+      }
+    }
+
+    function debouncedAutoRecommend() {
+      clearTimeout(recommendDebounceTimer);
+      recommendDebounceTimer = setTimeout(triggerAutoRecommend, 1500);
+    }
+
+    function applySmartRecommendations(scores) {
+      if (!scores || typeof scores !== 'object') return;
+
+      let highCount = 0, mediumCount = 0, lowCount = 0;
+
+      const allItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item');
+      allItems.forEach(item => {
+        const cb = item.querySelector('input[type="checkbox"]');
+        if (!cb) return;
+        const clauseId = cb.dataset.clauseId;
+        const score = scores[clauseId];
+
+        // Remove old tier classes and badges
+        item.classList.remove('ai-high', 'ai-medium', 'ai-low');
+        item.querySelector('.clause-relevance')?.remove();
+
+        if (score == null) return;
+
+        // Add badge
+        const badge = document.createElement('span');
+        badge.className = 'clause-relevance';
+        badge.textContent = `${score}%`;
+
+        const isRequired = item.classList.contains('required');
+        const isOverridden = userClauseOverrides.has(clauseId);
+
+        if (score >= 70) {
+          badge.classList.add('high');
+          item.classList.add('ai-high');
+          highCount++;
+          // Auto-check unless user overrode
+          if (!isOverridden && !cb.checked) {
+            cb.checked = true;
+          }
+        } else if (score >= 40) {
+          badge.classList.add('medium');
+          item.classList.add('ai-medium');
+          mediumCount++;
+        } else {
+          badge.classList.add('low');
+          item.classList.add('ai-low');
+          lowCount++;
+        }
+
+        // Required clauses always stay checked
+        if (isRequired) cb.checked = true;
+
+        // Insert badge after the clause title (clause-id span)
+        const titleSpan = item.querySelector('.clause-id');
+        if (titleSpan) titleSpan.after(badge);
+      });
+
+      // Update category master toggles
+      document.querySelectorAll('#clausesCategoriesContainer .clause-category').forEach(catDiv => {
+        const allInCat = catDiv.querySelectorAll('.clause-item input[type="checkbox"]');
+        const master = catDiv.querySelector('.category-toggle');
+        if (master && allInCat.length > 0) {
+          const allChecked = Array.from(allInCat).every(c => c.checked);
+          master.checked = allChecked;
+          master.indeterminate = !allChecked && Array.from(allInCat).some(c => c.checked);
+        }
+      });
+
+      // Show summary
+      let summary = document.querySelector('.clause-recommend-summary');
+      if (!summary) {
+        summary = document.createElement('div');
+        summary.className = 'clause-recommend-summary';
+        const container = document.getElementById('clausesCategoriesContainer');
+        if (container) container.prepend(summary);
+      }
+      summary.textContent = `AI: ${highCount} סעיפים מומלצים | ${mediumCount} אפשריים | ${lowCount} לא רלוונטיים`;
+      summary.classList.add('visible');
+    }
+
+    // Backward compat alias
+    function applyRecommendationBadges(recommendations) {
+      applySmartRecommendations(recommendations);
+    }
+
+    // Brief success notification for recommendations
+    function showRecommendToast(msg) {
+      let t = document.getElementById('_recommendToast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = '_recommendToast';
+        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#00d2b4;color:#fff;padding:8px 18px;border-radius:8px;font-size:0.85rem;font-weight:500;z-index:9999;opacity:0;transition:opacity 0.25s;pointer-events:none;direction:rtl;';
+        document.body.appendChild(t);
+      }
+      t.textContent = msg;
+      t.style.opacity = '1';
+      setTimeout(() => { t.style.opacity = '0'; }, 2500);
+    }
+
+    // Wire up recommend button (now a "refresh" button for manual re-trigger)
+    const recommendClausesBtn = document.getElementById('recommendClausesBtn');
+    if (recommendClausesBtn) {
+      recommendClausesBtn.addEventListener('click', () => {
+        lastRecommendHash = ''; // Force re-fetch
+        triggerAutoRecommend();
+      });
+    }
+
+    // Auto-recommend on form content changes
+    const serviceDetailsEl = document.querySelector('[name="serviceDetails"]');
+    const projectDescEl = document.querySelector('[name="projectDescription"]');
+    if (serviceDetailsEl) serviceDetailsEl.addEventListener('input', debouncedAutoRecommend);
+    if (projectDescEl) projectDescEl.addEventListener('input', debouncedAutoRecommend);
 
     function applyClauseState(selectedIds, edits) {
       if (!selectedIds && !edits) return;
@@ -5719,7 +6104,12 @@
 
     ['custom1', 'custom2', 'custom3'].forEach(id => {
       document.getElementById(id).addEventListener('input', () => {
-        updateCustomAmounts(getGrandTotal());
+        const optTotals = getOptionTotals();
+        if (optTotals) {
+          updateCustomAmountsPerOption(optTotals);
+        } else {
+          updateCustomAmounts(getGrandTotal());
+        }
       });
     });
 
@@ -5851,8 +6241,17 @@
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 1000);
 
+        // Show success with doc type name
+        const successText = document.getElementById('docSuccessText');
+        if (successText) {
+          successText.textContent = `${docTypeName} נוצר בהצלחה והורד למכשירך!`;
+        }
         docSuccess.classList.add('visible');
-        setTimeout(() => docSuccess.classList.remove('visible'), 5000);
+
+        // Scroll to see the success banner
+        docSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        setTimeout(() => docSuccess.classList.remove('visible'), 6000);
 
       } catch (err) {
         console.error('Generate error:', err);
@@ -6400,7 +6799,9 @@
 
       projectPanelList.innerHTML = sorted.map(p => {
         const isActive = p.id === currentProjectId;
-        const badge = p.docType ? `<span class="project-card-badge">${docTypeLabel(p.docType)}</span>` : '';
+        const badges = (p.docTypes && p.docTypes.length > 0 ? p.docTypes : (p.docType ? [p.docType] : []))
+          .map(t => `<span class="project-card-badge">${docTypeLabel(t)}</span>`).join(' ');
+        const badge = badges;
         const date = relativeTime(p.lastModified || p.createdAt);
         const docs = (p.docCount || 0) > 0 ? `<span class="project-card-docs">${p.docCount} \u05DE\u05E1\u05DE\u05DB\u05D9\u05DD</span>` : '';
         const client = p.clientName ? `<div class="project-card-client">${p.clientName}</div>` : '';
@@ -6535,6 +6936,8 @@
 
     let currentProjectId = null;
     let autosaveTimer = null;
+    window._projectFormStates = {};
+    window._activeDocType = 'quote';
 
     // ── Load projects list ──
     async function loadProjects() {
@@ -6589,14 +6992,15 @@
                   // Re-parse hidden blocks so action cards are restored
                   const fuMatch = msg.content.match(/<!--FORM_UPDATE:([\s\S]*?)-->/);
                   if (fuMatch && msgObj) {
-                    try {
-                      const ud = JSON.parse(fuMatch[1]);
-                      if (ud.actions && Array.isArray(ud.actions)) msgObj.addFormUpdateCard(ud.actions);
-                    } catch {}
+                    SkillsPipeline.processAIOutput(fuMatch[1], 'FORM_UPDATE').then(r => {
+                      if (!r.failed && r.json?.actions && Array.isArray(r.json.actions)) msgObj.addFormUpdateCard(r.json.actions);
+                    }).catch(() => {});
                   }
                   const fdMatch = msg.content.match(/<!--FORM_DATA:([\s\S]*?)-->/);
                   if (fdMatch && msgObj) {
-                    try { msgObj.addFillFormBtn(JSON.parse(fdMatch[1])); } catch {}
+                    SkillsPipeline.processAIOutput(fdMatch[1], 'FORM_DATA').then(r => {
+                      if (!r.failed) msgObj.addFillFormBtn(r.json);
+                    }).catch(() => {});
                   }
                   const scMatch = msg.content.match(/<!--SAVE_CLAUSE:([\s\S]*?)-->/);
                   if (scMatch && msgObj) {
@@ -6614,10 +7018,26 @@
               messagesEl.appendChild(welcome);
             }
 
-            // Restore form state
-            if (data.formState) {
+            // Restore form state (multi-doc or legacy)
+            if (data.formStates) {
+              const activeType = data.activeDocType || 'quote';
+              const activeState = data.formStates[activeType];
+              window._projectFormStates = data.formStates;
+              window._activeDocType = activeType;
+              if (activeState) {
+                restoreFormState({ ...activeState, docType: activeType });
+              } else {
+                resetForm();
+              }
+            } else if (data.formState) {
+              // Legacy fallback — single formState
+              const docType = data.formState.docType || 'quote';
+              window._projectFormStates = { [docType]: data.formState };
+              window._activeDocType = docType;
               restoreFormState(data.formState);
             } else {
+              window._projectFormStates = {};
+              window._activeDocType = 'quote';
               resetForm();
             }
           }
@@ -6679,6 +7099,8 @@
         sectionToggles: Object.fromEntries(
           Array.from(document.querySelectorAll('[data-section-toggle]')).map(el => [el.dataset.sectionToggle, el.checked])
         ),
+        clauseRecommendations: window._clauseRecommendations || null,
+        userClauseOverrides: Array.from(userClauseOverrides),
       };
     }
 
@@ -6723,6 +7145,14 @@
           selectedClauses: state.selectedClauses || [],
           clauseEdits: state.clauseEdits || {},
         };
+      }
+
+      // Restore AI recommendation state
+      if (state.clauseRecommendations) {
+        window._clauseRecommendations = state.clauseRecommendations;
+      }
+      if (state.userClauseOverrides) {
+        userClauseOverrides = new Set(state.userClauseOverrides);
       }
 
       // Restore document date
@@ -6794,10 +7224,12 @@
     async function saveProjectForm() {
       if (!currentProjectId) return;
       try {
+        const state = getFormState();
+        const docType = state.docType || window._activeDocType || 'quote';
         await fetch(`/api/projects/${currentProjectId}/form`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ formState: getFormState() }),
+          body: JSON.stringify({ formState: state, docType }),
         });
       } catch (err) {
         console.error('Failed to save form:', err);
@@ -7059,8 +7491,10 @@
             timeline: tmpl.typicalTimeline || '',
             notes: (tmpl.settings && tmpl.settings.defaultNotes) || 'ההצעה בתוקף ל-30 יום מתאריך הנפקתה.\nהמחיר אינו כולל מע"מ.',
           });
-          // Auto-check clauses for this template
-          autoCheckClausesForTemplate(val);
+          // Trigger AI recommendation instead of static template clause check
+          triggerAutoRecommend();
+          // Fallback: if AI fails, template's fixed clause list applies via autoCheckClausesForTemplate
+          // (kept as a function but not called here — AI takes priority)
           // Apply payment structure from settings
           if (tmpl.settings && tmpl.settings.paymentStructure) {
             paymentSelect.value = tmpl.settings.paymentStructure;
@@ -8233,8 +8667,25 @@
           if (value === currentValue) btn.classList.add('active');
 
           btn.addEventListener('click', () => {
-            // Reset form to empty state
-            if (typeof window._resetForm === 'function') window._resetForm();
+            const previousDocType = window._activeDocType || 'quote';
+
+            if (previousDocType !== value && currentProjectId) {
+              // Save current state to its slot before switching
+              window._projectFormStates[previousDocType] = getFormState();
+              saveProjectForm(); // fire-and-forget save to server
+            }
+
+            // Load saved state for target type, or reset to empty
+            const targetState = window._projectFormStates[value];
+            if (targetState) {
+              restoreFormState({ ...targetState, docType: value });
+            } else {
+              // No saved state — reset form to empty state
+              if (typeof window._resetForm === 'function') window._resetForm();
+            }
+
+            window._activeDocType = value;
+
             // Set the document type
             if (docTypeSelect) {
               docTypeSelect.value = value;
