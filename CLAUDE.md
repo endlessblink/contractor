@@ -111,9 +111,47 @@ From Noam's reference documents:
 - `GET /api/clauses-db` — Returns the full clause database
 - Template selector populated from `clauses-db.json` service templates (not hardcoded)
 
+## Skills Pipeline (AI Output Post-Processing)
+
+All AI output (FORM_DATA / FORM_UPDATE) passes through a modular skills pipeline before reaching the form. This enforces formatting, validates data, and repairs common AI mistakes — replacing verbose system prompt instructions with reliable code.
+
+**Source:** `src/shared/skills/` (isomorphic — runs in browser and Node.js)
+**Bundle:** `public/js/skills-pipeline.js` (auto-generated IIFE, loaded in index.html)
+**Build:** `npm run build:skills` (uses esbuild, also runs as part of `npm run build`)
+
+### Skills (execution order)
+
+| Skill | Stage | FailMode | What it does |
+|-------|-------|----------|--------------|
+| `parse-json` | parse | critical | Parses JSON, repairs trailing commas / truncated brackets |
+| `validate-schema` | validate | critical | Ensures required fields exist, coerces price types |
+| `detect-options` | transform | graceful | Auto-sets `option` field when desc contains "אופציה X" |
+| `format-text-fields` | transform | graceful | Splits notes/serviceDetails/timeline by `. ` into `\n` lines |
+| `trim-description` | transform | graceful | Keeps projectDescription under 80 chars, moves overflow to serviceDetails |
+| `log-transforms` | log | graceful | Diffs before/after, logs to console in dev |
+
+### Adding a new skill
+
+1. Create `src/shared/skills/my-skill.mjs` exporting `{ name, stage, failMode, run(ctx) }`
+2. Import and register in `src/shared/skills/index.mjs`
+3. Run `npm run build:skills` to rebuild the browser bundle
+4. Skill runs automatically — no changes to index.html needed
+
+### FailMode behavior
+
+- **critical:** Pipeline stops, error surfaced to user. Use for parsing/validation.
+- **graceful:** Error logged, pipeline continues with unchanged data. Use for formatting/enrichment.
+
+### Architecture notes
+
+- System prompt contains thin format hints as defense-in-depth (not the primary enforcement)
+- Skills are pure functions on a SkillContext object — no DOM or Node.js dependencies
+- Phase 2 (future): run pipeline server-side in the AI response stream before sending to client
+
 ## Commands
 
 ```bash
 node src/server.mjs           # Start the server (port 6831)
 node src/generate-quote.mjs   # Generate current quote (standalone)
+npm run build:skills          # Rebuild skills pipeline bundle
 ```

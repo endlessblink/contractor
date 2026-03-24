@@ -173,12 +173,29 @@ function writeIndex(data) {
 }
 
 function readProject(id) {
+  const projectPath = join(PROJECTS_DIR, id, 'project.json');
+  let project;
   try {
-    const raw = readFileSync(join(PROJECTS_DIR, id, 'project.json'), 'utf-8');
-    return JSON.parse(raw);
+    const raw = readFileSync(projectPath, 'utf-8');
+    project = JSON.parse(raw);
   } catch {
-    return { name: '', id, createdAt: null, chatHistory: [], formState: null };
+    return { name: '', id, createdAt: null, chatHistory: [], formStates: {}, activeDocType: 'quote' };
   }
+  // Lazy migration: formState (old) → formStates (new)
+  if (project.formState && !project.formStates) {
+    const docType = project.formState.docType || 'quote';
+    project.formStates = { [docType]: project.formState };
+    project.activeDocType = docType;
+    delete project.formState;
+    // Write back to migrate on disk
+    writeFileSync(projectPath, JSON.stringify(project, null, 2), 'utf-8');
+  }
+  // Ensure formStates always exists
+  if (!project.formStates) {
+    project.formStates = {};
+    project.activeDocType = 'quote';
+  }
+  return project;
 }
 
 function writeProject(id, data) {
@@ -361,6 +378,9 @@ ${langNote}
 - מחירים: מספרים בלבד (ללא ₪ או פסיקים)
 - שדה ריק = מחרוזת ריקה
 - הוסף FORM_DATA רק כשיש מידע מספיק
+- projectDescription: כותרת קצרה בלבד (עד 10 מילים)
+- שדות טקסט (notes, serviceDetails, timeline): הפרד פריטים ב-\\n
+- JSON לא תקין יידחה אוטומטית
 
 ## פורמט FORM_UPDATE (תיקונים נקודתיים)
 כשאתה בודק טופס קיים ומזהה בעיות, השתמש ב-FORM_UPDATE (לא FORM_DATA).
@@ -392,6 +412,7 @@ FORM_DATA מחליף את כל הטופס. FORM_UPDATE מתקן רק את מה �
 - כשבודק טופס, תמיד כלול FORM_UPDATE עם כל התיקונים — אל תבקש מהמשתמש לתקן ידנית
 - בעדכון שדות טקסט, שלח את הערך המלא החדש
 - כשיש בעיה — תקן אותה ב-FORM_UPDATE. אל תציע "מומלץ לתקן" בלי לכלול את התיקון בפועל
+- **חשוב:** כשמעדכנים תוכן של אופציה, תמיד עדכן גם את serviceDetails וגם את שורת התמחור המתאימה (updatePricingRow). שניהם מופיעים במסמך — אם תעדכן רק אחד, המסמך יהיה לא עקבי.
 
 ## ניתוח תמונות וצילומי מסך
 
@@ -412,7 +433,16 @@ FORM_DATA מחליף את כל הטופס. FORM_UPDATE מתקן רק את מה �
 - כשאתה בודק טופס (בעקבות "בדוק טופס"), דווח על בעיות **וגם** כלול בלוק FORM_UPDATE עם כל התיקונים. המשתמש יוכל ללחוץ "החל תיקונים" ישירות מהצ'אט.
 - **עברית תקינה בלבד.** בדוק כל טקסט בעברית לפני שליחה — ללא שגיאות כתיב, דקדוק, או ניסוח לא טבעי. פנה ללקוח בלשון זכר (ללקוח, עבורך) אלא אם צוין אחרת.
 - **כשמזכיר סעיפים בצ'אט, תמיד כתוב בעברית** — לא IDs באנגלית. למשל: "סעיף מקדמה 45%" ולא "payment-advance-45percent". ה-IDs הם פנימיים — המשתמש לא צריך לראות אותם. השתמש ב-IDs רק בבלוקים טכניים (FORM_UPDATE, FORM_DATA).
-- כשהמשתמש שואל על תמחור, תנאים, או מבנה — השתמש בידע מהסעיפים למטה.`;
+- כשהמשתמש שואל על תמחור, תנאים, או מבנה — השתמש בידע מהסעיפים למטה.
+
+## יצירת חוזה מהצעת מחיר
+כשהמשתמש מבקש ליצור חוזה או הזמנת עבודה — **אל תשאל שאלות, פשוט צור אותו מיד.**
+1. השתמש בנתוני הטופס הנוכחי (שם לקוח, תמחור, פרטי שירות)
+2. **חובה:** צור FORM_DATA (לא FORM_UPDATE!) עם docType:"contract" (או "order") — זה יחליף את סוג המסמך בטופס
+3. כלול את כל השדות: clientName, clientCompany, projectDescription, serviceDetails, pricingItems, notes, timeline
+4. הוסף סעיפים ספציפיים לחוזה (התחייבויות לקוח, קניין רוחני, ביטול עבודה מוקדמת)
+5. הצעת המחיר המקורית תישמר אוטומטית — אין צורך ליצור פרויקט חדש
+6. **אל תשתמש ב-FORM_UPDATE לשינוי סוג מסמך** — רק FORM_DATA מחליף את הטופס כולו`;
 
   prompt += buildClausesPromptSection();
 
@@ -992,7 +1022,8 @@ app.post('/api/projects', (req, res) => {
       id,
       createdAt: new Date().toISOString(),
       chatHistory: [],
-      formState: null,
+      formStates: {},
+      activeDocType: 'quote',
     };
 
     writeProject(id, project);
@@ -1117,10 +1148,15 @@ app.put('/api/projects/:id/form', (req, res) => {
     if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
       return res.status(400).json({ error: 'Invalid project ID' });
     }
-    const { formState } = req.body;
+    const { formState, docType } = req.body;
 
     const project = readProject(id);
-    project.formState = formState;
+    const effectiveDocType = docType || formState?.docType || project.activeDocType || 'quote';
+    if (!project.formStates) project.formStates = {};
+    project.formStates[effectiveDocType] = formState;
+    project.activeDocType = effectiveDocType;
+    // Migration cleanup: remove old formState if it exists
+    if (project.formState) delete project.formState;
     writeProject(id, project);
 
     // Update index metadata from form state
@@ -1128,7 +1164,8 @@ app.put('/api/projects/:id/form', (req, res) => {
     const entry = index.projects.find(p => p.id === id);
     if (entry) {
       entry.clientName = (formState && formState.clientName) || entry.clientName || '';
-      entry.docType = (formState && formState.docType) || entry.docType || '';
+      entry.docType = effectiveDocType;
+      entry.docTypes = Object.keys(project.formStates).filter(k => project.formStates[k] != null);
       entry.lastModified = new Date().toISOString();
       // Count output files
       try {
@@ -1150,7 +1187,7 @@ app.put('/api/projects/:id/form', (req, res) => {
 // ─── Existing endpoint: POST /api/chat ────────────────────────────────────────
 
 app.post('/api/chat', async (req, res) => {
-  const { messages, system, formContext } = req.body;
+  const { messages, system, formContext, projectId } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'messages array is required' });
@@ -1214,6 +1251,27 @@ app.post('/api/chat', async (req, res) => {
         });
       }
     }
+  }
+
+  // Add awareness of all document types in this project
+  if (projectId) {
+    try {
+      const project = readProject(projectId);
+      if (project && project.formStates) {
+        const docTypeNames = { quote: 'הצעת מחיר', order: 'הזמנת עבודה', contract: 'חוזה' };
+        const existingDocs = Object.keys(project.formStates)
+          .filter(k => project.formStates[k] != null)
+          .map(k => {
+            const state = project.formStates[k];
+            const isActive = k === project.activeDocType;
+            const client = state.clientName || '';
+            return `- ${docTypeNames[k] || k}: ${isActive ? '✓ (פעיל)' : '✓'}${client ? ' — לקוח: ' + client : ''}`;
+          });
+        if (existingDocs.length > 0) {
+          systemPrompt += '\n\nמסמכים קיימים בפרויקט:\n' + existingDocs.join('\n');
+        }
+      }
+    } catch { /* project not found, skip */ }
   }
 
   let streamResult;
@@ -1296,6 +1354,7 @@ app.post('/api/generate-document', async (req, res) => {
         description: item.desc || item.description || '',
         quantity: item.qty || item.quantity || 1,
         unitPrice: item.price || item.unitPrice || 0,
+        option: item.option || '',
       })),
       paymentTerms: {
         type: raw.paymentTerms?.type || 'two',
@@ -1904,7 +1963,7 @@ app.post('/api/learn-references', async (req, res) => {
         const val = (pp[field] || '').trim();
         // Skip placeholder values from AI
         if (!val || /not found|לא נמצא|unknown|N\/A/i.test(val)) continue;
-        if (!userProfile[field]) {
+        if (val && val !== userProfile[field]) {
           userProfile[field] = val;
           profileUpdated = true;
         }
@@ -1947,6 +2006,102 @@ app.get('/api/clauses-db', (_req, res) => {
     res.json(clausesDb);
   } else {
     res.json({ clauses: {}, serviceTemplates: [], paymentPatterns: [], standardTerms: {} });
+  }
+});
+
+// ─── AI clause recommendation endpoint ────────────────────────────────────────
+
+const recommendCache = new Map();
+const RECOMMEND_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+app.post('/api/recommend-clauses', async (req, res) => {
+  try {
+    const { formContext } = req.body || {};
+    if (!clausesDb || !clausesDb.clauses) {
+      return res.status(400).json({ error: 'Clauses DB not loaded' });
+    }
+
+    const docType = formContext?.docType || 'quote';
+    const docTypeKey = docType === 'order' ? 'workOrder' : docType === 'contract' ? 'contract' : 'quote';
+    const docTypeNames = { quote: 'הצעת מחיר', order: 'הזמנת עבודה', contract: 'חוזה' };
+
+    const serviceDetails = formContext?.serviceDetails || formContext?.serviceType || '';
+    const projectDescription = formContext?.projectDescription || '';
+    const pricingDescs = (formContext?.pricingItems || []).map(p => p.desc || p.description || '').filter(Boolean).join(', ');
+    const totalPrice = (formContext?.pricingItems || []).reduce((s, p) => s + ((p.qty || p.quantity || 1) * (p.price || p.unitPrice || 0)), 0);
+
+    // Cache key
+    const cacheKey = `${docType}|${serviceDetails}|${projectDescription}|${pricingDescs}`;
+
+    // Clean expired cache entries
+    const now = Date.now();
+    for (const [key, entry] of recommendCache) {
+      if (now - entry.ts > RECOMMEND_CACHE_TTL) {
+        recommendCache.delete(key);
+      }
+    }
+
+    // Return cached result if valid
+    if (recommendCache.has(cacheKey)) {
+      const cached = recommendCache.get(cacheKey);
+      if (now - cached.ts <= RECOMMEND_CACHE_TTL) {
+        return res.json({ recommendations: cached.recommendations });
+      }
+    }
+
+    // Build a flat list of clause IDs + names (+ notes) filtered to the current doc type
+    const clauseList = [];
+    for (const [, catData] of Object.entries(clausesDb.clauses)) {
+      for (const clause of catData.clauses) {
+        if (clause.appliesTo && clause.appliesTo.includes(docTypeKey)) {
+          const label = clause.name || clause.id;
+          clauseList.push(`${clause.id}: ${label}${clause.notes ? ' — ' + clause.notes : ''}`);
+        }
+      }
+    }
+
+    if (clauseList.length === 0) {
+      return res.json({ recommendations: {} });
+    }
+
+    const prompt = `בהינתן הטופס הבא:
+- סוג מסמך: ${docTypeNames[docType] || docType}
+- שירות: ${serviceDetails}
+- תיאור: ${projectDescription}
+- פריטי תמחור: ${pricingDescs || 'לא צוינו'}
+- סה"כ: ${totalPrice} ₪
+
+דרג כל סעיף ברשימה הבאה לפי רלוונטיות לפרויקט הזה (0-100):
+${clauseList.join('\n')}
+
+החזר JSON בלבד ללא הסברים, בפורמט: {"clause-id": score, ...}`;
+
+    const result = await chatCompletion({
+      system: 'אתה מומחה חוזים ישראלי. קרא את הטופס ותן ציון רלוונטיות (0-100) לכל סעיף. החזר JSON בלבד.',
+      messages: [{ role: 'user', content: prompt }],
+      maxTokens: 1024,
+    });
+
+    // Parse JSON from response (strip any surrounding markdown)
+    let recommendations = {};
+    try {
+      const raw = result.text.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+      const jsonStart = raw.indexOf('{');
+      const jsonEnd = raw.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        recommendations = JSON.parse(raw.slice(jsonStart, jsonEnd + 1));
+      }
+    } catch (parseErr) {
+      console.error('[recommend-clauses] JSON parse error:', parseErr.message, 'raw:', result.text.slice(0, 200));
+    }
+
+    // Store in cache
+    recommendCache.set(cacheKey, { recommendations, ts: Date.now() });
+
+    res.json({ recommendations });
+  } catch (err) {
+    console.error('[recommend-clauses] error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
