@@ -203,14 +203,14 @@
 
     /* ── BUTTON TOKEN: Dark mode — universal outline reset ── */
     /* Catches ALL buttons except utility/nav buttons via :not() exclusions */
-    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn) {
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn) {
       background: var(--btn-accent-bg) !important;
       color: var(--btn-accent-color) !important;
       border: var(--btn-accent-border) !important;
       box-shadow: none !important;
       background-image: none !important;
     }
-    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):hover:not(:disabled) {
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):hover:not(:disabled) {
       background: var(--btn-accent-hover-bg) !important;
       box-shadow: none !important;
     }
@@ -249,53 +249,26 @@
       transition: background-color 0.3s, box-shadow 0.3s;
     }
 
-    /* ── Header ── */
+    /* ── Header (Breadcrumb Bar) ── */
     .header {
-      background: var(--nav-bg);
-      color: var(--nav-text-active);
-      padding-block: 14px;
-      padding-inline: 24px;
+      background: var(--panel-bg);
+      color: var(--text-primary);
+      padding-block: 8px;
+      padding-inline: 16px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 14px;
-      transition: background-color 0.3s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
-      z-index: 20;
-    }
-
-    .header-text h1 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      line-height: 1.3;
-    }
-
-    .header-text .subtitle {
-      font-size: 0.76rem;
-      font-weight: 300;
-      opacity: 0.6;
-      margin-block-start: 1px;
-    }
-
-    .header-logo {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #1a1d23, #2ba8a0);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.1rem;
-      flex-shrink: 0;
+      z-index: 15;
     }
 
     /* ── Theme Toggle ── */
     .theme-toggle {
-      margin-inline-start: auto;
-      width: 34px;
-      height: 34px;
+      width: 30px;
+      height: 30px;
       border: none;
       border-radius: 50%;
       background: var(--toggle-bg);
@@ -308,7 +281,7 @@
       transition: background 0.2s, transform 0.2s;
     }
 
-    .theme-toggle:hover { background: #2d3139; transform: scale(1.08); }
+    .theme-toggle:hover { background: var(--elevated-bg); transform: scale(1.08); }
     .theme-toggle svg { width: 17px; height: 17px; }
 
     /* Hide the inappropriate icon per theme */
@@ -2445,135 +2418,115 @@
     }
 
     /* ═══════════════════════════════════════
-       SIDEBAR
+       ICON RAIL SIDEBAR
     ═══════════════════════════════════════ */
-    .sidebar { width: 300px; flex-shrink: 0; height: 100vh; position: sticky; top: 0; background: var(--sidebar-bg, var(--app-bg)); border-inline-end: 1px solid var(--border-strong); display: flex; flex-direction: column; overflow: hidden; z-index: 20; transition: width 0.2s cubic-bezier(0.4,0,0.2,1), min-width 0.2s; }
-    .sidebar.collapsed { width: 0; min-width: 0; border-inline-end: none; overflow: hidden; }
-    .sidebar-collapse-btn { position: absolute; top: 14px; inset-inline-start: -14px; width: 28px; height: 28px; border-radius: 50%; background: var(--sidebar-bg, var(--elevated-bg)); border: 1px solid var(--border-strong); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 25; transition: all 150ms; font-size: 12px; }
-    .sidebar-collapse-btn:hover { color: var(--accent-text); background: var(--elevated-bg); }
-    .sidebar-expand-btn { display: none; position: fixed; top: 14px; inset-inline-end: 14px; width: 32px; height: 32px; border-radius: 8px; background: var(--sidebar-bg, var(--elevated-bg)); border: 1px solid var(--border-strong); color: var(--text-muted); cursor: pointer; align-items: center; justify-content: center; z-index: 25; font-size: 14px; }
-    .sidebar.collapsed ~ .sidebar-expand-btn { display: flex; }
-    .sidebar-header { padding: 16px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-    .sidebar-brand { font-size: 16px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
-    .sidebar-brand-icon { font-size: 20px; }
-    .sidebar-close { display: none; background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
-    .sidebar-section { padding: 12px 14px; border-bottom: 1px solid var(--border); }
-    .sidebar-section:last-of-type { border-bottom: none; }
-    .sidebar-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .sidebar-action-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 4px; font-family: inherit; }
-    .sidebar-action-btn:hover { background: var(--accent-subtle); }
-    .sidebar-search { margin-bottom: 8px; }
-    .sidebar-search input { width: 100%; padding: 6px 10px; border: 1px solid var(--input-border); border-radius: 6px; background: var(--input-bg); color: var(--text-primary); font-size: 12px; font-family: inherit; direction: rtl; box-sizing: border-box; }
-    .sidebar-search input:focus { border-color: var(--input-focus-border); outline: none; }
-    .sidebar-project-list { max-height: calc(100vh - 400px); overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
-    .sidebar-project-card { padding: 10px 12px; background: var(--elevated-bg); border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; }
-    .sidebar-project-card:hover { border-color: var(--accent-border); background: var(--accent-subtle); }
-    .sidebar-project-card.active { border-color: var(--accent); background: var(--accent-subtle); box-shadow: 0 0 0 2px var(--accent-subtle); }
-    .sidebar-project-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sidebar-project-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-    .sidebar-project-none { text-align: center; padding: 16px 8px; color: var(--text-muted); font-size: 12px; }
-    .sidebar-doc-types { display: flex; flex-direction: column; gap: 4px; }
-    .sidebar-doc-type-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; background: var(--elevated-bg); border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text-primary); transition: all 0.2s; text-align: right; box-shadow: 0 1px 3px var(--btn-neutral-shadow); }
-    .sidebar-doc-type-btn:hover { border-color: var(--btn-frost-border-h); background: var(--btn-frost-hover); transform: translateY(-1px); box-shadow: 0 3px 10px var(--btn-glow); }
-    .sidebar-doc-type-btn.active { border-color: var(--accent); background: linear-gradient(135deg, var(--btn-frost-hover), var(--btn-frost)); color: var(--accent-text); font-weight: 600; box-shadow: 0 0 0 1px var(--btn-frost-border), 0 3px 12px var(--btn-glow); }
-    .sidebar-links { display: flex; flex-direction: column; gap: 2px; }
-    .sidebar-link { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; background: none; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text-secondary); transition: all 0.15s; text-align: right; }
-    .sidebar-link:hover { background: var(--accent-subtle); color: var(--accent-text); }
-    .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
-    .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 1px solid var(--border); display: flex; gap: 4px; }
-
-    /* Client picker dropdown */
-    .sidebar-client-picker { position: relative; border-bottom: 1px solid var(--border); }
-    .sidebar-client-btn {
-      width: 100%; padding: 14px 16px; background: none; border: none;
-      display: flex; align-items: center; justify-content: space-between;
-      cursor: pointer; direction: rtl; gap: 8px; transition: background 150ms;
+    .sidebar {
+      width: 48px; flex-shrink: 0; height: 100vh; position: sticky; top: 0;
+      background: var(--sidebar-bg, var(--app-bg)); border-inline-end: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; z-index: 20;
     }
-    .sidebar-client-btn:hover { background: var(--elevated-bg); }
-    .sidebar-client-info { text-align: right; }
-    .sidebar-client-name { display: block; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
-    .sidebar-client-company { display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
-    .sidebar-chevron { width: 16px; height: 16px; color: var(--text-muted); transition: transform 200ms; flex-shrink: 0; }
-    .sidebar-client-picker.open .sidebar-chevron { transform: rotate(180deg); }
-
-    .sidebar-client-dropdown {
-      display: none; position: absolute; top: 100%; right: 0; left: 0;
-      background: var(--card-bg); border: 1px solid var(--border-strong);
-      border-radius: 0 0 8px 8px; z-index: 100; max-height: 300px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3); overflow: hidden;
+    .rail-btn {
+      width: 36px; height: 36px; border: none; background: transparent;
+      color: var(--text-muted); cursor: pointer; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 150ms; padding: 0;
     }
-    .sidebar-client-picker.open .sidebar-client-dropdown { display: block; }
-
-    .sidebar-dropdown-search { padding: 8px; border-bottom: 1px solid var(--border); }
-    .sidebar-dropdown-search input {
-      width: 100%; padding: 6px 10px; background: var(--input-bg); border: 1px solid var(--border);
-      border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; font-family: inherit; direction: rtl; box-sizing: border-box;
-    }
-    .sidebar-dropdown-list { max-height: 200px; overflow-y: auto; }
-    .sidebar-dropdown-item {
-      display: block; width: 100%; padding: 10px 14px; background: none; border: none;
-      cursor: pointer; direction: rtl; text-align: right; transition: background 150ms;
-      color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
-    }
-    .sidebar-dropdown-item:hover { background: var(--elevated-bg); }
-    .sidebar-dropdown-item.active { color: var(--accent-text); background: var(--accent-subtle); }
-    .sidebar-dropdown-item .dd-company { font-size: 0.72rem; color: var(--text-muted); display: block; }
-    .sidebar-dropdown-add {
-      display: block; width: 100%; padding: 10px 14px; background: none; border: none;
-      border-top: 1px solid var(--border); cursor: pointer; direction: rtl; text-align: right;
-      color: var(--accent-text); font-family: inherit; font-size: 0.82rem; font-weight: 500;
-    }
-    .sidebar-dropdown-add:hover { background: var(--accent-subtle); }
-
-    /* Project list */
-    .sidebar-projects { flex: 1; overflow-y: auto; padding: 4px 0; }
-    .sidebar-project-item {
-      padding: 10px 16px; cursor: pointer; direction: rtl; transition: background 150ms;
-      border-radius: 4px; margin: 0 6px;
-    }
-    .sidebar-project-item:hover { background: var(--elevated-bg); }
-    .sidebar-project-item.active { background: var(--accent-subtle); border-right: 3px solid var(--accent); padding-right: 13px; }
-    .sidebar-project-name { font-size: 0.85rem; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sidebar-project-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
-    .sidebar-doc-chips { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
-    .sidebar-doc-chip {
-      font-size: 0.78rem; padding: 5px 12px; border-radius: 6px; cursor: pointer;
-      background: var(--elevated-bg); color: var(--text-muted); border: 1px solid var(--border);
-      transition: all 150ms; font-family: inherit;
-    }
-    .sidebar-doc-chip:hover { border-color: var(--accent); color: var(--text-primary); }
-    .sidebar-doc-chip.exists { color: var(--accent-text); border-color: var(--accent-border); }
-    .sidebar-doc-chip.active { background: var(--accent-subtle); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
-
-    .sidebar-project-empty {
-      padding: 24px 16px; text-align: center; color: var(--text-muted);
-      font-size: 0.82rem; direction: rtl;
-    }
-
-    /* Sidebar actions */
-    .sidebar-actions { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
-    .sidebar-actions button {
-      width: 100%; padding: 8px 12px; background: var(--elevated-bg); border: 1px solid var(--border);
-      border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-family: inherit;
-      color: var(--text-primary); direction: rtl; text-align: right; transition: all 150ms;
-    }
-    .sidebar-actions button:hover { border-color: var(--accent-border); color: var(--accent-text); background: var(--accent-subtle); }
+    .rail-btn:hover { color: var(--text-primary); background: var(--elevated-bg); }
+    .rail-btn.active { color: var(--accent); background: var(--accent-subtle); }
+    .rail-btn svg { width: 20px; height: 20px; }
 
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 19; }
-    .sidebar-toggle { display: none; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 6px; border-radius: 6px; }
-    .sidebar-toggle svg { width: 20px; height: 20px; }
+
     .main-content { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 60px var(--app-shadow); }
 
     @media (max-width: 768px) {
-      .sidebar { position: fixed; inset-block: 0; inset-inline-start: 0; transform: translateX(100%); z-index: 500; box-shadow: none; transition: transform 0.25s ease; }
-      html[dir="rtl"] .sidebar { transform: translateX(100%); }
-      html[dir="rtl"] .sidebar.open { transform: translateX(0); }
-      .sidebar.open { transform: translateX(0); box-shadow: -4px 0 20px rgba(0,0,0,0.15); }
-      .sidebar-close { display: flex; }
-      .sidebar-overlay.active { display: block; }
-      .sidebar-toggle { display: flex; }
+      .sidebar { width: 40px; padding: 8px 0; }
+      .rail-btn { width: 30px; height: 30px; }
+      .rail-btn svg { width: 17px; height: 17px; }
       .main-content { max-width: none; }
     }
+
+    /* ═══════════════════════════════════════
+       HUB VIEWS
+    ═══════════════════════════════════════ */
+    .view-container { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+    .hub-view { display: none; flex: 1; flex-direction: column; overflow-y: auto; min-height: 0; }
+    .hub-view.active { display: flex; }
+    .hub-content { max-width: 800px; width: 100%; margin: 0 auto; padding: 32px 40px; }
+    .hub-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; direction: rtl; }
+    .hub-header h2 { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+    .hub-section-title { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin: 0 0 12px; direction: rtl; }
+    .hub-meta { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 24px; direction: rtl; }
+    .hub-body { direction: rtl; }
+    .hub-empty { text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.88rem; }
+    .hub-action-btn {
+      padding: 8px 16px; background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text-primary); cursor: pointer; font-size: 0.82rem;
+      font-family: inherit; transition: all 150ms; direction: rtl;
+    }
+    .hub-action-btn:hover { border-color: var(--accent-border); color: var(--accent-text); }
+
+    /* Document view — full panels-row */
+    #view-document { overflow: hidden; }
+    #view-document .panels-row { flex: 1; }
+
+    /* Hub cards (clients, projects) */
+    .hub-card {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; cursor: pointer; direction: rtl; transition: all 150ms;
+      margin-bottom: 8px;
+    }
+    .hub-card:hover { border-color: var(--accent-border); background: var(--elevated-bg); }
+    .hub-card-title { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); }
+    .hub-card-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .hub-card-meta { font-size: 0.75rem; color: var(--text-muted); text-align: left; }
+    .hub-card-chips { display: flex; gap: 4px; margin-top: 6px; }
+
+    /* Doc type cards (3 in a row) */
+    .doc-type-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; direction: rtl; }
+    .doc-type-card {
+      padding: 20px; background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 12px; cursor: pointer; text-align: center; direction: rtl;
+      transition: all 150ms;
+    }
+    .doc-type-card:hover { border-color: var(--accent-border); background: var(--elevated-bg); }
+    .doc-type-card.exists { border-color: var(--accent-border); }
+    .doc-type-card-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .doc-type-card-status { font-size: 0.78rem; color: var(--text-muted); }
+    .doc-type-card-price { font-size: 1.1rem; font-weight: 700; color: var(--accent-text); margin-top: 8px; }
+    .doc-type-card-date { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* Timeline items (home view) */
+    .timeline-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; border-radius: 8px; cursor: pointer; direction: rtl;
+      transition: background 150ms;
+    }
+    .timeline-item:hover { background: var(--elevated-bg); }
+    .timeline-item-title { font-size: 0.88rem; color: var(--text-primary); }
+    .timeline-item-meta { font-size: 0.78rem; color: var(--text-muted); }
+    .timeline-item-client { font-size: 0.72rem; color: var(--accent-text); padding: 2px 8px; background: var(--accent-subtle); border-radius: 4px; }
+    .timeline-group { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); padding: 16px 16px 6px; direction: rtl; }
+
+    /* Breadcrumb */
+    .breadcrumb-nav {
+      display: flex; align-items: center; gap: 4px; flex: 1;
+      direction: rtl; font-size: 0.88rem; min-width: 0;
+    }
+    .breadcrumb-segment {
+      color: var(--text-muted); cursor: pointer; padding: 4px 8px;
+      border-radius: 6px; transition: all 150ms; white-space: nowrap; font-weight: 500;
+    }
+    .breadcrumb-segment:hover { color: var(--text-primary); background: var(--elevated-bg); }
+    .breadcrumb-segment.active { color: var(--text-primary); cursor: default; font-weight: 600; }
+    .breadcrumb-segment.active:hover { background: transparent; }
+    .breadcrumb-separator { color: var(--text-muted); font-size: 0.75rem; user-select: none; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+
+    /* Hide old elements */
+    .project-bar { display: none !important; }
+    .tab-bar { display: none !important; }
 
     /* ═══════════════════════════════════════
        PROJECT BAR
@@ -3636,56 +3589,27 @@
 <body>
   <div class="app">
 
-    <!-- ── Sidebar ── -->
+    <!-- ── Icon Rail Sidebar ── -->
     <div class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-brand"><span class="sidebar-brand-icon">&#128196;</span> office-work</div>
-        <button class="sidebar-close" id="sidebarClose">&times;</button>
-      </div>
-
-      <!-- Client Dropdown -->
-      <div class="sidebar-client-picker" id="sidebarClientPicker">
-        <button class="sidebar-client-btn" id="sidebarClientBtn">
-          <div class="sidebar-client-info">
-            <span class="sidebar-client-name" id="sidebarClientName">כל הלקוחות</span>
-            <span class="sidebar-client-company" id="sidebarClientCompany"></span>
-          </div>
-          <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="sidebar-client-dropdown" id="sidebarClientDropdown">
-          <div class="sidebar-dropdown-search">
-            <input type="text" id="sidebarClientSearch" placeholder="חיפוש לקוח..." dir="rtl">
-          </div>
-          <div class="sidebar-dropdown-list" id="sidebarClientList"></div>
-          <button class="sidebar-dropdown-add" id="sidebarAddClient">+ לקוח חדש</button>
-        </div>
-      </div>
-
-      <!-- Search projects -->
-      <div class="sidebar-search">
-        <input type="text" id="sidebarProjectSearch" placeholder="חיפוש פרויקטים..." dir="rtl">
-      </div>
-
-      <!-- Project list -->
-      <div class="sidebar-projects" id="sidebarProjects"></div>
-
-      <!-- Actions -->
-      <div class="sidebar-actions">
-        <button id="sidebarNewProject">+ פרויקט חדש</button>
-        <button id="sidebarManageClients">כל הלקוחות</button>
-      </div>
-
-      <!-- Footer links -->
-      <div class="sidebar-footer">
-        <button class="sidebar-link" id="sidebarKnowledge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          בסיס ידע
-        </button>
-        <button class="sidebar-link" id="sidebarSettings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          הגדרות
-        </button>
-      </div>
+      <button class="rail-btn active" data-view="home" title="בית">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </button>
+      <button class="rail-btn" data-view="clients" title="לקוחות">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </button>
+      <button class="rail-btn" data-view="projects" title="פרויקטים">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      </button>
+      <button class="rail-btn" data-view="docs" title="מסמכים">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </button>
+      <div style="flex:1"></div>
+      <button class="rail-btn" data-view="knowledge" title="בסיס ידע">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </button>
+      <button class="rail-btn" data-view="settings" title="הגדרות">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
     </div>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
@@ -3693,42 +3617,33 @@
     <div class="main-content">
 
     <!-- ── Header ── -->
-    <div class="header">
-      <div class="header-logo">&#128196;</div>
-      <div class="header-text">
-        <h1>office-work</h1>
-        <div class="subtitle" id="headerSubtitle">office-work</div>
+    <header class="header">
+      <nav class="breadcrumb-nav" id="breadcrumbNav" dir="rtl">
+        <span class="breadcrumb-segment active" data-view="home">בית</span>
+      </nav>
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" title="החלף מצב תצוגה" aria-label="החלף בין מצב כהה ובהיר">
+          <!-- Sun icon (shown in dark mode - click to go light) -->
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <!-- Moon icon (shown in light mode - click to go dark) -->
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
       </div>
-      <button class="sidebar-toggle" id="sidebarToggle" title="תפריט">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-      </button>
-      <button class="settings-btn" id="settingsBtn" title="הגדרות" aria-label="הגדרות">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-      </button>
-      <button class="theme-toggle" id="themeToggle" title="החלף מצב תצוגה" aria-label="החלף בין מצב כהה ובהיר">
-        <!-- Sun icon (shown in dark mode — click to go light) -->
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="23"></line>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-          <line x1="1" y1="12" x2="3" y2="12"></line>
-          <line x1="21" y1="12" x2="23" y2="12"></line>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-        </svg>
-        <!-- Moon icon (shown in light mode — click to go dark) -->
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-        </svg>
-      </button>
-    </div>
+    </header>
 
-    <!-- ── Project Bar ── -->
+    <!-- ── Project Bar (hidden, kept for backward compat) ── -->
     <div class="project-bar" id="projectBar" style="display:none">
       <span class="project-bar-label">פרויקט:</span>
       <span class="project-indicator" id="projectIndicator"></span>
@@ -3747,31 +3662,60 @@
       </div>
     </div>
 
-    <!-- ── Tab Bar ── -->
-    <div class="tab-bar">
-      <button class="tab-btn active" data-tab="chat">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-        צ'אט
-      </button>
-      <button class="tab-btn" data-tab="create">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="12" y1="18" x2="12" y2="12"></line>
-          <line x1="9" y1="15" x2="15" y2="15"></line>
-        </svg>
-        יצירת מסמך
-      </button>
-      <button class="tab-btn" data-tab="docs">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-        </svg>
-        מסמכים
-      </button>
-    </div>
+    <!-- ── View Container ── -->
+    <div class="view-container" id="viewContainer">
 
+      <!-- Home View -->
+      <div class="hub-view active" id="view-home">
+        <div class="hub-content">
+          <div class="hub-header">
+            <h2>עבודה אחרונה</h2>
+          </div>
+          <div id="homeTimeline" class="hub-body">
+            <div class="hub-empty">טוען...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clients View -->
+      <div class="hub-view" id="view-clients">
+        <div class="hub-content">
+          <div class="hub-header">
+            <h2>לקוחות</h2>
+            <button class="hub-action-btn" id="hubAddClient">+ לקוח חדש</button>
+          </div>
+          <div id="clientsList" class="hub-body"></div>
+        </div>
+      </div>
+
+      <!-- Client Hub View -->
+      <div class="hub-view" id="view-client-hub">
+        <div class="hub-content">
+          <div class="hub-header">
+            <h2 id="clientHubName"></h2>
+            <button class="hub-action-btn" id="hubEditClient">&#9998; עריכה</button>
+          </div>
+          <div id="clientHubDetails" class="hub-meta"></div>
+          <h3 class="hub-section-title">פרויקטים</h3>
+          <div id="clientHubProjects" class="hub-body"></div>
+          <button class="hub-action-btn" id="hubAddProject" style="margin-top:12px;">+ פרויקט חדש</button>
+        </div>
+      </div>
+
+      <!-- Project Hub View -->
+      <div class="hub-view" id="view-project-hub">
+        <div class="hub-content">
+          <div class="hub-header">
+            <h2 id="projectHubName"></h2>
+          </div>
+          <div class="doc-type-cards" id="projectHubCards"></div>
+          <h3 class="hub-section-title" style="margin-top:24px;">היסטוריה</h3>
+          <div id="projectHubHistory" class="hub-body"></div>
+        </div>
+      </div>
+
+      <!-- Document View (contains existing chat+form) -->
+      <div class="hub-view" id="view-document">
     <div class="panels-row">
     <!-- ══════════════════════════════════════
          PANEL: CHAT
@@ -4173,6 +4117,9 @@
     </div>
 
     </div><!-- /panels-row -->
+      </div><!-- /view-document -->
+
+    </div><!-- /view-container -->
 
     <!-- ══════════════════════════════════════
          TAB 3: DOCUMENTS (hidden, shown via modal)
@@ -6791,7 +6738,7 @@
     refreshDocsBtn.addEventListener('click', loadDocuments);
 
     // Load documents on first visit if docs tab is active
-    if (document.querySelector('.tab-btn[data-tab="docs"]').classList.contains('active')) {
+    if (document.querySelector('.tab-btn[data-tab="docs"]')?.classList.contains('active')) {
       loadDocuments();
     }
 
@@ -6852,8 +6799,8 @@
       // Switch to the create tab
       tabBtns.forEach(b => b.classList.remove('active'));
       tabPanels.forEach(p => p.classList.remove('active'));
-      document.querySelector('.tab-btn[data-tab="create"]').classList.add('active');
-      document.getElementById('panel-create').classList.add('active');
+      document.querySelector('.tab-btn[data-tab="create"]')?.classList.add('active');
+      document.getElementById('panel-create')?.classList.add('active');
     });
 
     function renderAnalysisModal(data) {
@@ -8802,7 +8749,7 @@
       settingsOverlay.style.display = 'none';
     }
 
-    settingsBtn.addEventListener('click', openSettings);
+    if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
     settingsCloseBtn.addEventListener('click', closeSettings);
     profileCancelBtn.addEventListener('click', closeSettings);
     settingsOverlay.addEventListener('click', (e) => { if (e.target === settingsOverlay) closeSettings(); });
@@ -9355,6 +9302,375 @@
         }
       };
     }
+  })();
+
+  // ═══════════════════════════════════════
+  // HUB-PAGE NAVIGATION
+  // ═══════════════════════════════════════
+  (function() {
+    var navState = { view: 'home', clientId: null, projectId: null, docType: null };
+
+    function navigate(view, params) {
+      params = params || {};
+      // Hide all views
+      document.querySelectorAll('.hub-view').forEach(function(v) { v.classList.remove('active'); });
+
+      // Update state
+      navState.view = view;
+      if (params.clientId !== undefined) navState.clientId = params.clientId;
+      if (params.projectId !== undefined) navState.projectId = params.projectId;
+      if (params.docType !== undefined) navState.docType = params.docType;
+
+      // Show target view
+      var target = document.getElementById('view-' + view);
+      if (target) target.classList.add('active');
+
+      // Update rail active state
+      document.querySelectorAll('.rail-btn').forEach(function(b) { b.classList.remove('active'); });
+      var railMap = { home: 'home', clients: 'clients', 'client-hub': 'clients', 'project-hub': 'projects', document: 'projects' };
+      var railBtn = document.querySelector('.rail-btn[data-view="' + (railMap[view] || view) + '"]');
+      if (railBtn) railBtn.classList.add('active');
+
+      // Update breadcrumb
+      updateBreadcrumb();
+
+      // Render view content
+      renderView(view, params);
+
+      // Push browser history
+      var url = new URL(window.location);
+      url.searchParams.set('view', view);
+      if (navState.clientId) url.searchParams.set('client', navState.clientId);
+      else url.searchParams.delete('client');
+      if (navState.projectId) url.searchParams.set('project', navState.projectId);
+      else url.searchParams.delete('project');
+      if (navState.docType) url.searchParams.set('doc', navState.docType);
+      else url.searchParams.delete('doc');
+      history.pushState({ view: view, clientId: navState.clientId, projectId: navState.projectId, docType: navState.docType }, '', url);
+    }
+
+    function updateBreadcrumb() {
+      var nav = document.getElementById('breadcrumbNav');
+      if (!nav) return;
+      nav.innerHTML = '';
+      var segments = [{ label: '\u05D1\u05D9\u05EA', view: 'home' }];
+
+      if (navState.view === 'clients' || navState.view === 'client-hub' || navState.view === 'project-hub' || navState.view === 'document') {
+        segments.push({ label: '\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA', view: 'clients' });
+      }
+      if ((navState.view === 'client-hub' || navState.view === 'project-hub' || navState.view === 'document') && navState.clientId) {
+        var client = (window._allClients || []).find(function(c) { return c.id === navState.clientId; });
+        segments.push({ label: client ? client.name : navState.clientId, view: 'client-hub', params: { clientId: navState.clientId } });
+      }
+      if ((navState.view === 'project-hub' || navState.view === 'document') && navState.projectId) {
+        var project = (window._allProjects || []).find(function(p) { return p.id === navState.projectId; });
+        segments.push({ label: project ? project.name : navState.projectId, view: 'project-hub', params: { clientId: navState.clientId, projectId: navState.projectId } });
+      }
+      if (navState.view === 'document' && navState.docType) {
+        var docLabels = { quote: '\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8', contract: '\u05D7\u05D5\u05D6\u05D4 \u05E2\u05D1\u05D5\u05D3\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4' };
+        segments.push({ label: docLabels[navState.docType] || navState.docType });
+      }
+
+      segments.forEach(function(seg, i) {
+        if (i > 0) {
+          var sep = document.createElement('span');
+          sep.className = 'breadcrumb-separator';
+          sep.textContent = '\u203A';
+          nav.appendChild(sep);
+        }
+        var span = document.createElement('span');
+        span.className = 'breadcrumb-segment' + (i === segments.length - 1 ? ' active' : '');
+        span.textContent = seg.label;
+        if (i < segments.length - 1) {
+          (function(s) {
+            span.addEventListener('click', function() { navigate(s.view, s.params || {}); });
+          })(seg);
+        }
+        nav.appendChild(span);
+      });
+    }
+
+    function renderView(view, params) {
+      switch (view) {
+        case 'home': renderHome(); break;
+        case 'clients': renderClients(); break;
+        case 'client-hub': renderClientHub(params.clientId || navState.clientId); break;
+        case 'project-hub': renderProjectHub(params.projectId || navState.projectId); break;
+        case 'document': loadDocument(params); break;
+      }
+    }
+
+    function escHtml(s) { return (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    // ── Home View ──
+    function renderHome() {
+      var el = document.getElementById('homeTimeline');
+      if (!el) return;
+      Promise.all([
+        fetch('/api/clients').then(function(r) { return r.json(); }),
+        fetch('/api/projects').then(function(r) { return r.json(); }),
+      ]).then(function(results) {
+        var clientsRes = results[0], projectsRes = results[1];
+        window._allClients = clientsRes.clients || [];
+        window._allProjects = projectsRes.projects || [];
+        var projects = (projectsRes.projects || []).sort(function(a, b) { return (b.lastModified || '').localeCompare(a.lastModified || ''); });
+
+        if (projects.length === 0) {
+          el.innerHTML = '<div class="hub-empty">\u05D0\u05D9\u05DF \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD \u05E2\u05D3\u05D9\u05D9\u05DF. \u05E6\u05D5\u05E8 \u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9 \u05DB\u05D3\u05D9 \u05DC\u05D4\u05EA\u05D7\u05D9\u05DC.</div>';
+          return;
+        }
+
+        var docLabels = { quote: '\u05D4\u05E6\u05E2\u05D4', contract: '\u05D7\u05D5\u05D6\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05D4' };
+        el.innerHTML = projects.map(function(p) {
+          var client = (clientsRes.clients || []).find(function(c) { return c.id === p.clientId; });
+          var docTypes = (p.docTypes || [p.docType]).filter(Boolean);
+          return '<div class="timeline-item" data-project="' + escHtml(p.id) + '" data-client="' + escHtml(p.clientId || '') + '">' +
+            '<div>' +
+              '<div class="timeline-item-title">' + escHtml(p.name) + '</div>' +
+              '<div class="timeline-item-meta">' + docTypes.map(function(d) { return docLabels[d] || d; }).join(' \u00b7 ') + '</div>' +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+              (client ? '<span class="timeline-item-client">' + escHtml(client.name) + '</span>' : '') +
+              '<span class="timeline-item-meta">' + (p.lastModified ? new Date(p.lastModified).toLocaleDateString('he-IL') : '') + '</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+
+        el.querySelectorAll('.timeline-item').forEach(function(item) {
+          item.addEventListener('click', function() {
+            navigate('project-hub', { clientId: item.dataset.client, projectId: item.dataset.project });
+          });
+        });
+      }).catch(function(err) {
+        el.innerHTML = '<div class="hub-empty">\u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05D8\u05E2\u05D9\u05E0\u05EA \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD</div>';
+        console.error('Home render error:', err);
+      });
+    }
+
+    // ── Clients View ──
+    function renderClients() {
+      var el = document.getElementById('clientsList');
+      if (!el) return;
+      Promise.all([
+        fetch('/api/clients').then(function(r) { return r.json(); }),
+        fetch('/api/projects').then(function(r) { return r.json(); }),
+      ]).then(function(results) {
+        var clientsRes = results[0], projRes = results[1];
+        window._allClients = clientsRes.clients || [];
+        window._allProjects = projRes.projects || [];
+        var clients = clientsRes.clients || [];
+
+        if (clients.length === 0) {
+          el.innerHTML = '<div class="hub-empty">\u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E2\u05D3\u05D9\u05D9\u05DF. \u05DC\u05D7\u05E5 "+ \u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9" \u05DB\u05D3\u05D9 \u05DC\u05D4\u05EA\u05D7\u05D9\u05DC.</div>';
+          return;
+        }
+
+        el.innerHTML = clients.map(function(c) {
+          var projCount = (projRes.projects || []).filter(function(p) { return p.clientId === c.id; }).length;
+          return '<div class="hub-card" data-client="' + escHtml(c.id) + '">' +
+            '<div>' +
+              '<div class="hub-card-title">' + escHtml(c.name) + '</div>' +
+              '<div class="hub-card-subtitle">' + escHtml(c.company || '') + '</div>' +
+            '</div>' +
+            '<div class="hub-card-meta">' + projCount + ' \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD</div>' +
+          '</div>';
+        }).join('');
+
+        el.querySelectorAll('.hub-card').forEach(function(card) {
+          card.addEventListener('click', function() {
+            navigate('client-hub', { clientId: card.dataset.client });
+          });
+        });
+      }).catch(function(err) {
+        el.innerHTML = '<div class="hub-empty">\u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05D8\u05E2\u05D9\u05E0\u05EA \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA</div>';
+      });
+    }
+
+    // ── Client Hub View ──
+    function renderClientHub(clientId) {
+      if (!clientId) { navigate('clients'); return; }
+      navState.clientId = clientId;
+
+      fetch('/api/clients/' + clientId).then(function(r) { return r.json(); }).then(function(client) {
+        document.getElementById('clientHubName').textContent = client.name || '';
+        var details = document.getElementById('clientHubDetails');
+        details.innerHTML = [client.company, client.email, client.phone].filter(Boolean).join(' \u00b7 ');
+
+        var projEl = document.getElementById('clientHubProjects');
+        var projects = client.projects || [];
+
+        if (projects.length === 0) {
+          projEl.innerHTML = '<div class="hub-empty">\u05D0\u05D9\u05DF \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D6\u05D4</div>';
+          return;
+        }
+
+        var docLabels = { quote: '\u05D4\u05E6\u05E2\u05D4', contract: '\u05D7\u05D5\u05D6\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05D4' };
+        projEl.innerHTML = projects.map(function(p) {
+          var docTypes = (p.docTypes || [p.docType]).filter(Boolean);
+          return '<div class="hub-card" data-project="' + escHtml(p.id) + '">' +
+            '<div>' +
+              '<div class="hub-card-title">' + escHtml(p.name) + '</div>' +
+              '<div class="hub-card-chips">' + docTypes.map(function(d) {
+                return '<span style="font-size:0.72rem;padding:2px 8px;border-radius:4px;background:var(--accent-subtle);color:var(--accent-text);">' + (docLabels[d] || d) + ' \u2713</span>';
+              }).join('') + '</div>' +
+            '</div>' +
+            '<div class="hub-card-meta">' + (p.lastModified ? new Date(p.lastModified).toLocaleDateString('he-IL') : '') + '</div>' +
+          '</div>';
+        }).join('');
+
+        projEl.querySelectorAll('.hub-card').forEach(function(card) {
+          card.addEventListener('click', function() {
+            navigate('project-hub', { clientId: clientId, projectId: card.dataset.project });
+          });
+        });
+      }).catch(function(err) {
+        console.error('Client hub error:', err);
+      });
+    }
+
+    // ── Project Hub View ──
+    function renderProjectHub(projectId) {
+      if (!projectId) { navigate('clients'); return; }
+      navState.projectId = projectId;
+
+      fetch('/api/projects/' + projectId).then(function(r) { return r.json(); }).then(function(res) {
+        document.getElementById('projectHubName').textContent = res.name || '';
+
+        var cardsEl = document.getElementById('projectHubCards');
+        var docTypes = [
+          { key: 'quote', label: '\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8' },
+          { key: 'contract', label: '\u05D7\u05D5\u05D6\u05D4 \u05E2\u05D1\u05D5\u05D3\u05D4' },
+          { key: 'order', label: '\u05D4\u05D6\u05DE\u05E0\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4' },
+        ];
+
+        var formStates = res.formStates || {};
+        cardsEl.innerHTML = docTypes.map(function(dt) {
+          var state = formStates[dt.key];
+          var exists = !!state;
+          var total = exists && state.pricingItems ? state.pricingItems.reduce(function(s, p) { return s + ((p.qty || 1) * (p.price || 0)); }, 0) : 0;
+          return '<div class="doc-type-card' + (exists ? ' exists' : '') + '" data-doctype="' + dt.key + '">' +
+            '<div class="doc-type-card-title">' + dt.label + '</div>' +
+            '<div class="doc-type-card-status">' + (exists ? '\u2713 \u05E7\u05D9\u05D9\u05DD' : '\u05D8\u05E8\u05DD \u05E0\u05D5\u05E6\u05E8') + '</div>' +
+            (total > 0 ? '<div class="doc-type-card-price">' + total.toLocaleString('he-IL') + ' \u20AA</div>' : '') +
+          '</div>';
+        }).join('');
+
+        cardsEl.querySelectorAll('.doc-type-card').forEach(function(card) {
+          card.addEventListener('click', function() {
+            navigate('document', { clientId: navState.clientId, projectId: projectId, docType: card.dataset.doctype });
+          });
+        });
+
+        // History placeholder
+        var histEl = document.getElementById('projectHubHistory');
+        histEl.innerHTML = '<div class="hub-empty" style="padding:16px;">\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D4 \u05EA\u05D4\u05D9\u05D4 \u05D6\u05DE\u05D9\u05E0\u05D4 \u05D1\u05E7\u05E8\u05D5\u05D1</div>';
+      }).catch(function(err) {
+        console.error('Project hub error:', err);
+      });
+    }
+
+    // ── Document View ──
+    function loadDocument(params) {
+      var sp = window._switchProject;
+      if (sp && params.projectId) {
+        sp(params.projectId).then(function() {
+          if (params.docType) {
+            var docTypeSelect = document.querySelector('[name="docType"]');
+            if (docTypeSelect && docTypeSelect.value !== params.docType) {
+              docTypeSelect.value = params.docType;
+              docTypeSelect.dispatchEvent(new Event('change'));
+            }
+          }
+        });
+      } else if (params.docType) {
+        var docTypeSelect = document.querySelector('[name="docType"]');
+        if (docTypeSelect && docTypeSelect.value !== params.docType) {
+          docTypeSelect.value = params.docType;
+          docTypeSelect.dispatchEvent(new Event('change'));
+        }
+      }
+    }
+
+    // ── Rail button clicks ──
+    document.querySelectorAll('.rail-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var view = btn.dataset.view;
+        if (view === 'knowledge') {
+          var docsOverlay = document.getElementById('docsModalOverlay');
+          if (docsOverlay) docsOverlay.classList.add('visible');
+          return;
+        }
+        if (view === 'settings') {
+          var settingsOverlay = document.getElementById('settingsOverlay');
+          if (settingsOverlay) settingsOverlay.style.display = 'flex';
+          return;
+        }
+        navigate(view);
+      });
+    });
+
+    // ── Hub action buttons ──
+    var hubAddClient = document.getElementById('hubAddClient');
+    if (hubAddClient) {
+      hubAddClient.addEventListener('click', function() {
+        var name = prompt('\u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7:');
+        if (!name) return;
+        var company = prompt('\u05D7\u05D1\u05E8\u05D4 (\u05D0\u05D5\u05E4\u05E6\u05D9\u05D5\u05E0\u05DC\u05D9):') || '';
+        fetch('/api/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, company: company }) })
+          .then(function(res) { if (res.ok) navigate('clients'); });
+      });
+    }
+
+    var hubAddProject = document.getElementById('hubAddProject');
+    if (hubAddProject) {
+      hubAddProject.addEventListener('click', function() {
+        var name = prompt('\u05E9\u05DD \u05D4\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8:');
+        if (!name) return;
+        fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, clientId: navState.clientId }) })
+          .then(function(res) { if (res.ok) navigate('client-hub', { clientId: navState.clientId }); });
+      });
+    }
+
+    var hubEditClient = document.getElementById('hubEditClient');
+    if (hubEditClient) {
+      hubEditClient.addEventListener('click', function() {
+        var client = (window._allClients || []).find(function(c) { return c.id === navState.clientId; });
+        if (!client) return;
+        var name = prompt('\u05E9\u05DD:', client.name);
+        if (!name) return;
+        var company = prompt('\u05D7\u05D1\u05E8\u05D4:', client.company || '') || '';
+        fetch('/api/clients/' + client.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, company: company }) })
+          .then(function() { navigate('client-hub', { clientId: navState.clientId }); });
+      });
+    }
+
+    // ── Browser back/forward ──
+    window.addEventListener('popstate', function(e) {
+      if (e.state && e.state.view) {
+        // Suppress pushState in navigate during popstate
+        var origPush = history.pushState;
+        history.pushState = function() {};
+        navigate(e.state.view, e.state);
+        history.pushState = origPush;
+      }
+    });
+
+    // ── Restore from URL or default to home ──
+    var urlParams = new URLSearchParams(window.location.search);
+    var urlView = urlParams.get('view');
+    if (urlView) {
+      navigate(urlView, {
+        clientId: urlParams.get('client'),
+        projectId: urlParams.get('project'),
+        docType: urlParams.get('doc'),
+      });
+    } else {
+      navigate('home');
+    }
+
+    // Expose for external use
+    window._navigate = navigate;
+    window._navState = navState;
   })();
   </script>
 </body>
