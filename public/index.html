@@ -194,46 +194,32 @@
       --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
       --shadow-md: 0 4px 12px rgba(0,0,0,0.35);
       --shadow-lg: 0 8px 24px rgba(0,0,0,0.45);
+      /* Button tokens */
+      --btn-accent-bg: transparent;
+      --btn-accent-color: var(--accent);
+      --btn-accent-border: 1.5px solid var(--accent);
+      --btn-accent-hover-bg: var(--accent-subtle);
     }
 
-    /* ── BUTTON TOKEN: Dark mode — ALL accent/primary buttons → outline/ghost ── */
-    /* Universal catch: any button whose computed bg is accent-like gets converted */
-    html.dark .btn-primary,
-    html.dark [class*="generate"],
-    html.dark [class*="save-btn"],
-    html.dark [class*="apply"],
-    html.dark [class*="approve"],
-    html.dark [class*="learn-btn"],
-    html.dark [class*="analyze"],
-    html.dark [class*="review-form"],
-    html.dark .send-btn,
-    html.dark .form-update-apply-all,
-    html.dark .sidebar-doc-chip.active,
-    html.dark .settings-overlay button[style*="background"],
-    html.dark .client-form-actions .client-save-btn,
-    html.dark .confirm-ok-btn:not(.danger) {
-      background: transparent !important;
-      color: var(--accent) !important;
-      border: 1.5px solid var(--accent) !important;
+    /* ── BUTTON TOKEN: Dark mode — universal outline reset ── */
+    /* Catches ALL buttons except utility/nav buttons via :not() exclusions */
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn) {
+      background: var(--btn-accent-bg) !important;
+      color: var(--btn-accent-color) !important;
+      border: var(--btn-accent-border) !important;
       box-shadow: none !important;
       background-image: none !important;
     }
-    html.dark .btn-primary:hover,
-    html.dark [class*="generate"]:hover:not(:disabled),
-    html.dark [class*="save-btn"]:hover,
-    html.dark [class*="apply"]:hover:not(:disabled),
-    html.dark [class*="approve"]:hover,
-    html.dark [class*="learn-btn"]:hover,
-    html.dark [class*="analyze"]:hover,
-    html.dark [class*="review-form"]:hover,
-    html.dark .send-btn:hover:not(:disabled),
-    html.dark .form-update-apply-all:hover,
-    html.dark .sidebar-doc-chip.active:hover,
-    html.dark .settings-overlay button[style*="background"]:hover,
-    html.dark .client-form-actions .client-save-btn:hover,
-    html.dark .confirm-ok-btn:not(.danger):hover {
-      background: var(--accent-subtle) !important;
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):hover:not(:disabled) {
+      background: var(--btn-accent-hover-bg) !important;
       box-shadow: 0 0 12px rgba(0,210,180,0.15) !important;
+    }
+    /* Spans acting as buttons (doc chips, badges) */
+    html.dark .sidebar-doc-chip.exists,
+    html.dark .sidebar-doc-chip.active {
+      background: var(--btn-accent-bg) !important;
+      color: var(--btn-accent-color) !important;
+      border-color: var(--accent) !important;
     }
 
     *, *::before, *::after {
