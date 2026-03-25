@@ -2424,13 +2424,24 @@
       width: 48px; flex-shrink: 0; height: 100vh; position: sticky; top: 0;
       background: var(--sidebar-bg, var(--app-bg)); border-inline-end: 1px solid var(--border);
       display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; z-index: 20;
+      overflow: visible;
     }
     .rail-btn {
       width: 36px; height: 36px; border: none; background: transparent;
       color: var(--text-muted); cursor: pointer; border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      transition: all 150ms; padding: 0;
+      transition: all 150ms; padding: 0; position: relative;
     }
+    .rail-btn::after {
+      content: attr(data-tooltip);
+      position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+      background: var(--elevated-bg); color: var(--text-primary);
+      padding: 4px 10px; border-radius: 6px; font-size: 0.75rem;
+      white-space: nowrap; pointer-events: none;
+      opacity: 0; transition: opacity 150ms;
+      border: 1px solid var(--border-strong); z-index: 100;
+    }
+    .rail-btn:hover::after { opacity: 1; }
     .rail-btn:hover { color: var(--text-primary); background: var(--elevated-bg); }
     .rail-btn.active { color: var(--accent); background: var(--accent-subtle); }
     .rail-btn svg { width: 20px; height: 20px; }
@@ -2452,7 +2463,7 @@
     .view-container { flex: 1; display: flex; min-height: 0; overflow: hidden; }
     .hub-view { display: none; flex: 1; flex-direction: column; overflow-y: auto; min-height: 0; }
     .hub-view.active { display: flex; }
-    .hub-content { max-width: 800px; width: 100%; margin: 0 auto; padding: 32px 40px; }
+    .hub-content { max-width: 1100px; width: 100%; margin: 0 auto; padding: 32px 48px; }
     .hub-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; direction: rtl; }
     .hub-header h2 { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin: 0; }
     .hub-section-title { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin: 0 0 12px; direction: rtl; }
@@ -2465,25 +2476,331 @@
       font-family: inherit; transition: all 150ms; direction: rtl;
     }
     .hub-action-btn:hover { border-color: var(--accent-border); color: var(--accent-text); }
+    .hub-action-btn-danger { color: #f87171 !important; }
+    .hub-action-btn-danger:hover { border-color: rgba(248,113,113,0.3) !important; background: rgba(248,113,113,0.08) !important; }
 
     /* Document view — full panels-row */
-    #view-document { overflow: hidden; }
+    #view-document { overflow: hidden; flex-direction: row; }
     #view-document .panels-row { flex: 1; }
 
-    /* Hub cards (clients, projects) */
-    .hub-card {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 20px; background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 10px; cursor: pointer; direction: rtl; transition: all 150ms;
-      margin-bottom: 8px;
-    }
-    .hub-card:hover { border-color: var(--accent-border); background: var(--elevated-bg); }
-    .hub-card-title { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); }
-    .hub-card-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-    .hub-card-meta { font-size: 0.75rem; color: var(--text-muted); text-align: left; }
-    .hub-card-chips { display: flex; gap: 4px; margin-top: 6px; }
+    /* ── Dashboard ── */
+    .dashboard { flex: 1; overflow-y: auto; direction: rtl; position: relative; }
+    .dash-inner { max-width: 960px; width: 100%; margin: 0 auto; padding: 32px 40px 60px; position: relative; z-index: 1; }
 
-    /* Doc type cards (3 in a row) */
+    /* Office side illustrations */
+    .dash-deco-side {
+      position: fixed; pointer-events: none; color: var(--accent-text); opacity: 0.06;
+      z-index: 0;
+    }
+    .dash-deco-right { right: 80px; bottom: 20px; }
+    .dash-deco-left { left: 30px; bottom: 20px; }
+    @media (max-width: 1300px) { .dash-deco-side { display: none; } }
+
+    /* Welcome header */
+    .dash-welcome {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
+      padding: 36px 40px; margin-bottom: 20px; text-align: right;
+    }
+    .dash-welcome-name { font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+    .dash-welcome-sub { font-size: 0.9rem; color: var(--text-muted); margin-top: 6px; }
+
+    /* Stats row */
+    .dash-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px;
+    }
+    .dash-stat-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px 24px; text-align: right;
+    }
+    .dash-stat-icon { color: var(--accent-text); margin-bottom: 12px; }
+    .dash-stat-icon svg { width: 22px; height: 22px; }
+    .dash-stat-value { font-size: 2rem; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+    .dash-stat-label { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* Quick actions */
+    .dash-actions { display: flex; justify-content: center; gap: 12px; margin-bottom: 32px; }
+    .dash-action-btn {
+      display: flex; align-items: center; gap: 8px; padding: 10px 22px;
+      background: transparent; border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text-secondary); font-size: 0.85rem; font-family: inherit;
+      cursor: pointer; transition: all 150ms;
+    }
+    .dash-action-btn:hover { border-color: var(--accent-border); color: var(--accent-text); }
+    .dash-action-btn svg { width: 16px; height: 16px; }
+
+    /* Section header */
+    .dash-section { margin-bottom: 32px; }
+    .dash-section-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+    }
+    .dash-section-title { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+    .dash-section-link {
+      font-size: 0.8rem; color: var(--accent-text); cursor: pointer;
+      text-decoration: none; display: flex; align-items: center; gap: 4px;
+    }
+
+    /* Project cards (2-col grid) */
+    .dash-projects-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .dash-project-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; cursor: pointer; transition: all 150ms; position: relative;
+    }
+    .dash-project-card:hover { border-color: var(--accent-border); background: var(--elevated-bg); }
+    .dash-project-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .dash-project-info { text-align: right; }
+    .dash-project-name { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+    .dash-project-client { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+    .dash-project-avatar {
+      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+      background: var(--accent-subtle); color: var(--accent-text);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700;
+    }
+    .dash-project-chips { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+    .dash-project-chip {
+      font-size: 0.7rem; padding: 3px 10px; border-radius: 6px;
+      background: var(--elevated-bg); color: var(--text-secondary);
+    }
+    .dash-project-bottom {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
+    }
+    .dash-project-price { font-size: 0.95rem; font-weight: 700; color: var(--accent-text); }
+    .dash-project-date { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* Client cards (3-col grid) */
+    .dash-clients-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .dash-client-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px; display: flex; align-items: center; gap: 12px;
+      direction: rtl; transition: all 150ms;
+    }
+    .dash-client-card:hover { border-color: var(--accent-border); background: var(--elevated-bg); }
+    .dash-client-avatar {
+      width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent-subtle), rgba(0,210,180,0.15));
+      color: var(--accent-text); display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 700; border: 1px solid var(--accent-border);
+    }
+    .dash-client-body { flex: 1; min-width: 0; }
+    .dash-client-name { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
+    .dash-client-company { font-size: 0.75rem; color: var(--text-muted); }
+    .dash-client-badge {
+      font-size: 0.7rem; padding: 2px 8px; border-radius: 10px;
+      background: var(--elevated-bg); color: var(--text-secondary); flex-shrink: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .dash-stats { grid-template-columns: repeat(2, 1fr); }
+      .dash-projects-grid { grid-template-columns: 1fr; }
+      .dash-clients-grid { grid-template-columns: 1fr; }
+      .dash-actions { flex-direction: column; align-items: center; }
+    }
+
+    /* ── Clients Management View ── */
+    .clients-view { flex: 1; overflow-y: auto; direction: rtl; }
+    .clients-inner { max-width: 960px; width: 100%; margin: 0 auto; padding: 32px 40px 60px; }
+    .clients-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+    }
+    .clients-header h2 { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+    .clients-search {
+      width: 100%; padding: 10px 16px; background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text-primary); font-size: 0.88rem; font-family: inherit;
+      margin-bottom: 16px; direction: rtl; box-sizing: border-box;
+    }
+    .clients-search:focus { outline: none; border-color: var(--accent-border); }
+    .clients-search::placeholder { color: var(--text-muted); }
+    .client-mgmt-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 16px;
+      direction: rtl; transition: all 150ms;
+    }
+    .client-mgmt-card:hover { border-color: var(--accent-border); background: var(--elevated-bg); }
+    .client-mgmt-avatar {
+      width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent-subtle), rgba(0,210,180,0.15));
+      color: var(--accent-text); display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 700; border: 1px solid var(--accent-border);
+    }
+    .client-mgmt-body { flex: 1; min-width: 0; }
+    .client-mgmt-name { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+    .client-mgmt-details { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .client-mgmt-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .client-mgmt-btn {
+      padding: 6px 14px; background: transparent; border: 1px solid var(--border);
+      border-radius: 7px; color: var(--text-secondary); cursor: pointer;
+      font-size: 0.78rem; font-family: inherit; transition: all 150ms;
+    }
+    .client-mgmt-btn:hover { border-color: var(--accent-border); color: var(--accent-text); }
+    .client-mgmt-btn.danger { color: #f87171; }
+    .client-mgmt-btn.danger:hover { border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); }
+    .client-mgmt-projects {
+      font-size: 0.75rem; color: var(--text-secondary); padding: 2px 10px;
+      background: var(--elevated-bg); border-radius: 10px; flex-shrink: 0;
+    }
+
+    /* ── Nav Sidebar (document view) ── */
+    .nav-sidebar {
+      width: 220px; flex-shrink: 0; overflow-y: auto; overflow-x: hidden;
+      background: var(--sidebar-bg, var(--app-bg));
+      border-inline-start: 1px solid var(--border);
+      display: flex; flex-direction: column; direction: rtl;
+      transition: width 150ms ease, opacity 150ms ease;
+    }
+    .nav-sidebar.collapsed { width: 0; opacity: 0; overflow: hidden; }
+    .nav-sidebar-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px 10px; flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-sidebar-title {
+      font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);
+    }
+    .nav-sidebar-toggle {
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; padding: 4px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 150ms;
+    }
+    .nav-sidebar-toggle:hover { color: var(--text-primary); background: var(--elevated-bg); }
+    .nav-sidebar-toggle svg { width: 16px; height: 16px; }
+    .nav-sidebar-body { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .nav-sidebar-body::-webkit-scrollbar { width: 3px; }
+    .nav-sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .nav-sidebar-footer {
+      padding: 10px 14px; border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .nav-sidebar-add {
+      padding: 6px 12px; background: transparent; border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-secondary); cursor: pointer;
+      font-size: 0.75rem; font-family: inherit; transition: all 150ms;
+      text-align: center; direction: rtl;
+    }
+    .nav-sidebar-add:hover { border-color: var(--accent-border); color: var(--accent-text); }
+
+    /* Nav tree */
+    .nav-client-group { margin-bottom: 2px; }
+    .nav-client-header {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px; cursor: pointer; transition: all 150ms;
+      border-radius: 6px; margin: 0 6px;
+    }
+    .nav-client-header:hover { background: var(--elevated-bg); }
+    .nav-client-chevron {
+      width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0;
+      transition: transform 150ms;
+    }
+    .nav-client-group.expanded .nav-client-chevron { transform: rotate(90deg); }
+    .nav-client-name {
+      font-size: 0.8rem; font-weight: 600; color: var(--text-primary);
+      flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .nav-project-list { display: none; padding: 0 6px 4px 6px; }
+    .nav-client-group.expanded .nav-project-list { display: block; }
+    .nav-project-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px 7px 28px; cursor: pointer;
+      font-size: 0.78rem; color: var(--text-secondary);
+      border-radius: 6px; transition: all 150ms;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .nav-project-item:hover { background: var(--elevated-bg); color: var(--text-primary); }
+    .nav-project-item.active {
+      background: var(--accent-subtle); color: var(--accent-text); font-weight: 600;
+    }
+    .nav-project-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--text-muted); flex-shrink: 0;
+    }
+    .nav-project-item.active .nav-project-dot { background: var(--accent); }
+
+    /* ── Legacy compat (kept) ── */
+    .hub-empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 60px 20px; text-align: center;
+    }
+    .hub-empty-state-icon {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: var(--accent-subtle); color: var(--accent-text);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+    .hub-empty-state-icon svg { width: 28px; height: 28px; }
+    .hub-empty-state-title {
+      font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;
+    }
+    .hub-empty-state-desc {
+      font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; max-width: 300px;
+    }
+    .hub-empty-state-btn {
+      padding: 10px 24px; background: var(--accent); color: #0c0e13;
+      border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all 150ms;
+    }
+    .hub-empty-state-btn:hover { background: var(--accent-hover); }
+
+    @media (max-width: 768px) {
+      .nav-sidebar { width: 180px; }
+      .nav-sidebar.collapsed { width: 0; }
+    }
+
+    /* ── Hub modal ── */
+    .hub-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; backdrop-filter: blur(4px);
+    }
+    .hub-modal {
+      background: var(--card-bg); border: 1px solid var(--border-strong);
+      border-radius: 14px; width: 420px; max-width: 90vw;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .hub-modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 24px 0; direction: rtl;
+    }
+    .hub-modal-header h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+    .hub-modal-close {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 1.4rem; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+      transition: all 150ms;
+    }
+    .hub-modal-close:hover { color: var(--text-primary); background: var(--elevated-bg); }
+    .hub-modal-body { padding: 20px 24px; direction: rtl; }
+    .hub-field { margin-bottom: 14px; }
+    .hub-field-label {
+      display: block; font-size: 0.8rem; font-weight: 600;
+      color: var(--text-secondary); margin-bottom: 6px;
+    }
+    .hub-field-input {
+      width: 100%; padding: 10px 14px; background: var(--elevated-bg);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text-primary); font-size: 0.88rem; font-family: inherit;
+      transition: border-color 150ms; box-sizing: border-box;
+    }
+    .hub-field-input:focus { outline: none; border-color: var(--accent-border); }
+    .hub-field-input::placeholder { color: var(--text-muted); }
+    .hub-modal-footer {
+      display: flex; justify-content: flex-start; gap: 10px;
+      padding: 0 24px 20px; direction: rtl;
+    }
+    .hub-modal-cancel {
+      padding: 9px 20px; background: transparent; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text-secondary); cursor: pointer;
+      font-size: 0.85rem; font-family: inherit; transition: all 150ms;
+    }
+    .hub-modal-cancel:hover { border-color: var(--border-strong); color: var(--text-primary); }
+    .hub-modal-submit {
+      padding: 9px 20px; background: var(--accent); color: #0c0e13;
+      border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all 150ms;
+    }
+    .hub-modal-submit:hover { background: var(--accent-hover); }
+
+    /* Doc type cards — legacy (kept for compat) */
     .doc-type-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; direction: rtl; }
     .doc-type-card {
       padding: 20px; background: var(--card-bg); border: 1px solid var(--border);
@@ -2492,12 +2809,20 @@
     }
     .doc-type-card:hover { border-color: var(--accent-border); background: var(--elevated-bg); }
     .doc-type-card.exists { border-color: var(--accent-border); }
+    .doc-type-card-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--accent-subtle); color: var(--accent-text);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .doc-type-card-icon svg { width: 24px; height: 24px; }
     .doc-type-card-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
     .doc-type-card-status { font-size: 0.78rem; color: var(--text-muted); }
+    .doc-type-card-status.exists { color: var(--accent-text); }
     .doc-type-card-price { font-size: 1.1rem; font-weight: 700; color: var(--accent-text); margin-top: 8px; }
     .doc-type-card-date { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* Timeline items (home view) */
+    /* Timeline items (home view) — legacy kept */
     .timeline-item {
       display: flex; justify-content: space-between; align-items: center;
       padding: 12px 16px; border-radius: 8px; cursor: pointer; direction: rtl;
@@ -3595,23 +3920,23 @@
 
     <!-- ── Icon Rail Sidebar ── -->
     <div class="sidebar" id="sidebar">
-      <button class="rail-btn active" data-view="home" title="בית">
+      <button class="rail-btn active" data-view="home" data-tooltip="בית">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       </button>
-      <button class="rail-btn" data-view="clients" title="לקוחות">
+      <button class="rail-btn" data-view="clients" data-tooltip="לקוחות">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </button>
-      <button class="rail-btn" data-view="projects" title="פרויקטים">
+      <button class="rail-btn" data-view="projects" data-tooltip="פרויקטים">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       </button>
-      <button class="rail-btn" data-view="docs" title="מסמכים">
+      <button class="rail-btn" data-view="docs" data-tooltip="מסמכים">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       </button>
       <div style="flex:1"></div>
-      <button class="rail-btn" data-view="knowledge" title="בסיס ידע">
+      <button class="rail-btn" data-view="knowledge" data-tooltip="בסיס ידע">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       </button>
-      <button class="rail-btn" data-view="settings" title="הגדרות">
+      <button class="rail-btn" data-view="settings" data-tooltip="הגדרות">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
     </div>
@@ -3669,57 +3994,141 @@
     <!-- ── View Container ── -->
     <div class="view-container" id="viewContainer">
 
-      <!-- Home View -->
+      <!-- Home View — Dashboard -->
       <div class="hub-view active" id="view-home">
-        <div class="hub-content">
-          <div class="hub-header">
-            <h2>עבודה אחרונה</h2>
+        <div class="dashboard">
+          <!-- Right side deco: desk plant -->
+          <div class="dash-deco-side dash-deco-right">
+            <svg width="140" height="200" viewBox="0 0 140 200" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+              <!-- Pot -->
+              <path d="M45 155 L55 195 L85 195 L95 155 Z"/>
+              <line x1="42" y1="155" x2="98" y2="155"/>
+              <!-- Stem -->
+              <line x1="70" y1="155" x2="70" y2="100"/>
+              <!-- Leaves -->
+              <path d="M70 100 C55 80 35 85 40 65 C45 50 60 55 70 75"/>
+              <path d="M70 100 C85 80 105 85 100 65 C95 50 80 55 70 75"/>
+              <path d="M70 110 C50 95 30 105 38 85 C42 75 58 80 70 95"/>
+              <path d="M70 110 C90 95 110 105 102 85 C98 75 82 80 70 95"/>
+              <path d="M70 120 C55 105 40 115 48 98"/>
+              <path d="M70 120 C85 105 100 115 92 98"/>
+              <!-- Small leaf at top -->
+              <path d="M70 75 C62 60 55 50 60 40 C65 32 70 45 70 55"/>
+              <path d="M70 75 C78 60 85 50 80 40 C75 32 70 45 70 55"/>
+            </svg>
           </div>
-          <div id="homeTimeline" class="hub-body">
-            <div class="hub-empty">טוען...</div>
+          <!-- Left side deco: books + coffee -->
+          <div class="dash-deco-side dash-deco-left">
+            <svg width="160" height="140" viewBox="0 0 160 140" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+              <!-- Stacked books -->
+              <rect x="10" y="95" width="65" height="10" rx="2" transform="rotate(-2 42 100)"/>
+              <rect x="12" y="83" width="60" height="10" rx="2" transform="rotate(1 42 88)"/>
+              <rect x="8" y="71" width="68" height="10" rx="2" transform="rotate(-3 42 76)"/>
+              <rect x="15" y="60" width="55" height="10" rx="2" transform="rotate(2 42 65)"/>
+              <!-- Coffee cup -->
+              <path d="M105 100 L105 125 Q105 135 115 135 L135 135 Q145 135 145 125 L145 100 Z"/>
+              <path d="M145 108 Q158 108 158 118 Q158 128 145 128"/>
+              <!-- Steam -->
+              <path d="M118 95 C118 88 122 85 120 78" stroke-dasharray="3 3"/>
+              <path d="M128 93 C128 86 132 83 130 76" stroke-dasharray="3 3"/>
+              <path d="M138 95 C138 88 142 85 140 78" stroke-dasharray="3 3"/>
+            </svg>
+          </div>
+          <div class="dash-inner">
+            <!-- Welcome -->
+            <div class="dash-welcome">
+              <h1 class="dash-welcome-name">היי נועם,</h1>
+              <p class="dash-welcome-sub">הנה הסקירה שלך</p>
+            </div>
+            <!-- Stats -->
+            <div class="dash-stats" id="dashStats"></div>
+            <!-- Quick Actions -->
+            <div class="dash-actions">
+              <button class="dash-action-btn" id="dashAddClient">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                + לקוח חדש
+              </button>
+              <button class="dash-action-btn" id="dashAddProject">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                + פרויקט חדש
+              </button>
+              <button class="dash-action-btn" id="dashNewDoc">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                + מסמך חדש
+              </button>
+            </div>
+            <!-- Recent Projects -->
+            <div class="dash-section">
+              <div class="dash-section-header">
+                <span class="dash-section-title">עבודה אחרונה</span>
+                <span class="dash-section-link">כל הפרויקטים ←</span>
+              </div>
+              <div class="dash-projects-grid" id="dashProjectsList"></div>
+            </div>
+            <!-- Clients -->
+            <div class="dash-section">
+              <div class="dash-section-header">
+                <span class="dash-section-title">הלקוחות שלי</span>
+                <span class="dash-section-link">כל הלקוחות ←</span>
+              </div>
+              <div class="dash-clients-grid" id="dashClientsList"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Clients View -->
+      <!-- Clients Management View -->
       <div class="hub-view" id="view-clients">
-        <div class="hub-content">
-          <div class="hub-header">
-            <h2>לקוחות</h2>
-            <button class="hub-action-btn" id="hubAddClient">+ לקוח חדש</button>
+        <div class="clients-view">
+          <div class="clients-inner">
+            <div class="clients-header">
+              <h2>ניהול לקוחות</h2>
+              <button class="dash-action-btn" id="clientsAddBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                + לקוח חדש
+              </button>
+            </div>
+            <input type="text" class="clients-search" id="clientsSearch" placeholder="חיפוש לקוח..." />
+            <div id="clientsMgmtList"></div>
           </div>
-          <div id="clientsList" class="hub-body"></div>
         </div>
       </div>
 
-      <!-- Client Hub View -->
-      <div class="hub-view" id="view-client-hub">
-        <div class="hub-content">
-          <div class="hub-header">
-            <h2 id="clientHubName"></h2>
-            <button class="hub-action-btn" id="hubEditClient">&#9998; עריכה</button>
+      <!-- Projects Management View -->
+      <div class="hub-view" id="view-projects">
+        <div class="clients-view">
+          <div class="clients-inner">
+            <div class="clients-header">
+              <h2>ניהול פרויקטים</h2>
+              <button class="dash-action-btn" id="projectsAddBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                + פרויקט חדש
+              </button>
+            </div>
+            <input type="text" class="clients-search" id="projectsSearch" placeholder="חיפוש פרויקט..." />
+            <div id="projectsMgmtList"></div>
           </div>
-          <div id="clientHubDetails" class="hub-meta"></div>
-          <h3 class="hub-section-title">פרויקטים</h3>
-          <div id="clientHubProjects" class="hub-body"></div>
-          <button class="hub-action-btn" id="hubAddProject" style="margin-top:12px;">+ פרויקט חדש</button>
         </div>
       </div>
 
-      <!-- Project Hub View -->
-      <div class="hub-view" id="view-project-hub">
-        <div class="hub-content">
-          <div class="hub-header">
-            <h2 id="projectHubName"></h2>
-          </div>
-          <div class="doc-type-cards" id="projectHubCards"></div>
-          <h3 class="hub-section-title" style="margin-top:24px;">היסטוריה</h3>
-          <div id="projectHubHistory" class="hub-body"></div>
-        </div>
-      </div>
-
-      <!-- Document View (contains existing chat+form) -->
+      <!-- Document View (contains nav sidebar + chat+form) -->
       <div class="hub-view" id="view-document">
+
+    <!-- Nav Sidebar -->
+    <div class="nav-sidebar" id="navSidebar">
+      <div class="nav-sidebar-header">
+        <span class="nav-sidebar-title">ניווט</span>
+        <button class="nav-sidebar-toggle" id="navSidebarToggle" title="כווץ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+      </div>
+      <div class="nav-sidebar-body" id="navSidebarBody"></div>
+      <div class="nav-sidebar-footer">
+        <button class="nav-sidebar-add" id="navAddClient">+ לקוח חדש</button>
+        <button class="nav-sidebar-add" id="navAddProject">+ פרויקט חדש</button>
+      </div>
+    </div>
+
     <div class="panels-row">
     <!-- ══════════════════════════════════════
          PANEL: CHAT
@@ -4408,6 +4817,110 @@
       <div class="confirm-modal-actions">
         <button class="confirm-ok-btn" id="confirmOkBtn"></button>
         <button class="confirm-cancel-btn" id="confirmCancelBtn">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Add Client Modal ── -->
+  <div class="hub-modal-overlay" id="addClientModal" style="display:none">
+    <div class="hub-modal">
+      <div class="hub-modal-header">
+        <h3>לקוח חדש</h3>
+        <button class="hub-modal-close" data-close-modal="addClientModal">&times;</button>
+      </div>
+      <div class="hub-modal-body">
+        <div class="hub-field">
+          <label class="hub-field-label">שם *</label>
+          <input type="text" class="hub-field-input" id="modalClientName" dir="rtl" placeholder="שם הלקוח" />
+        </div>
+        <div class="hub-field">
+          <label class="hub-field-label">חברה</label>
+          <input type="text" class="hub-field-input" id="modalClientCompany" dir="rtl" placeholder="שם החברה (אופציונלי)" />
+        </div>
+        <div class="hub-field">
+          <label class="hub-field-label">אימייל</label>
+          <input type="email" class="hub-field-input" id="modalClientEmail" dir="ltr" placeholder="email@example.com" />
+        </div>
+        <div class="hub-field">
+          <label class="hub-field-label">טלפון</label>
+          <input type="tel" class="hub-field-input" id="modalClientPhone" dir="ltr" placeholder="050-000-0000" />
+        </div>
+      </div>
+      <div class="hub-modal-footer">
+        <button class="hub-modal-submit" id="modalClientSubmit">שמור</button>
+        <button class="hub-modal-cancel" data-close-modal="addClientModal">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Edit Client Modal ── -->
+  <div class="hub-modal-overlay" id="editClientModal" style="display:none">
+    <div class="hub-modal">
+      <div class="hub-modal-header">
+        <h3>עריכת לקוח</h3>
+        <button class="hub-modal-close" data-close-modal="editClientModal">&times;</button>
+      </div>
+      <div class="hub-modal-body">
+        <div class="hub-field">
+          <label class="hub-field-label">שם *</label>
+          <input type="text" class="hub-field-input" id="editClientName" dir="rtl" placeholder="שם הלקוח" />
+        </div>
+        <div class="hub-field">
+          <label class="hub-field-label">חברה</label>
+          <input type="text" class="hub-field-input" id="editClientCompany" dir="rtl" placeholder="שם החברה (אופציונלי)" />
+        </div>
+        <div class="hub-field">
+          <label class="hub-field-label">אימייל</label>
+          <input type="email" class="hub-field-input" id="editClientEmail" dir="ltr" placeholder="email@example.com" />
+        </div>
+        <div class="hub-field">
+          <label class="hub-field-label">טלפון</label>
+          <input type="tel" class="hub-field-input" id="editClientPhone" dir="ltr" placeholder="050-000-0000" />
+        </div>
+      </div>
+      <div class="hub-modal-footer">
+        <button class="hub-modal-submit" id="editClientSubmit">שמור</button>
+        <button class="hub-modal-cancel" data-close-modal="editClientModal">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Add Project Modal ── -->
+  <div class="hub-modal-overlay" id="addProjectModal" style="display:none">
+    <div class="hub-modal">
+      <div class="hub-modal-header">
+        <h3>פרויקט חדש</h3>
+        <button class="hub-modal-close" data-close-modal="addProjectModal">&times;</button>
+      </div>
+      <div class="hub-modal-body">
+        <div class="hub-field">
+          <label class="hub-field-label">שם הפרויקט *</label>
+          <input type="text" class="hub-field-input" id="modalProjectName" dir="rtl" placeholder="שם הפרויקט" />
+        </div>
+      </div>
+      <div class="hub-modal-footer">
+        <button class="hub-modal-submit" id="modalProjectSubmit">שמור</button>
+        <button class="hub-modal-cancel" data-close-modal="addProjectModal">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Rename Project Modal ── -->
+  <div class="hub-modal-overlay" id="renameProjectModal" style="display:none">
+    <div class="hub-modal">
+      <div class="hub-modal-header">
+        <h3>שינוי שם פרויקט</h3>
+        <button class="hub-modal-close" data-close-modal="renameProjectModal">&times;</button>
+      </div>
+      <div class="hub-modal-body">
+        <div class="hub-field">
+          <label class="hub-field-label">שם חדש *</label>
+          <input type="text" class="hub-field-input" id="renameProjectName" dir="rtl" placeholder="שם הפרויקט" />
+        </div>
+      </div>
+      <div class="hub-modal-footer">
+        <button class="hub-modal-submit" id="renameProjectSubmit">שמור</button>
+        <button class="hub-modal-cancel" data-close-modal="renameProjectModal">ביטול</button>
       </div>
     </div>
   </div>
@@ -5534,7 +6047,7 @@
       const previousDocType = window._activeDocType || 'quote';
       const newDocType = docTypeSelect.value;
 
-      if (previousDocType !== newDocType && currentProjectId) {
+      if (!window._restoringFormState && previousDocType !== newDocType && currentProjectId) {
         // Save current state to its slot
         window._projectFormStates[previousDocType] = getFormState();
         saveProjectForm(); // fire-and-forget save to server
@@ -7388,6 +7901,8 @@
     // ── Restore form from saved state ──
     function restoreFormState(state) {
       if (!state) return;
+      if (window._restoringFormState) return;
+      window._restoringFormState = true;
 
       // Normalise pricing rows: support both legacy pricingItems ({desc,qty,price})
       // and the newer pricingRows format ({description,qty,unitPrice}).
@@ -7456,6 +7971,7 @@
           }
         });
       }
+      window._restoringFormState = false;
     }
 
     // ── Reset form to defaults ──
@@ -9313,35 +9829,38 @@
   // ═══════════════════════════════════════
   (function() {
     var navState = { view: 'home', clientId: null, projectId: null, docType: null };
+    var _navigating = false;
+    // (removed legacy _dashSelectedClient / _dashSelectedProject)
 
     function navigate(view, params) {
+      if (_navigating) return;
+      _navigating = true;
+      try { _doNavigate(view, params); } finally { _navigating = false; }
+    }
+    function _doNavigate(view, params) {
       params = params || {};
-      // Hide all views
-      document.querySelectorAll('.hub-view').forEach(function(v) { v.classList.remove('active'); });
+      // Normalize old views to new two-view system
+      if (view === 'client-hub') view = 'clients';
+      if (view === 'project-hub') view = 'projects';
 
-      // Update state
+      document.querySelectorAll('.hub-view').forEach(function(v) { v.classList.remove('active'); });
       navState.view = view;
       if (params.clientId !== undefined) navState.clientId = params.clientId;
       if (params.projectId !== undefined) navState.projectId = params.projectId;
       if (params.docType !== undefined) navState.docType = params.docType;
 
-      // Show target view
       var target = document.getElementById('view-' + view);
       if (target) target.classList.add('active');
 
       // Update rail active state
       document.querySelectorAll('.rail-btn').forEach(function(b) { b.classList.remove('active'); });
-      var railMap = { home: 'home', clients: 'clients', 'client-hub': 'clients', 'project-hub': 'projects', document: 'projects' };
-      var railBtn = document.querySelector('.rail-btn[data-view="' + (railMap[view] || view) + '"]');
+      var railTarget = view === 'document' ? 'projects' : view === 'clients' ? 'clients' : view === 'projects' ? 'projects' : 'home';
+      var railBtn = document.querySelector('.rail-btn[data-view="' + railTarget + '"]');
       if (railBtn) railBtn.classList.add('active');
 
-      // Update breadcrumb
       updateBreadcrumb();
-
-      // Render view content
       renderView(view, params);
 
-      // Push browser history
       var url = new URL(window.location);
       url.searchParams.set('view', view);
       if (navState.clientId) url.searchParams.set('client', navState.clientId);
@@ -9359,20 +9878,15 @@
       nav.innerHTML = '';
       var segments = [{ label: '\u05D1\u05D9\u05EA', view: 'home' }];
 
-      if (navState.view === 'clients' || navState.view === 'client-hub' || navState.view === 'project-hub' || navState.view === 'document') {
-        segments.push({ label: '\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA', view: 'clients' });
-      }
-      if ((navState.view === 'client-hub' || navState.view === 'project-hub' || navState.view === 'document') && navState.clientId) {
-        var client = (window._allClients || []).find(function(c) { return c.id === navState.clientId; });
-        segments.push({ label: client ? client.name : navState.clientId, view: 'client-hub', params: { clientId: navState.clientId } });
-      }
-      if ((navState.view === 'project-hub' || navState.view === 'document') && navState.projectId) {
-        var project = (window._allProjects || []).find(function(p) { return p.id === navState.projectId; });
-        segments.push({ label: project ? project.name : navState.projectId, view: 'project-hub', params: { clientId: navState.clientId, projectId: navState.projectId } });
-      }
-      if (navState.view === 'document' && navState.docType) {
-        var docLabels = { quote: '\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8', contract: '\u05D7\u05D5\u05D6\u05D4 \u05E2\u05D1\u05D5\u05D3\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4' };
-        segments.push({ label: docLabels[navState.docType] || navState.docType });
+      if (navState.view === 'document') {
+        if (navState.projectId) {
+          var project = (window._allProjects || []).find(function(p) { return p.id === navState.projectId; });
+          segments.push({ label: project ? project.name : navState.projectId, view: 'home' });
+        }
+        if (navState.docType) {
+          var docLabels = { quote: '\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8', contract: '\u05D7\u05D5\u05D6\u05D4 \u05E2\u05D1\u05D5\u05D3\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4' };
+          segments.push({ label: docLabels[navState.docType] || navState.docType });
+        }
       }
 
       segments.forEach(function(seg, i) {
@@ -9396,180 +9910,420 @@
 
     function renderView(view, params) {
       switch (view) {
-        case 'home': renderHome(); break;
-        case 'clients': renderClients(); break;
-        case 'client-hub': renderClientHub(params.clientId || navState.clientId); break;
-        case 'project-hub': renderProjectHub(params.projectId || navState.projectId); break;
-        case 'document': loadDocument(params); break;
+        case 'home': renderDashboard(); break;
+        case 'clients': renderClientsView(); break;
+        case 'projects': renderProjectsView(); break;
+        case 'document':
+          loadDocument(params);
+          renderNavSidebar();
+          break;
       }
     }
 
     function escHtml(s) { return (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function getInitials(name) {
+      return (name || '').split(' ').map(function(w) { return w.charAt(0); }).slice(0, 2).join('');
+    }
 
-    // ── Home View ──
-    function renderHome() {
-      var el = document.getElementById('homeTimeline');
-      if (!el) return;
+    // ── Doc type icons ──
+    var docTypeIcons = {
+      quote: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
+      contract: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
+      order: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>'
+    };
+    var docTypeLabelsShort = { quote: '\u05D4\u05E6\u05E2\u05D4', contract: '\u05D7\u05D5\u05D6\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05D4' };
+    var docTypeLabelsLong = {
+      quote: '\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8',
+      contract: '\u05D7\u05D5\u05D6\u05D4 \u05E2\u05D1\u05D5\u05D3\u05D4',
+      order: '\u05D4\u05D6\u05DE\u05E0\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4'
+    };
+
+    // ══════════════════════════════════════
+    // DASHBOARD
+    // ══════════════════════════════════════
+    function renderDashboard() {
       Promise.all([
         fetch('/api/clients').then(function(r) { return r.json(); }),
         fetch('/api/projects').then(function(r) { return r.json(); }),
       ]).then(function(results) {
         var clientsRes = results[0], projectsRes = results[1];
         window._allClients = clientsRes.clients || [];
-        window._allProjects = projectsRes.projects || [];
-        var projects = (projectsRes.projects || []).sort(function(a, b) { return (b.lastModified || '').localeCompare(a.lastModified || ''); });
-
-        if (projects.length === 0) {
-          el.innerHTML = '<div class="hub-empty">\u05D0\u05D9\u05DF \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD \u05E2\u05D3\u05D9\u05D9\u05DF. \u05E6\u05D5\u05E8 \u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9 \u05DB\u05D3\u05D9 \u05DC\u05D4\u05EA\u05D7\u05D9\u05DC.</div>';
-          return;
-        }
-
-        var docLabels = { quote: '\u05D4\u05E6\u05E2\u05D4', contract: '\u05D7\u05D5\u05D6\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05D4' };
-        el.innerHTML = projects.map(function(p) {
-          var client = (clientsRes.clients || []).find(function(c) { return c.id === p.clientId; });
-          var docTypes = (p.docTypes || [p.docType]).filter(Boolean);
-          return '<div class="timeline-item" data-project="' + escHtml(p.id) + '" data-client="' + escHtml(p.clientId || '') + '">' +
-            '<div>' +
-              '<div class="timeline-item-title">' + escHtml(p.name) + '</div>' +
-              '<div class="timeline-item-meta">' + docTypes.map(function(d) { return docLabels[d] || d; }).join(' \u00b7 ') + '</div>' +
-            '</div>' +
-            '<div style="display:flex;align-items:center;gap:8px;">' +
-              (client ? '<span class="timeline-item-client">' + escHtml(client.name) + '</span>' : '') +
-              '<span class="timeline-item-meta">' + (p.lastModified ? new Date(p.lastModified).toLocaleDateString('he-IL') : '') + '</span>' +
-            '</div>' +
-          '</div>';
-        }).join('');
-
-        el.querySelectorAll('.timeline-item').forEach(function(item) {
-          item.addEventListener('click', function() {
-            navigate('project-hub', { clientId: item.dataset.client, projectId: item.dataset.project });
-          });
+        window._allProjects = (projectsRes.projects || []).sort(function(a, b) {
+          return (b.lastModified || '').localeCompare(a.lastModified || '');
         });
+        renderStats(window._allClients, window._allProjects);
+        renderProjectCards(window._allProjects, window._allClients);
+        renderClientCards(window._allClients, window._allProjects);
       }).catch(function(err) {
-        el.innerHTML = '<div class="hub-empty">\u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05D8\u05E2\u05D9\u05E0\u05EA \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD</div>';
-        console.error('Home render error:', err);
+        console.error('Dashboard render error:', err);
       });
     }
 
-    // ── Clients View ──
-    function renderClients() {
-      var el = document.getElementById('clientsList');
+    function renderStats(clients, projects) {
+      var el = document.getElementById('dashStats');
       if (!el) return;
+      var totalDocs = 0, totalRevenue = 0;
+      projects.forEach(function(p) {
+        var fs = p.formStates || {};
+        totalDocs += Object.keys(fs).length;
+        Object.keys(fs).forEach(function(k) {
+          var st = fs[k];
+          if (st && st.pricingItems) st.pricingItems.forEach(function(i) {
+            totalRevenue += (i.qty || 1) * (i.price || 0);
+          });
+        });
+      });
+      el.innerHTML =
+        '<div class="dash-stat-card">' +
+          '<div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>' +
+          '<div class="dash-stat-value">' + clients.length + '</div>' +
+          '<div class="dash-stat-label">\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA</div>' +
+        '</div>' +
+        '<div class="dash-stat-card">' +
+          '<div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>' +
+          '<div class="dash-stat-value">' + projects.length + '</div>' +
+          '<div class="dash-stat-label">\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD</div>' +
+        '</div>' +
+        '<div class="dash-stat-card">' +
+          '<div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
+          '<div class="dash-stat-value">' + totalDocs + '</div>' +
+          '<div class="dash-stat-label">\u05DE\u05E1\u05DE\u05DB\u05D9\u05DD</div>' +
+        '</div>' +
+        '<div class="dash-stat-card">' +
+          '<div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>' +
+          '<div class="dash-stat-value">' + (totalRevenue > 0 ? '\u20AA' + totalRevenue.toLocaleString('he-IL') : '0') + '</div>' +
+          '<div class="dash-stat-label">\u05D4\u05DB\u05E0\u05E1\u05D5\u05EA</div>' +
+        '</div>';
+    }
+
+    function renderProjectCards(projects, clients) {
+      var el = document.getElementById('dashProjectsList');
+      if (!el) return;
+      if (projects.length === 0) {
+        el.innerHTML = '<div class="hub-empty">\u05D0\u05D9\u05DF \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD \u05E2\u05D3\u05D9\u05D9\u05DF</div>';
+        return;
+      }
+      var docLabels = { quote: '\u05D4\u05E6\u05E2\u05D4', contract: '\u05D7\u05D5\u05D6\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05D4' };
+      el.innerHTML = projects.map(function(p) {
+        var client = clients.find(function(c) { return c.id === p.clientId; });
+        var initials = client ? getInitials(client.name) : '?';
+        var docTypes = (p.docTypes || [p.docType]).filter(Boolean);
+        var formStates = p.formStates || {};
+        var total = 0;
+        Object.keys(formStates).forEach(function(k) {
+          var st = formStates[k];
+          if (st && st.pricingItems) st.pricingItems.forEach(function(i) { total += (i.qty || 1) * (i.price || 0); });
+        });
+        return '<div class="dash-project-card" data-project="' + escHtml(p.id) + '" data-client="' + escHtml(p.clientId || '') + '">' +
+          '<div class="dash-project-top">' +
+            '<div class="dash-project-info">' +
+              '<div class="dash-project-name">' + escHtml(p.name) + '</div>' +
+              '<div class="dash-project-client">' + escHtml(client ? client.name : '') + '</div>' +
+            '</div>' +
+            '<div class="dash-project-avatar">' + escHtml(initials) + '</div>' +
+          '</div>' +
+          '<div class="dash-project-chips">' +
+            docTypes.map(function(d) { return '<span class="dash-project-chip">' + (docLabels[d] || d) + '</span>'; }).join('') +
+          '</div>' +
+          '<div class="dash-project-bottom">' +
+            '<div class="dash-project-price">' + (total > 0 ? '\u20AA' + total.toLocaleString('he-IL') : '') + '</div>' +
+            '<div class="dash-project-date">' + (p.lastModified ? new Date(p.lastModified).toLocaleDateString('he-IL') : '') + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      el.querySelectorAll('.dash-project-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          var proj = projects.find(function(p) { return p.id === card.dataset.project; });
+          var docType = proj ? (proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote') : 'quote';
+          navigate('document', { clientId: card.dataset.client, projectId: card.dataset.project, docType: docType });
+        });
+      });
+    }
+
+    function renderClientCards(clients, allProjects) {
+      var el = document.getElementById('dashClientsList');
+      if (!el) return;
+      if (clients.length === 0) {
+        el.innerHTML = '<div class="hub-empty">\u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA</div>';
+        return;
+      }
+      el.innerHTML = clients.map(function(c) {
+        var projCount = allProjects.filter(function(p) { return p.clientId === c.id; }).length;
+        return '<div class="dash-client-card">' +
+          '<div class="dash-client-avatar">' + escHtml(getInitials(c.name)) + '</div>' +
+          '<div class="dash-client-body">' +
+            '<div class="dash-client-name">' + escHtml(c.name) + '</div>' +
+            (c.company ? '<div class="dash-client-company">' + escHtml(c.company) + '</div>' : '') +
+          '</div>' +
+          '<span class="dash-client-badge">' + projCount + ' \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    // ══════════════════════════════════════
+    // CLIENTS MANAGEMENT VIEW
+    // ══════════════════════════════════════
+    function renderClientsView() {
       Promise.all([
         fetch('/api/clients').then(function(r) { return r.json(); }),
         fetch('/api/projects').then(function(r) { return r.json(); }),
       ]).then(function(results) {
-        var clientsRes = results[0], projRes = results[1];
-        window._allClients = clientsRes.clients || [];
-        window._allProjects = projRes.projects || [];
-        var clients = clientsRes.clients || [];
-
-        if (clients.length === 0) {
-          el.innerHTML = '<div class="hub-empty">\u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E2\u05D3\u05D9\u05D9\u05DF. \u05DC\u05D7\u05E5 "+ \u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9" \u05DB\u05D3\u05D9 \u05DC\u05D4\u05EA\u05D7\u05D9\u05DC.</div>';
-          return;
-        }
-
-        el.innerHTML = clients.map(function(c) {
-          var projCount = (projRes.projects || []).filter(function(p) { return p.clientId === c.id; }).length;
-          return '<div class="hub-card" data-client="' + escHtml(c.id) + '">' +
-            '<div>' +
-              '<div class="hub-card-title">' + escHtml(c.name) + '</div>' +
-              '<div class="hub-card-subtitle">' + escHtml(c.company || '') + '</div>' +
-            '</div>' +
-            '<div class="hub-card-meta">' + projCount + ' \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD</div>' +
-          '</div>';
-        }).join('');
-
-        el.querySelectorAll('.hub-card').forEach(function(card) {
-          card.addEventListener('click', function() {
-            navigate('client-hub', { clientId: card.dataset.client });
-          });
-        });
-      }).catch(function(err) {
-        el.innerHTML = '<div class="hub-empty">\u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05D8\u05E2\u05D9\u05E0\u05EA \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA</div>';
+        var clients = results[0].clients || [];
+        var projects = results[1].projects || [];
+        window._allClients = clients;
+        window._allProjects = projects;
+        renderClientsMgmtList(clients, projects, '');
       });
     }
 
-    // ── Client Hub View ──
-    function renderClientHub(clientId) {
-      if (!clientId) { navigate('clients'); return; }
-      navState.clientId = clientId;
+    function renderClientsMgmtList(clients, projects, filter) {
+      var el = document.getElementById('clientsMgmtList');
+      if (!el) return;
+      var filtered = filter ? clients.filter(function(c) {
+        var q = filter.toLowerCase();
+        return (c.name || '').toLowerCase().includes(q) || (c.company || '').toLowerCase().includes(q);
+      }) : clients;
 
-      fetch('/api/clients/' + clientId).then(function(r) { return r.json(); }).then(function(client) {
-        document.getElementById('clientHubName').textContent = client.name || '';
-        var details = document.getElementById('clientHubDetails');
-        details.innerHTML = [client.company, client.email, client.phone].filter(Boolean).join(' \u00b7 ');
+      if (filtered.length === 0) {
+        el.innerHTML = '<div class="hub-empty">' + (filter ? '\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05EA\u05D5\u05E6\u05D0\u05D5\u05EA' : '\u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E2\u05D3\u05D9\u05D9\u05DF') + '</div>';
+        return;
+      }
 
-        var projEl = document.getElementById('clientHubProjects');
-        var projects = client.projects || [];
+      el.innerHTML = filtered.map(function(c) {
+        var projCount = projects.filter(function(p) { return p.clientId === c.id; }).length;
+        var details = [c.company, c.email, c.phone].filter(Boolean);
+        return '<div class="client-mgmt-card" data-client="' + escHtml(c.id) + '">' +
+          '<div class="client-mgmt-avatar">' + escHtml(getInitials(c.name)) + '</div>' +
+          '<div class="client-mgmt-body">' +
+            '<div class="client-mgmt-name">' + escHtml(c.name) + '</div>' +
+            (details.length ? '<div class="client-mgmt-details">' + details.map(function(d) { return '<span>' + escHtml(d) + '</span>'; }).join('') + '</div>' : '') +
+          '</div>' +
+          '<span class="client-mgmt-projects">' + projCount + ' \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD</span>' +
+          '<div class="client-mgmt-actions">' +
+            '<button class="client-mgmt-btn" data-action="edit" data-client="' + escHtml(c.id) + '">\u05E2\u05E8\u05D9\u05DB\u05D4</button>' +
+            '<button class="client-mgmt-btn danger" data-action="delete" data-client="' + escHtml(c.id) + '">\u05DE\u05D7\u05D9\u05E7\u05D4</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
 
-        if (projects.length === 0) {
-          projEl.innerHTML = '<div class="hub-empty">\u05D0\u05D9\u05DF \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D6\u05D4</div>';
-          return;
-        }
-
-        var docLabels = { quote: '\u05D4\u05E6\u05E2\u05D4', contract: '\u05D7\u05D5\u05D6\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05D4' };
-        projEl.innerHTML = projects.map(function(p) {
-          var docTypes = (p.docTypes || [p.docType]).filter(Boolean);
-          return '<div class="hub-card" data-project="' + escHtml(p.id) + '">' +
-            '<div>' +
-              '<div class="hub-card-title">' + escHtml(p.name) + '</div>' +
-              '<div class="hub-card-chips">' + docTypes.map(function(d) {
-                return '<span style="font-size:0.72rem;padding:2px 8px;border-radius:4px;background:var(--accent-subtle);color:var(--accent-text);">' + (docLabels[d] || d) + ' \u2713</span>';
-              }).join('') + '</div>' +
-            '</div>' +
-            '<div class="hub-card-meta">' + (p.lastModified ? new Date(p.lastModified).toLocaleDateString('he-IL') : '') + '</div>' +
-          '</div>';
-        }).join('');
-
-        projEl.querySelectorAll('.hub-card').forEach(function(card) {
-          card.addEventListener('click', function() {
-            navigate('project-hub', { clientId: clientId, projectId: card.dataset.project });
-          });
+      // Edit buttons
+      el.querySelectorAll('[data-action="edit"]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var client = (window._allClients || []).find(function(c) { return c.id === btn.dataset.client; });
+          if (!client) return;
+          document.getElementById('editClientName').value = client.name || '';
+          document.getElementById('editClientCompany').value = client.company || '';
+          document.getElementById('editClientEmail').value = client.email || '';
+          document.getElementById('editClientPhone').value = client.phone || '';
+          navState.clientId = client.id;
+          openModal('editClientModal');
         });
-      }).catch(function(err) {
-        console.error('Client hub error:', err);
+      });
+
+      // Delete buttons
+      el.querySelectorAll('[data-action="delete"]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var client = (window._allClients || []).find(function(c) { return c.id === btn.dataset.client; });
+          if (!client) return;
+          if (!confirm('\u05D4\u05D0\u05DD \u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA "' + client.name + '"?')) return;
+          fetch('/api/clients/' + encodeURIComponent(client.id), { method: 'DELETE' })
+            .then(function(res) { if (res.ok) renderClientsView(); });
+        });
       });
     }
 
-    // ── Project Hub View ──
-    function renderProjectHub(projectId) {
-      if (!projectId) { navigate('clients'); return; }
-      navState.projectId = projectId;
+    // Clients search
+    var clientsSearchInput = document.getElementById('clientsSearch');
+    if (clientsSearchInput) {
+      var searchTimer;
+      clientsSearchInput.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        var q = clientsSearchInput.value;
+        searchTimer = setTimeout(function() {
+          renderClientsMgmtList(window._allClients || [], window._allProjects || [], q);
+        }, 200);
+      });
+    }
 
-      fetch('/api/projects/' + encodeURIComponent(projectId)).then(function(r) { return r.json(); }).then(function(res) {
-        document.getElementById('projectHubName').textContent = res.name || '';
+    // Clients add button
+    var clientsAddBtn = document.getElementById('clientsAddBtn');
+    if (clientsAddBtn) clientsAddBtn.addEventListener('click', function() { openAddClientModal(); });
 
-        var cardsEl = document.getElementById('projectHubCards');
-        var docTypes = [
-          { key: 'quote', label: '\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8' },
-          { key: 'contract', label: '\u05D7\u05D5\u05D6\u05D4 \u05E2\u05D1\u05D5\u05D3\u05D4' },
-          { key: 'order', label: '\u05D4\u05D6\u05DE\u05E0\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4' },
-        ];
-
-        var formStates = res.formStates || {};
-        cardsEl.innerHTML = docTypes.map(function(dt) {
-          var state = formStates[dt.key];
-          var exists = !!state;
-          var total = exists && state.pricingItems ? state.pricingItems.reduce(function(s, p) { return s + ((p.qty || 1) * (p.price || 0)); }, 0) : 0;
-          return '<div class="doc-type-card' + (exists ? ' exists' : '') + '" data-doctype="' + dt.key + '">' +
-            '<div class="doc-type-card-title">' + dt.label + '</div>' +
-            '<div class="doc-type-card-status">' + (exists ? '\u2713 \u05E7\u05D9\u05D9\u05DD' : '\u05D8\u05E8\u05DD \u05E0\u05D5\u05E6\u05E8') + '</div>' +
-            (total > 0 ? '<div class="doc-type-card-price">' + total.toLocaleString('he-IL') + ' \u20AA</div>' : '') +
-          '</div>';
-        }).join('');
-
-        cardsEl.querySelectorAll('.doc-type-card').forEach(function(card) {
-          card.addEventListener('click', function() {
-            navigate('document', { clientId: navState.clientId, projectId: projectId, docType: card.dataset.doctype });
-          });
+    // ══════════════════════════════════════
+    // PROJECTS MANAGEMENT VIEW
+    // ══════════════════════════════════════
+    function renderProjectsView() {
+      Promise.all([
+        fetch('/api/clients').then(function(r) { return r.json(); }),
+        fetch('/api/projects').then(function(r) { return r.json(); }),
+      ]).then(function(results) {
+        var clients = results[0].clients || [];
+        var projects = (results[1].projects || []).sort(function(a, b) {
+          return (b.lastModified || '').localeCompare(a.lastModified || '');
         });
+        window._allClients = clients;
+        window._allProjects = projects;
+        renderProjectsMgmtList(projects, clients, '');
+      });
+    }
 
-        // History placeholder
-        var histEl = document.getElementById('projectHubHistory');
-        histEl.innerHTML = '<div class="hub-empty" style="padding:16px;">\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D4 \u05EA\u05D4\u05D9\u05D4 \u05D6\u05DE\u05D9\u05E0\u05D4 \u05D1\u05E7\u05E8\u05D5\u05D1</div>';
-      }).catch(function(err) {
-        console.error('Project hub error:', err);
+    function renderProjectsMgmtList(projects, clients, filter) {
+      var el = document.getElementById('projectsMgmtList');
+      if (!el) return;
+      var filtered = filter ? projects.filter(function(p) {
+        var q = filter.toLowerCase();
+        var client = clients.find(function(c) { return c.id === p.clientId; });
+        return (p.name || '').toLowerCase().includes(q) || (client && client.name.toLowerCase().includes(q));
+      }) : projects;
+
+      if (filtered.length === 0) {
+        el.innerHTML = '<div class="hub-empty">' + (filter ? '\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05EA\u05D5\u05E6\u05D0\u05D5\u05EA' : '\u05D0\u05D9\u05DF \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD \u05E2\u05D3\u05D9\u05D9\u05DF') + '</div>';
+        return;
+      }
+
+      var docLabels = { quote: '\u05D4\u05E6\u05E2\u05D4', contract: '\u05D7\u05D5\u05D6\u05D4', order: '\u05D4\u05D6\u05DE\u05E0\u05D4' };
+      el.innerHTML = filtered.map(function(p) {
+        var client = clients.find(function(c) { return c.id === p.clientId; });
+        var docTypes = (p.docTypes || [p.docType]).filter(Boolean);
+        var formStates = p.formStates || {};
+        var total = 0;
+        Object.keys(formStates).forEach(function(k) {
+          var st = formStates[k];
+          if (st && st.pricingItems) st.pricingItems.forEach(function(i) { total += (i.qty || 1) * (i.price || 0); });
+        });
+        return '<div class="client-mgmt-card" data-project="' + escHtml(p.id) + '" data-client="' + escHtml(p.clientId || '') + '" style="cursor:pointer;">' +
+          '<div class="client-mgmt-avatar" style="border-radius:10px;">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
+          '</div>' +
+          '<div class="client-mgmt-body">' +
+            '<div class="client-mgmt-name">' + escHtml(p.name) + '</div>' +
+            '<div class="client-mgmt-details">' +
+              (client ? '<span>' + escHtml(client.name) + '</span>' : '') +
+              '<span>' + docTypes.map(function(d) { return docLabels[d] || d; }).join(' \u00b7 ') + '</span>' +
+              (total > 0 ? '<span>\u20AA' + total.toLocaleString('he-IL') + '</span>' : '') +
+              (p.lastModified ? '<span>' + new Date(p.lastModified).toLocaleDateString('he-IL') + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="client-mgmt-actions">' +
+            '<button class="client-mgmt-btn" data-action="open" data-project="' + escHtml(p.id) + '" data-client="' + escHtml(p.clientId || '') + '">\u05E4\u05EA\u05D7</button>' +
+            '<button class="client-mgmt-btn" data-action="rename" data-project="' + escHtml(p.id) + '">\u05E9\u05E0\u05D4 \u05E9\u05DD</button>' +
+            '<button class="client-mgmt-btn danger" data-action="delete-project" data-project="' + escHtml(p.id) + '">\u05DE\u05D7\u05E7</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      // Open project
+      el.querySelectorAll('[data-action="open"]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var proj = projects.find(function(p) { return p.id === btn.dataset.project; });
+          var docType = proj ? (proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote') : 'quote';
+          navigate('document', { clientId: btn.dataset.client, projectId: btn.dataset.project, docType: docType });
+        });
+      });
+
+      // Card click also opens
+      el.querySelectorAll('.client-mgmt-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          var proj = projects.find(function(p) { return p.id === card.dataset.project; });
+          var docType = proj ? (proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote') : 'quote';
+          navigate('document', { clientId: card.dataset.client, projectId: card.dataset.project, docType: docType });
+        });
+      });
+
+      // Rename
+      el.querySelectorAll('[data-action="rename"]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var proj = projects.find(function(p) { return p.id === btn.dataset.project; });
+          if (!proj) return;
+          document.getElementById('renameProjectName').value = proj.name || '';
+          navState.projectId = proj.id;
+          openModal('renameProjectModal');
+        });
+      });
+
+      // Delete
+      el.querySelectorAll('[data-action="delete-project"]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var proj = projects.find(function(p) { return p.id === btn.dataset.project; });
+          if (!proj) return;
+          if (!confirm('\u05D4\u05D0\u05DD \u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA "' + proj.name + '"?')) return;
+          fetch('/api/projects/' + encodeURIComponent(proj.id), { method: 'DELETE' })
+            .then(function(res) { if (res.ok) renderProjectsView(); });
+        });
+      });
+    }
+
+    // Projects search
+    var projectsSearchInput = document.getElementById('projectsSearch');
+    if (projectsSearchInput) {
+      var projSearchTimer;
+      projectsSearchInput.addEventListener('input', function() {
+        clearTimeout(projSearchTimer);
+        var q = projectsSearchInput.value;
+        projSearchTimer = setTimeout(function() {
+          renderProjectsMgmtList(window._allProjects || [], window._allClients || [], q);
+        }, 200);
+      });
+    }
+
+    // Projects add button
+    var projectsAddBtn = document.getElementById('projectsAddBtn');
+    if (projectsAddBtn) projectsAddBtn.addEventListener('click', function() { openAddProjectModal(); });
+
+    // ══════════════════════════════════════
+    // NAV SIDEBAR (in document view)
+    // ══════════════════════════════════════
+    function renderNavSidebar() {
+      var body = document.getElementById('navSidebarBody');
+      if (!body) return;
+      var clients = window._allClients || [];
+      var projects = window._allProjects || [];
+      if (clients.length === 0) {
+        body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.8rem;">\u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA</div>';
+        return;
+      }
+      body.innerHTML = clients.map(function(c) {
+        var clientProjects = projects.filter(function(p) { return p.clientId === c.id; });
+        var isExpanded = c.id === navState.clientId || clientProjects.some(function(p) { return p.id === navState.projectId; });
+        return '<div class="nav-client-group' + (isExpanded ? ' expanded' : '') + '" data-client="' + escHtml(c.id) + '">' +
+          '<div class="nav-client-header">' +
+            '<svg class="nav-client-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>' +
+            '<span class="nav-client-name">' + escHtml(c.name) + '</span>' +
+          '</div>' +
+          '<div class="nav-project-list">' +
+            clientProjects.map(function(p) {
+              var isActive = p.id === navState.projectId;
+              return '<div class="nav-project-item' + (isActive ? ' active' : '') + '" data-project="' + escHtml(p.id) + '">' +
+                '<div class="nav-project-dot"></div>' +
+                '<span>' + escHtml(p.name) + '</span>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>';
+      }).join('');
+      body.querySelectorAll('.nav-client-header').forEach(function(header) {
+        header.addEventListener('click', function() { header.parentElement.classList.toggle('expanded'); });
+      });
+      body.querySelectorAll('.nav-project-item').forEach(function(item) {
+        item.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var projId = item.dataset.project;
+          body.querySelectorAll('.nav-project-item').forEach(function(pi) { pi.classList.remove('active'); });
+          item.classList.add('active');
+          var sp = window._switchProject;
+          if (sp) {
+            navState.projectId = projId;
+            var proj = projects.find(function(p) { return p.id === projId; });
+            if (proj) navState.clientId = proj.clientId;
+            sp(projId);
+            updateBreadcrumb();
+          }
+        });
       });
     }
 
@@ -9614,48 +10368,156 @@
           if (docsOverlay) docsOverlay.classList.add('visible');
           return;
         }
-        if (view === 'projects') {
-          navigate('home'); // Home view shows all projects
-          return;
-        }
+        // projects and clients navigate directly to their views
+
         navigate(view);
       });
     });
 
-    // ── Hub action buttons ──
-    var hubAddClient = document.getElementById('hubAddClient');
-    if (hubAddClient) {
-      hubAddClient.addEventListener('click', function() {
-        var name = prompt('\u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7:');
-        if (!name) return;
-        var company = prompt('\u05D7\u05D1\u05E8\u05D4 (\u05D0\u05D5\u05E4\u05E6\u05D9\u05D5\u05E0\u05DC\u05D9):') || '';
-        fetch('/api/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, company: company }) })
-          .then(function(res) { if (res.ok) navigate('clients'); });
+    // ── Nav sidebar toggle ──
+    var navToggle = document.getElementById('navSidebarToggle');
+    if (navToggle) {
+      navToggle.addEventListener('click', function() {
+        var sidebar = document.getElementById('navSidebar');
+        if (sidebar) sidebar.classList.toggle('collapsed');
       });
     }
+    var navAddClient = document.getElementById('navAddClient');
+    if (navAddClient) navAddClient.addEventListener('click', function() { openAddClientModal(); });
+    var navAddProject = document.getElementById('navAddProject');
+    if (navAddProject) navAddProject.addEventListener('click', function() { openAddProjectModal(); });
 
-    var hubAddProject = document.getElementById('hubAddProject');
-    if (hubAddProject) {
-      hubAddProject.addEventListener('click', function() {
-        var name = prompt('\u05E9\u05DD \u05D4\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8:');
-        if (!name) return;
+    // ── Modal helpers ──
+    function openModal(id) {
+      var modal = document.getElementById(id);
+      if (modal) modal.style.display = 'flex';
+    }
+    function closeModal(id) {
+      var modal = document.getElementById(id);
+      if (modal) modal.style.display = 'none';
+    }
+    function openAddClientModal() {
+      document.getElementById('modalClientName').value = '';
+      document.getElementById('modalClientCompany').value = '';
+      document.getElementById('modalClientEmail').value = '';
+      document.getElementById('modalClientPhone').value = '';
+      openModal('addClientModal');
+      setTimeout(function() { document.getElementById('modalClientName').focus(); }, 100);
+    }
+    function openAddProjectModal() {
+      document.getElementById('modalProjectName').value = '';
+      openModal('addProjectModal');
+      setTimeout(function() { document.getElementById('modalProjectName').focus(); }, 100);
+    }
+    document.querySelectorAll('.hub-modal-overlay').forEach(function(overlay) {
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.style.display = 'none';
+      });
+    });
+    document.querySelectorAll('[data-close-modal]').forEach(function(btn) {
+      btn.addEventListener('click', function() { closeModal(btn.dataset.closeModal); });
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.hub-modal-overlay').forEach(function(m) { m.style.display = 'none'; });
+      }
+    });
+
+    // ── Dashboard add buttons ──
+    var dashAddClient = document.getElementById('dashAddClient');
+    if (dashAddClient) dashAddClient.addEventListener('click', function() { openAddClientModal(); });
+    var dashAddProject = document.getElementById('dashAddProject');
+    if (dashAddProject) dashAddProject.addEventListener('click', function() { openAddProjectModal(); });
+    var dashNewDoc = document.getElementById('dashNewDoc');
+    if (dashNewDoc) dashNewDoc.addEventListener('click', function() {
+      // If there are projects, open the most recent one; otherwise prompt to create a project first
+      var projects = window._allProjects || [];
+      if (projects.length > 0) {
+        var p = projects[0];
+        var docType = p.docType || (p.docTypes && p.docTypes[0]) || 'quote';
+        navigate('document', { clientId: p.clientId, projectId: p.id, docType: docType });
+      } else {
+        openAddProjectModal();
+      }
+    });
+
+    // ── Modal submit handlers ──
+    var modalClientSubmit = document.getElementById('modalClientSubmit');
+    if (modalClientSubmit) {
+      modalClientSubmit.addEventListener('click', function() {
+        var name = document.getElementById('modalClientName').value.trim();
+        if (!name) { document.getElementById('modalClientName').focus(); return; }
+        var body = {
+          name: name,
+          company: document.getElementById('modalClientCompany').value.trim(),
+          email: document.getElementById('modalClientEmail').value.trim(),
+          phone: document.getElementById('modalClientPhone').value.trim()
+        };
+        fetch('/api/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+          .then(function(res) {
+            if (res.ok) {
+              closeModal('addClientModal');
+              if (navState.view === 'clients') renderClientsView();
+              else if (navState.view === 'home') renderDashboard();
+              else renderNavSidebar();
+            }
+          });
+      });
+    }
+    var modalProjectSubmit = document.getElementById('modalProjectSubmit');
+    if (modalProjectSubmit) {
+      modalProjectSubmit.addEventListener('click', function() {
+        var name = document.getElementById('modalProjectName').value.trim();
+        if (!name) { document.getElementById('modalProjectName').focus(); return; }
         fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, clientId: navState.clientId }) })
-          .then(function(res) { if (res.ok) navigate('client-hub', { clientId: navState.clientId }); });
+          .then(function(res) {
+            if (res.ok) {
+              closeModal('addProjectModal');
+              if (navState.view === 'projects') renderProjectsView();
+              else if (navState.view === 'home') renderDashboard();
+              else renderNavSidebar();
+            }
+          });
+      });
+    }
+    var editClientSubmit = document.getElementById('editClientSubmit');
+    if (editClientSubmit) {
+      editClientSubmit.addEventListener('click', function() {
+        var name = document.getElementById('editClientName').value.trim();
+        if (!name) { document.getElementById('editClientName').focus(); return; }
+        var body = {
+          name: name,
+          company: document.getElementById('editClientCompany').value.trim(),
+          email: document.getElementById('editClientEmail').value.trim(),
+          phone: document.getElementById('editClientPhone').value.trim()
+        };
+        fetch('/api/clients/' + navState.clientId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+          .then(function() { closeModal('editClientModal'); if (navState.view === 'clients') renderClientsView(); else renderDashboard(); });
+      });
+    }
+    var renameProjectSubmit = document.getElementById('renameProjectSubmit');
+    if (renameProjectSubmit) {
+      renameProjectSubmit.addEventListener('click', function() {
+        var name = document.getElementById('renameProjectName').value.trim();
+        if (!name) { document.getElementById('renameProjectName').focus(); return; }
+        fetch('/api/projects/' + encodeURIComponent(navState.projectId), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) })
+          .then(function(res) { if (res.ok) { closeModal('renameProjectModal'); if (navState.view === 'projects') renderProjectsView(); else renderDashboard(); } });
       });
     }
 
-    var hubEditClient = document.getElementById('hubEditClient');
-    if (hubEditClient) {
-      hubEditClient.addEventListener('click', function() {
-        var client = (window._allClients || []).find(function(c) { return c.id === navState.clientId; });
-        if (!client) return;
-        var name = prompt('\u05E9\u05DD:', client.name);
-        if (!name) return;
-        var company = prompt('\u05D7\u05D1\u05E8\u05D4:', client.company || '') || '';
-        fetch('/api/clients/' + client.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, company: company }) })
-          .then(function() { navigate('client-hub', { clientId: navState.clientId }); });
-      });
-    }
+    // Submit modals on Enter key
+    ['modalClientName', 'modalClientCompany', 'modalClientEmail', 'modalClientPhone'].forEach(function(id) {
+      var inp = document.getElementById(id);
+      if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('modalClientSubmit').click(); } });
+    });
+    ['editClientName', 'editClientCompany', 'editClientEmail', 'editClientPhone'].forEach(function(id) {
+      var inp = document.getElementById(id);
+      if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('editClientSubmit').click(); } });
+    });
+    var modalProjectNameInput = document.getElementById('modalProjectName');
+    if (modalProjectNameInput) modalProjectNameInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('modalProjectSubmit').click(); } });
+    var renameProjectNameInput = document.getElementById('renameProjectName');
+    if (renameProjectNameInput) renameProjectNameInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('renameProjectSubmit').click(); } });
 
     // ── Browser back/forward ──
     window.addEventListener('popstate', function(e) {
@@ -9673,25 +10535,57 @@
     var urlView = urlParams.get('view');
     var urlProject = urlParams.get('project');
 
-    // Always auto-resume to last active project on fresh load
-    // Only use URL view if explicitly navigating to a non-home hub page
+    function waitForSwitchProject(cb, retries) {
+      retries = retries || 0;
+      if (window._switchProject || retries > 10) { cb(); return; }
+      setTimeout(function() { waitForSwitchProject(cb, retries + 1); }, 100);
+    }
+
+    // Restore from URL params, or auto-resume last project only on bare load
     (async function() {
       try {
-        var projRes = await fetch('/api/projects').then(function(r) { return r.json(); });
-        var activeId = urlProject || projRes.activeProjectId;
-        var projects = projRes.projects || [];
-        if (activeId && projects.some(function(p) { return p.id === activeId; })) {
-          var proj = projects.find(function(p) { return p.id === activeId; });
-          var docType = urlParams.get('doc') || proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote';
-          navigate('document', { clientId: proj.clientId, projectId: activeId, docType: docType });
-        } else if (urlView && urlView !== 'home' && urlView !== 'document') {
-          // Explicit hub navigation from URL
-          navigate(urlView, { clientId: urlParams.get('client'), projectId: urlParams.get('project') });
-        } else if (projects.length > 0) {
-          navigate('home');
-        } else {
-          navigate('home');
+        var results = await Promise.all([
+          fetch('/api/projects').then(function(r) { return r.json(); }),
+          fetch('/api/clients').then(function(r) { return r.json(); })
+        ]);
+        var projRes = results[0];
+        var clientsRes = results[1];
+        window._allClients = clientsRes.clients || [];
+        window._allProjects = projRes.projects || [];
+
+        // 1. If URL explicitly says a hub view → go there
+        if (urlView === 'home' || urlView === 'clients' || urlView === 'projects') {
+          navigate(urlView);
+          return;
         }
+
+        // 2. If URL explicitly says view=document with a project → load that doc
+        if (urlView === 'document' && urlProject) {
+          var proj = (projRes.projects || []).find(function(p) { return p.id === urlProject; });
+          if (proj) {
+            var docType = urlParams.get('doc') || proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote';
+            waitForSwitchProject(function() {
+              navigate('document', { clientId: proj.clientId, projectId: urlProject, docType: docType });
+            });
+            return;
+          }
+        }
+
+        // 3. No URL view param (bare "/" load) → auto-resume last active project
+        if (!urlView) {
+          var activeId = projRes.activeProjectId;
+          if (activeId && (projRes.projects || []).some(function(p) { return p.id === activeId; })) {
+            var proj = (projRes.projects || []).find(function(p) { return p.id === activeId; });
+            var docType = proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote';
+            waitForSwitchProject(function() {
+              navigate('document', { clientId: proj.clientId, projectId: activeId, docType: docType });
+            });
+            return;
+          }
+        }
+
+        // 4. Fallback → dashboard
+        navigate('home');
       } catch(e) {
         navigate('home');
       }

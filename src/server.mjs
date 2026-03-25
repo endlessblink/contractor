@@ -1393,7 +1393,7 @@ app.delete('/api/projects/:id', (req, res) => {
   }
 });
 
-app.put('/api/projects/:id/chat', (req, res) => {
+function handleSaveChat(req, res) {
   try {
     const { id } = req.params;
     if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
@@ -1413,9 +1413,11 @@ app.put('/api/projects/:id/chat', (req, res) => {
     console.error('Error saving chat history:', err);
     res.status(500).json({ error: err.message });
   }
-});
+}
+app.put('/api/projects/:id/chat', handleSaveChat);
+app.post('/api/projects/:id/chat', handleSaveChat);
 
-app.put('/api/projects/:id/form', (req, res) => {
+function handleSaveForm(req, res) {
   try {
     const { id } = req.params;
     if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
@@ -1504,7 +1506,9 @@ app.put('/api/projects/:id/form', (req, res) => {
     console.error('Error saving form state:', err);
     res.status(500).json({ error: err.message });
   }
-});
+}
+app.put('/api/projects/:id/form', handleSaveForm);
+app.post('/api/projects/:id/form', handleSaveForm);
 
 // ─── Existing endpoint: POST /api/chat ────────────────────────────────────────
 
