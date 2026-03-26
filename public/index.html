@@ -31,8 +31,8 @@
       --text-label:          #374151;
       --border:              #e5e7eb;
       --border-strong:       #d1d5db;
-      --input-bg:            #f9fafb;
-      --input-bg-focus:      #ffffff;
+      --input-bg:            transparent;
+      --input-bg-focus:      rgba(0,0,0,0.02);
       --input-border:        #e5e7eb;
       --input-focus-border:  #2ba8a0;
       --card-bg:             #ffffff;
@@ -120,8 +120,8 @@
       --text-label:          rgba(255,255,255,0.45);
       --border:              rgba(255,255,255,0.07);
       --border-strong:       rgba(255,255,255,0.12);
-      --input-bg:            #12141a;
-      --input-bg-focus:      #16181f;
+      --input-bg:            transparent;
+      --input-bg-focus:      rgba(255,255,255,0.03);
       --input-border:        rgba(255,255,255,0.10);
       --input-focus-border:  #00d2b4;
       --card-bg:             #1a1d26;
@@ -203,16 +203,23 @@
 
     /* ── BUTTON TOKEN: Dark mode — universal outline reset ── */
     /* Catches ALL buttons except utility/nav buttons via :not() exclusions */
-    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn) {
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn) {
       background: var(--btn-accent-bg) !important;
       color: var(--btn-accent-color) !important;
       border: var(--btn-accent-border) !important;
       box-shadow: none !important;
       background-image: none !important;
     }
-    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):hover:not(:disabled) {
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):hover:not(:disabled) {
       background: var(--btn-accent-hover-bg) !important;
       box-shadow: none !important;
+    }
+    /* ── Form element theming: date inputs, selects, checkboxes ── */
+    html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.5);
+    }
+    html.dark select {
+      background-color: transparent !important;
     }
     /* Spans acting as buttons (doc chips, badges) */
     html.dark .sidebar-doc-chip.exists,
@@ -348,18 +355,17 @@
     .btn-primary {
       font-family: 'Heebo', sans-serif; font-size: 0.88rem; font-weight: 700;
       padding: 9px 22px;
-      background: linear-gradient(to bottom, var(--btn-primary-from), var(--btn-primary-to));
-      color: #fff;
-      border: 1px solid var(--btn-shine);
+      background: var(--accent-subtle);
+      color: var(--accent-text);
+      border: 1px solid var(--accent-border);
       border-radius: 10px; cursor: pointer;
-      box-shadow: 0 2px 8px var(--btn-glow), 0 1px 2px var(--btn-neutral-shadow);
-      transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
+      transition: background 0.2s, border-color 0.2s;
     }
     .btn-primary:hover {
-      box-shadow: 0 4px 18px var(--btn-glow-hover), 0 2px 4px var(--btn-neutral-shadow);
-      transform: translateY(-1px);
+      background: rgba(0, 210, 180, 0.14);
+      border-color: var(--accent);
     }
-    .btn-primary:active { transform: translateY(0) scale(0.98); box-shadow: 0 1px 4px var(--btn-glow); }
+    .btn-primary:active { transform: translateY(0) scale(0.98); }
     .btn-secondary {
       font-family: 'Heebo', sans-serif; font-size: 0.88rem; font-weight: 600;
       padding: 9px 22px; background: var(--elevated-bg); color: var(--text-secondary);
@@ -852,11 +858,11 @@
     .form-update-row .fu-apply-btn:disabled { opacity: 0.3; cursor: default; }
     .form-update-apply-all {
       display: block; width: 100%; margin-top: 8px; padding: 8px;
-      background: var(--accent); color: white; border: none; border-radius: 8px;
+      background: var(--accent-subtle); color: var(--accent-text); border: 1px solid var(--accent-border); border-radius: 8px;
       font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer;
-      transition: opacity 0.15s;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .form-update-apply-all:hover { opacity: 0.9; }
+    .form-update-apply-all:hover { background: rgba(0, 210, 180, 0.14); border-color: var(--accent); }
     .form-update-apply-all:disabled { opacity: 0.4; cursor: default; }
 
     /* Visual marker for AI-changed fields */
@@ -1340,7 +1346,7 @@
       align-items: center;
       gap: 8px;
       padding: 10px 14px;
-      background: rgba(255,255,255,0.03);
+      background: transparent;
       cursor: pointer;
       user-select: none;
       font-size: 0.85rem;
@@ -1349,13 +1355,13 @@
       transition: background 0.15s;
     }
     html:not(.dark) .clause-category-header {
-      background: rgba(0,0,0,0.02);
+      background: transparent;
     }
     .clause-category-header:hover {
-      background: rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.04);
     }
     html:not(.dark) .clause-category-header:hover {
-      background: rgba(0,0,0,0.04);
+      background: rgba(0,0,0,0.03);
     }
     .clause-category-header .category-toggle {
       width: 18px;
@@ -1363,18 +1369,42 @@
       accent-color: var(--accent);
       cursor: pointer;
       flex-shrink: 0;
+      appearance: none; -webkit-appearance: none;
+      border: 1.5px solid var(--border-strong);
+      border-radius: 4px;
+      background: transparent;
+      position: relative;
+    }
+    .clause-category-header .category-toggle:checked {
+      border-color: var(--accent);
+      background: transparent;
+    }
+    .clause-category-header .category-toggle:checked::after {
+      content: '✓';
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; line-height: 1; color: var(--accent-text); font-weight: 700;
+    }
+    .clause-category-header .category-toggle:indeterminate {
+      border-color: var(--accent);
+    }
+    .clause-category-header .category-toggle:indeterminate::after {
+      content: '–';
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; line-height: 1; color: var(--accent-text); font-weight: 700;
     }
     .clause-category-header .category-name {
       flex: 1;
     }
     .clause-category-header .category-count {
       font-size: 0.75rem;
-      color: var(--muted);
+      color: var(--text-muted);
       font-weight: 400;
     }
     .clause-category-header .expand-icon {
       font-size: 0.7rem;
-      color: var(--muted);
+      color: var(--text-muted);
       transition: transform 0.2s;
     }
     .clause-category.expanded .expand-icon {
@@ -1848,21 +1878,20 @@
       align-items: center;
       gap: 6px;
       padding: 8px 18px;
-      background: linear-gradient(to bottom, var(--btn-primary-from), var(--btn-primary-to));
-      color: #ffffff;
-      border: 1px solid var(--btn-shine);
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
       border-radius: 10px;
       font-family: 'Heebo', sans-serif;
       font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 2px 8px var(--btn-glow), 0 1px 2px var(--btn-neutral-shadow);
-      transition: box-shadow 0.2s, transform 0.15s;
+      transition: border-color 0.2s, color 0.2s;
     }
 
     .upload-btn-trigger:hover {
-      box-shadow: 0 4px 16px var(--btn-glow-hover), 0 2px 4px var(--btn-neutral-shadow);
-      transform: translateY(-1px);
+      border-color: var(--accent-border);
+      color: var(--accent-text);
     }
     .upload-btn-trigger:active { transform: translateY(0) scale(0.97); }
 
@@ -2293,18 +2322,18 @@
       align-items: center;
       gap: 6px;
       padding: 9px 18px;
-      background: var(--accent);
-      color: #ffffff;
-      border: none;
+      background: var(--accent-subtle);
+      color: var(--accent-text);
+      border: 1px solid var(--accent-border);
       border-radius: 8px;
       font-family: 'Heebo', sans-serif;
       font-size: 0.88rem;
       font-weight: 700;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background 0.15s, border-color 0.15s;
     }
 
-    .modal-fill-btn:hover { background: var(--accent-hover); }
+    .modal-fill-btn:hover { background: rgba(0, 210, 180, 0.14); border-color: var(--accent); }
     .modal-fill-btn svg { width: 15px; height: 15px; }
 
     .modal-close-footer-btn {
@@ -2355,8 +2384,8 @@
     .ref-item-btn.delete:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
 
     .analyze-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
-    .analyze-bar-btn { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: background 0.15s; }
-    .analyze-bar-btn:hover { background: var(--accent-hover); }
+    .analyze-bar-btn { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, color 0.15s; }
+    .analyze-bar-btn:hover { border-color: var(--accent-border); color: var(--accent-text); }
     .analyze-bar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .analyze-bar-status { font-size: 13px; color: var(--text-muted); }
 
@@ -2371,8 +2400,8 @@
     .extraction-item-text { font-size: 13px; color: var(--text-primary); line-height: 1.6; margin-bottom: 8px; }
     .extraction-item-actions { display: flex; gap: 6px; }
     .extraction-item-actions button { padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; border: 1px solid var(--border); transition: background 0.15s, color 0.15s; }
-    .extraction-approve { background: var(--accent); color: white; border-color: var(--accent) !important; }
-    .extraction-approve:hover { background: var(--accent-hover); }
+    .extraction-approve { background: var(--accent-subtle); color: var(--accent-text); border-color: var(--accent-border) !important; }
+    .extraction-approve:hover { background: rgba(0, 210, 180, 0.14); border-color: var(--accent) !important; }
     .extraction-edit-btn { background: var(--elevated-bg); color: var(--text-primary); }
     .extraction-dismiss-btn { background: none; color: var(--text-muted); }
     .extraction-dismiss-btn:hover { color: #ef4444; border-color: rgba(239,68,68,0.3) !important; }
@@ -2608,7 +2637,7 @@
     }
     .clients-header h2 { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin: 0; }
     .clients-search {
-      width: 100%; padding: 10px 16px; background: var(--card-bg); border: 1px solid var(--border);
+      width: 100%; padding: 10px 16px; background: transparent; border: 1px solid var(--border);
       border-radius: 10px; color: var(--text-primary); font-size: 0.88rem; font-family: inherit;
       margin-bottom: 16px; direction: rtl; box-sizing: border-box;
     }
@@ -2718,6 +2747,18 @@
       background: var(--text-muted); flex-shrink: 0;
     }
     .nav-project-item.active .nav-project-dot { background: var(--accent); }
+    .nav-doc-types {
+      display: flex; flex-direction: column; gap: 3px;
+      padding: 4px 0 4px 20px;
+    }
+    .nav-doc-btn {
+      padding: 5px 10px; font-size: 0.72rem; border-radius: 5px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-secondary); cursor: pointer; font-family: inherit;
+      text-align: right; transition: all 150ms; direction: rtl;
+    }
+    .nav-doc-btn:hover { border-color: var(--accent-border); color: var(--accent-text); }
+    .nav-doc-btn.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
 
     /* ── Legacy compat (kept) ── */
     .hub-empty-state {
@@ -2738,11 +2779,11 @@
       font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; max-width: 300px;
     }
     .hub-empty-state-btn {
-      padding: 10px 24px; background: var(--accent); color: #0c0e13;
-      border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+      padding: 10px 24px; background: transparent; color: var(--text-secondary);
+      border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem; font-weight: 600;
       cursor: pointer; font-family: inherit; transition: all 150ms;
     }
-    .hub-empty-state-btn:hover { background: var(--accent-hover); }
+    .hub-empty-state-btn:hover { border-color: var(--accent-border); color: var(--accent-text); }
 
     @media (max-width: 768px) {
       .nav-sidebar { width: 180px; }
@@ -2778,7 +2819,7 @@
       color: var(--text-secondary); margin-bottom: 6px;
     }
     .hub-field-input {
-      width: 100%; padding: 10px 14px; background: var(--elevated-bg);
+      width: 100%; padding: 10px 14px; background: transparent;
       border: 1px solid var(--border); border-radius: 8px;
       color: var(--text-primary); font-size: 0.88rem; font-family: inherit;
       transition: border-color 150ms; box-sizing: border-box;
@@ -2796,11 +2837,11 @@
     }
     .hub-modal-cancel:hover { border-color: var(--border-strong); color: var(--text-primary); }
     .hub-modal-submit {
-      padding: 9px 20px; background: var(--accent); color: #0c0e13;
-      border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+      padding: 9px 20px; background: var(--accent-subtle); color: var(--accent-text);
+      border: 1px solid var(--accent-border); border-radius: 8px; font-size: 0.85rem; font-weight: 600;
       cursor: pointer; font-family: inherit; transition: all 150ms;
     }
-    .hub-modal-submit:hover { background: var(--accent-hover); }
+    .hub-modal-submit:hover { background: rgba(0, 210, 180, 0.14); border-color: var(--accent); }
 
     /* Doc type cards — legacy (kept for compat) */
     .doc-type-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; direction: rtl; }
@@ -3139,18 +3180,18 @@
       font-size: 0.8rem;
       font-weight: 600;
       padding: 7px 14px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
       border-radius: 7px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: background 0.15s;
+      transition: border-color 0.15s, color 0.15s;
     }
 
-    .tmpl-add-btn:hover { background: var(--accent-hover); }
+    .tmpl-add-btn:hover { border-color: var(--accent-border); color: var(--accent-text); }
 
     .tmpl-card {
       display: flex;
@@ -3352,14 +3393,14 @@
       font-size: 0.85rem;
       font-weight: 600;
       padding: 8px 20px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
+      background: var(--accent-subtle);
+      color: var(--accent-text);
+      border: 1px solid var(--accent-border);
       border-radius: 7px;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .tmpl-save-btn:hover { background: var(--accent-hover); }
+    .tmpl-save-btn:hover { background: rgba(0, 210, 180, 0.14); border-color: var(--accent); }
     .tmpl-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .tmpl-cancel-btn {
@@ -3418,21 +3459,22 @@
       align-items: center;
       gap: 8px;
       padding: 9px 18px;
-      background: linear-gradient(135deg, var(--accent), #1e918a);
-      color: #ffffff;
-      border: none;
+      background: var(--accent-subtle);
+      color: var(--accent-text);
+      border: 1px solid var(--accent-border);
       border-radius: 8px;
       font-family: 'Heebo', sans-serif;
       font-size: 0.85rem;
       font-weight: 700;
       cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
       position: relative;
       overflow: hidden;
     }
 
     .learn-btn:hover:not(:disabled) {
-      opacity: 0.9;
+      background: rgba(0, 210, 180, 0.14);
+      border-color: var(--accent);
       transform: translateY(-1px);
     }
 
@@ -3825,10 +3867,10 @@
     .confirm-modal-actions { padding: 16px 20px 20px; display: flex; gap: 10px; justify-content: flex-start; }
     .confirm-ok-btn {
       font-family: 'Heebo', sans-serif; font-size: 0.88rem; font-weight: 700; padding: 9px 20px;
-      border: none; border-radius: 8px; cursor: pointer; transition: background 0.15s, transform 0.1s;
-      background: var(--accent); color: #fff;
+      border: 1px solid var(--accent-border); border-radius: 8px; cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      background: var(--accent-subtle); color: var(--accent-text);
     }
-    .confirm-ok-btn:hover { background: var(--accent-hover); }
+    .confirm-ok-btn:hover { background: rgba(0, 210, 180, 0.14); border-color: var(--accent); }
     .confirm-ok-btn:active { transform: scale(0.97); }
     .confirm-ok-btn.danger { background: #dc2626; }
     .confirm-ok-btn.danger:hover { background: #b91c1c; }
@@ -3866,8 +3908,8 @@
     .project-panel.open, html[dir='rtl'] .project-panel.open { transform: translateX(0); }
     .project-panel-header { padding: 18px 20px; border-block-end: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
     .project-panel-header h3 { flex: 1; font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
-    .project-panel-new-btn { font-family: 'Heebo', sans-serif; font-size: 0.8rem; font-weight: 600; padding: 7px 14px; background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background 0.15s; white-space: nowrap; }
-    .project-panel-new-btn:hover { background: var(--accent-hover); }
+    .project-panel-new-btn { font-family: 'Heebo', sans-serif; font-size: 0.8rem; font-weight: 600; padding: 7px 14px; background: var(--accent-subtle); color: var(--accent-text); border: 1px solid var(--accent-border); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background 0.15s, border-color 0.15s; white-space: nowrap; }
+    .project-panel-new-btn:hover { background: rgba(0, 210, 180, 0.14); border-color: var(--accent); }
     .project-panel-close { width: 30px; height: 30px; border: none; border-radius: 6px; background: var(--elevated-bg); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
     .project-panel-close:hover { background: var(--border); }
     .project-panel-close svg { width: 14px; height: 14px; }
@@ -3922,23 +3964,23 @@
 
     <!-- ── Icon Rail Sidebar ── -->
     <div class="sidebar" id="sidebar">
-      <button class="rail-btn active" data-view="home" data-tooltip="בית">
+      <button class="rail-btn active" data-view="home" data-tooltip="בית" aria-label="בית">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       </button>
-      <button class="rail-btn" data-view="clients" data-tooltip="לקוחות">
+      <button class="rail-btn" data-view="clients" data-tooltip="לקוחות" aria-label="לקוחות">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </button>
-      <button class="rail-btn" data-view="projects" data-tooltip="פרויקטים">
+      <button class="rail-btn" data-view="projects" data-tooltip="פרויקטים" aria-label="פרויקטים">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       </button>
-      <button class="rail-btn" data-view="docs" data-tooltip="מסמכים">
+      <button class="rail-btn" data-view="docs" data-tooltip="מסמכים" aria-label="מסמכים">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       </button>
       <div style="flex:1"></div>
-      <button class="rail-btn" data-view="knowledge" data-tooltip="בסיס ידע">
+      <button class="rail-btn" data-view="knowledge" data-tooltip="בסיס ידע" aria-label="בסיס ידע">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       </button>
-      <button class="rail-btn" data-view="settings" data-tooltip="הגדרות">
+      <button class="rail-btn" data-view="settings" data-tooltip="הגדרות" aria-label="הגדרות">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
     </div>
@@ -4072,7 +4114,7 @@
           <div class="dash-inner">
             <!-- Welcome -->
             <div class="dash-welcome">
-              <h1 class="dash-welcome-name">היי נועם,</h1>
+              <h1 class="dash-welcome-name" id="dashWelcomeName">היי נועם,</h1>
               <p class="dash-welcome-sub">הנה הסקירה שלך</p>
             </div>
             <!-- Stats -->
@@ -4096,7 +4138,7 @@
             <div class="dash-section">
               <div class="dash-section-header">
                 <span class="dash-section-title">עבודה אחרונה</span>
-                <span class="dash-section-link">כל הפרויקטים ←</span>
+                <span class="dash-section-link" id="dashAllProjects">כל הפרויקטים ←</span>
               </div>
               <div class="dash-projects-grid" id="dashProjectsList"></div>
             </div>
@@ -4104,7 +4146,7 @@
             <div class="dash-section">
               <div class="dash-section-header">
                 <span class="dash-section-title">הלקוחות שלי</span>
-                <span class="dash-section-link">כל הלקוחות ←</span>
+                <span class="dash-section-link" id="dashAllClients">כל הלקוחות ←</span>
               </div>
               <div class="dash-clients-grid" id="dashClientsList"></div>
             </div>
@@ -4487,7 +4529,7 @@
               סעיפים משפטיים
             </div>
             <div class="form-section-body" id="clausesCategoriesContainer">
-              <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
                 בחר את הסעיפים שיכללו במסמך. סעיפי חובה מסומנים אוטומטית.
               </p>
               <div class="clause-filter-bar">
@@ -4873,6 +4915,10 @@
           <input type="text" class="hub-field-input" id="modalClientCompany" dir="rtl" placeholder="שם החברה (אופציונלי)" />
         </div>
         <div class="hub-field">
+          <label class="hub-field-label">ח.פ.</label>
+          <input type="text" class="hub-field-input" id="modalClientCompanyId" dir="ltr" placeholder="מספר חברה (אופציונלי)" />
+        </div>
+        <div class="hub-field">
           <label class="hub-field-label">אימייל</label>
           <input type="email" class="hub-field-input" id="modalClientEmail" dir="ltr" placeholder="email@example.com" />
         </div>
@@ -4905,6 +4951,10 @@
           <input type="text" class="hub-field-input" id="editClientCompany" dir="rtl" placeholder="שם החברה (אופציונלי)" />
         </div>
         <div class="hub-field">
+          <label class="hub-field-label">ח.פ.</label>
+          <input type="text" class="hub-field-input" id="editClientCompanyId" dir="ltr" placeholder="מספר חברה (אופציונלי)" />
+        </div>
+        <div class="hub-field">
           <label class="hub-field-label">אימייל</label>
           <input type="email" class="hub-field-input" id="editClientEmail" dir="ltr" placeholder="email@example.com" />
         </div>
@@ -4913,9 +4963,12 @@
           <input type="tel" class="hub-field-input" id="editClientPhone" dir="ltr" placeholder="050-000-0000" />
         </div>
       </div>
-      <div class="hub-modal-footer">
-        <button class="hub-modal-submit" id="editClientSubmit">שמור</button>
-        <button class="hub-modal-cancel" data-close-modal="editClientModal">ביטול</button>
+      <div class="hub-modal-footer" style="justify-content: space-between;">
+        <div style="display:flex;gap:10px;">
+          <button class="hub-modal-submit" id="editClientSubmit">שמור</button>
+          <button class="hub-modal-cancel" data-close-modal="editClientModal">ביטול</button>
+        </div>
+        <button class="hub-modal-cancel" id="editClientDelete" style="color:#f87171;border-color:rgba(248,113,113,0.3);">מחיקה</button>
       </div>
     </div>
   </div>
@@ -4928,6 +4981,12 @@
         <button class="hub-modal-close" data-close-modal="addProjectModal">&times;</button>
       </div>
       <div class="hub-modal-body">
+        <div class="hub-field">
+          <label class="hub-field-label">לקוח</label>
+          <select class="hub-field-input" id="modalProjectClient" dir="rtl">
+            <option value="">ללא לקוח</option>
+          </select>
+        </div>
         <div class="hub-field">
           <label class="hub-field-label">שם הפרויקט *</label>
           <input type="text" class="hub-field-input" id="modalProjectName" dir="rtl" placeholder="שם הפרויקט" />
@@ -9836,6 +9895,7 @@
       }
       if (docsOverlay) docsOverlay.classList.add('visible');
     }
+    window._openDocs = openDocs;
     function closeDocs() { if (docsOverlay) docsOverlay.classList.remove('visible'); }
     const kbBtn = document.getElementById('sidebarKnowledge');
     if (kbBtn) kbBtn.addEventListener('click', openDocs);
@@ -9913,7 +9973,11 @@
       nav.innerHTML = '';
       var segments = [{ label: '\u05D1\u05D9\u05EA', view: 'home' }];
 
-      if (navState.view === 'document') {
+      if (navState.view === 'clients') {
+        segments.push({ label: '\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA' });
+      } else if (navState.view === 'projects') {
+        segments.push({ label: '\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD' });
+      } else if (navState.view === 'document') {
         if (navState.projectId) {
           var project = (window._allProjects || []).find(function(p) { return p.id === navState.projectId; });
           segments.push({ label: project ? project.name : navState.projectId, view: 'home' });
@@ -9977,6 +10041,11 @@
     // DASHBOARD
     // ══════════════════════════════════════
     function renderDashboard() {
+      var welcomeEl = document.getElementById('dashWelcomeName');
+      if (welcomeEl) {
+        var storedName = localStorage.getItem('ownerName') || 'נועם';
+        welcomeEl.textContent = 'היי ' + storedName + ',';
+      }
       Promise.all([
         fetch('/api/clients').then(function(r) { return r.json(); }),
         fetch('/api/projects').then(function(r) { return r.json(); }),
@@ -10084,7 +10153,7 @@
       }
       el.innerHTML = clients.map(function(c) {
         var projCount = allProjects.filter(function(p) { return p.clientId === c.id; }).length;
-        return '<div class="dash-client-card">' +
+        return '<div class="dash-client-card" style="cursor:pointer;" data-client="' + escHtml(c.id) + '">' +
           '<div class="dash-client-avatar">' + escHtml(getInitials(c.name)) + '</div>' +
           '<div class="dash-client-body">' +
             '<div class="dash-client-name">' + escHtml(c.name) + '</div>' +
@@ -10093,6 +10162,19 @@
           '<span class="dash-client-badge">' + projCount + ' \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD</span>' +
         '</div>';
       }).join('');
+      el.querySelectorAll('.dash-client-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          var client = clients.find(function(c) { return c.id === card.dataset.client; });
+          if (!client) return;
+          navState.clientId = client.id;
+          document.getElementById('editClientName').value = client.name || '';
+          document.getElementById('editClientCompany').value = client.company || '';
+          document.getElementById('editClientCompanyId').value = client.companyId || '';
+          document.getElementById('editClientEmail').value = client.email || '';
+          document.getElementById('editClientPhone').value = client.phone || '';
+          openModal('editClientModal');
+        });
+      });
     }
 
     // ══════════════════════════════════════
@@ -10149,6 +10231,7 @@
           if (!client) return;
           document.getElementById('editClientName').value = client.name || '';
           document.getElementById('editClientCompany').value = client.company || '';
+          document.getElementById('editClientCompanyId').value = client.companyId || '';
           document.getElementById('editClientEmail').value = client.email || '';
           document.getElementById('editClientPhone').value = client.phone || '';
           navState.clientId = client.id;
@@ -10333,10 +10416,22 @@
           '<div class="nav-project-list">' +
             clientProjects.map(function(p) {
               var isActive = p.id === navState.projectId;
-              return '<div class="nav-project-item' + (isActive ? ' active' : '') + '" data-project="' + escHtml(p.id) + '">' +
+              var html = '<div class="nav-project-item' + (isActive ? ' active' : '') + '" data-project="' + escHtml(p.id) + '">' +
                 '<div class="nav-project-dot"></div>' +
                 '<span>' + escHtml(p.name) + '</span>' +
               '</div>';
+              if (isActive) {
+                var dtList = [
+                  { key: 'quote', label: '\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8' },
+                  { key: 'contract', label: '\u05D7\u05D5\u05D6\u05D4 \u05E2\u05D1\u05D5\u05D3\u05D4' },
+                  { key: 'order', label: '\u05D4\u05D6\u05DE\u05E0\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4' }
+                ];
+                html += '<div class="nav-doc-types">' + dtList.map(function(dt) {
+                  var isActiveDoc = navState.docType === dt.key;
+                  return '<button class="nav-doc-btn' + (isActiveDoc ? ' active' : '') + '" data-doctype="' + dt.key + '">' + dt.label + '</button>';
+                }).join('') + '</div>';
+              }
+              return html;
             }).join('') +
           '</div>' +
         '</div>';
@@ -10358,6 +10453,22 @@
             sp(projId);
             updateBreadcrumb();
           }
+        });
+      });
+      // Doc-type buttons
+      body.querySelectorAll('.nav-doc-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var docType = btn.dataset.doctype;
+          navState.docType = docType;
+          var docTypeSelect = document.querySelector('[name="docType"]');
+          if (docTypeSelect && docTypeSelect.value !== docType) {
+            docTypeSelect.value = docType;
+            docTypeSelect.dispatchEvent(new Event('change'));
+          }
+          body.querySelectorAll('.nav-doc-btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          updateBreadcrumb();
         });
       });
     }
@@ -10388,19 +10499,14 @@
     document.querySelectorAll('.rail-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var view = btn.dataset.view;
-        if (view === 'knowledge') {
-          var docsOverlay = document.getElementById('docsModalOverlay');
-          if (docsOverlay) docsOverlay.classList.add('visible');
+        if (view === 'knowledge' || view === 'docs') {
+          if (window._openDocs) window._openDocs();
+          else { var o = document.getElementById('docsModalOverlay'); if (o) o.classList.add('visible'); }
           return;
         }
         if (view === 'settings') {
           var settingsOverlay = document.getElementById('settingsOverlay');
           if (settingsOverlay) settingsOverlay.style.display = 'flex';
-          return;
-        }
-        if (view === 'docs') {
-          var docsOverlay = document.getElementById('docsModalOverlay');
-          if (docsOverlay) docsOverlay.classList.add('visible');
           return;
         }
         // projects and clients navigate directly to their views
@@ -10434,6 +10540,7 @@
     function openAddClientModal() {
       document.getElementById('modalClientName').value = '';
       document.getElementById('modalClientCompany').value = '';
+      document.getElementById('modalClientCompanyId').value = '';
       document.getElementById('modalClientEmail').value = '';
       document.getElementById('modalClientPhone').value = '';
       openModal('addClientModal');
@@ -10441,6 +10548,17 @@
     }
     function openAddProjectModal() {
       document.getElementById('modalProjectName').value = '';
+      var clientSelect = document.getElementById('modalProjectClient');
+      if (clientSelect) {
+        clientSelect.innerHTML = '<option value="">ללא לקוח</option>';
+        (window._allClients || []).forEach(function(c) {
+          var opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.name + (c.company ? ' — ' + c.company : '');
+          if (navState.clientId && navState.clientId === c.id) opt.selected = true;
+          clientSelect.appendChild(opt);
+        });
+      }
       openModal('addProjectModal');
       setTimeout(function() { document.getElementById('modalProjectName').focus(); }, 100);
     }
@@ -10476,6 +10594,12 @@
       }
     });
 
+    // ── Dashboard section links ──
+    var dashAllProjects = document.getElementById('dashAllProjects');
+    if (dashAllProjects) dashAllProjects.addEventListener('click', function() { navigate('projects'); });
+    var dashAllClients = document.getElementById('dashAllClients');
+    if (dashAllClients) dashAllClients.addEventListener('click', function() { navigate('clients'); });
+
     // ── Modal submit handlers ──
     var modalClientSubmit = document.getElementById('modalClientSubmit');
     if (modalClientSubmit) {
@@ -10485,6 +10609,7 @@
         var body = {
           name: name,
           company: document.getElementById('modalClientCompany').value.trim(),
+          companyId: document.getElementById('modalClientCompanyId').value.trim(),
           email: document.getElementById('modalClientEmail').value.trim(),
           phone: document.getElementById('modalClientPhone').value.trim()
         };
@@ -10504,7 +10629,9 @@
       modalProjectSubmit.addEventListener('click', function() {
         var name = document.getElementById('modalProjectName').value.trim();
         if (!name) { document.getElementById('modalProjectName').focus(); return; }
-        fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, clientId: navState.clientId }) })
+        var clientSelectEl = document.getElementById('modalProjectClient');
+        var selectedClientId = clientSelectEl ? clientSelectEl.value || null : navState.clientId;
+        fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, clientId: selectedClientId }) })
           .then(function(res) {
             if (res.ok) {
               closeModal('addProjectModal');
@@ -10523,11 +10650,22 @@
         var body = {
           name: name,
           company: document.getElementById('editClientCompany').value.trim(),
+          companyId: document.getElementById('editClientCompanyId').value.trim(),
           email: document.getElementById('editClientEmail').value.trim(),
           phone: document.getElementById('editClientPhone').value.trim()
         };
         fetch('/api/clients/' + navState.clientId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
           .then(function() { closeModal('editClientModal'); if (navState.view === 'clients') renderClientsView(); else renderDashboard(); });
+      });
+    }
+    var editClientDelete = document.getElementById('editClientDelete');
+    if (editClientDelete) {
+      editClientDelete.addEventListener('click', function() {
+        var client = (window._allClients || []).find(function(c) { return c.id === navState.clientId; });
+        if (!client) return;
+        if (!confirm('\u05D4\u05D0\u05DD \u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA "' + client.name + '"?')) return;
+        fetch('/api/clients/' + encodeURIComponent(navState.clientId), { method: 'DELETE' })
+          .then(function(res) { if (res.ok) { closeModal('editClientModal'); if (navState.view === 'clients') renderClientsView(); else renderDashboard(); } });
       });
     }
     var renameProjectSubmit = document.getElementById('renameProjectSubmit');
