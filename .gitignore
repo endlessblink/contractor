@@ -15,3 +15,15 @@ projects/
 knowledge/learned-context.json
 knowledge/project-context.md
 scripts/
+
+# Private data (not shared in open source)
+knowledge/clauses-db.json
+knowledge/learned-context.json
+data/user-profile.json
+data/clients.json
+data/projects/
+output/
+document refrences - quotes/
+
+# Keep sample tracked
+!knowledge/clauses-db.sample.json

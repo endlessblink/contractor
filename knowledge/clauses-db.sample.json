@@ -1,0 +1,248 @@
+{
+  "version": 1,
+  "createdAt": "2026-03-26T00:00:00.000Z",
+  "updatedAt": "2026-03-26T00:00:00.000Z",
+  "source": "sample — generic freelance contract clauses for demo purposes",
+  "clauses": {
+    "paymentTerms": {
+      "name": "תמורה ותנאי תשלום",
+      "category": "תמורה ותנאי תשלום",
+      "clauses": [
+        {
+          "id": "payment-advance-start",
+          "name": "מקדמה לתחילת עבודה",
+          "text": "תחילת העבודה על הפרויקט מותנית בקבלת חוזה חתום ובתשלום מקדמה בשיעור 35% מסך עלות הפרויקט. המקדמה אינה ניתנת להחזר לאחר תחילת ביצוע העבודה.",
+          "appliesTo": ["quote", "contract"],
+          "required": true,
+          "notes": "Standard advance payment clause for project kickoff"
+        },
+        {
+          "id": "payment-late-penalty",
+          "name": "ריבית פיגורים",
+          "text": "תשלום שלא יסולק במועדו יחויב בריבית פיגורים בשיעור 1% לכל חודש איחור או חלק ממנו, החל מהיום ה-15 לאחר מועד התשלום שנקבע. ספק השירות רשאי להשעות את העבודה עד להסדרת החוב.",
+          "appliesTo": ["contract", "workOrder"],
+          "required": false,
+          "notes": "Late payment penalty and work suspension right"
+        }
+      ]
+    },
+    "earlyTermination": {
+      "name": "סיום מוקדם",
+      "category": "סיום מוקדם",
+      "clauses": [
+        {
+          "id": "termination-right",
+          "name": "זכות לסיום מוקדם",
+          "text": "כל צד רשאי לסיים הסכם זה בהודעה בכתב של 14 יום מראש. במקרה של סיום על ידי הלקוח, ישולם לספק השירות תמורה מלאה עבור כל העבודה שבוצעה עד למועד הסיום, בנוסף להוצאות שנגרמו בפועל. המקדמה ששולמה תקוזז מהחשבון הסופי.",
+          "appliesTo": ["contract", "workOrder"],
+          "required": true,
+          "notes": "Mutual early termination right with 14-day notice"
+        }
+      ]
+    },
+    "intellectualProperty": {
+      "name": "קניין רוחני",
+      "category": "קניין רוחני",
+      "clauses": [
+        {
+          "id": "ip-transfer-on-payment",
+          "name": "העברת זכויות בתשלום מלא",
+          "text": "עם קבלת התשלום המלא, יועברו ללקוח מלוא זכויות היוצרים והשימוש בתוצרים הסופיים שנמסרו במסגרת הפרויקט. עד להשלמת התשלום, כל התוצרים הם בבעלות ספק השירות ואין לעשות בהם שימוש ציבורי.",
+          "appliesTo": ["quote", "contract", "workOrder"],
+          "required": true,
+          "notes": "IP transfers only upon full payment"
+        },
+        {
+          "id": "ip-portfolio-usage",
+          "name": "שימוש בתיק עבודות",
+          "text": "ספק השירות רשאי לעשות שימוש בתוצרים שנוצרו במסגרת ההסכם לצורכי הצגה בתיק עבודותיו, בפרסום ברשתות חברתיות ובחומרי שיווק, אלא אם הלקוח הודיע בכתב על התנגדות לכך לפני חתימת ההסכם.",
+          "appliesTo": ["quote", "contract", "workOrder"],
+          "required": false,
+          "notes": "Portfolio and marketing usage rights for the service provider"
+        }
+      ]
+    },
+    "revisions": {
+      "name": "תיקונים ושינויים",
+      "category": "תיקונים ושינויים",
+      "clauses": [
+        {
+          "id": "revisions-included",
+          "name": "סבבי תיקונים כלולים",
+          "text": "מחיר הפרויקט כולל עד 2 סבבי תיקונים לכל תוצר. תיקונים נוספים מעבר לכך, וכן שינויים מהותיים בדרישות שנקבעו במועד חתימת ההסכם, יחויבו לפי תעריף שעתי שייקבע מראש בכתב.",
+          "appliesTo": ["quote", "contract", "workOrder"],
+          "required": false,
+          "notes": "2 revision rounds included; extras billed hourly"
+        }
+      ]
+    },
+    "generalTerms": {
+      "name": "תנאים כלליים",
+      "category": "תנאים כלליים",
+      "clauses": [
+        {
+          "id": "general-governing-law",
+          "name": "דין חל וסמכות שיפוט",
+          "text": "הסכם זה יפורש ויחול לפי דיני מדינת ישראל. כל מחלוקת שתתעורר בקשר לביצוע הסכם זה תובא לפני בית המשפט המוסמך במחוז תל-אביב, אשר מוסמך לדון בה לבדידותו.",
+          "appliesTo": ["quote", "contract", "workOrder"],
+          "required": true,
+          "notes": "Israeli law, Tel Aviv jurisdiction"
+        },
+        {
+          "id": "general-force-majeure",
+          "name": "כוח עליון",
+          "text": "אף צד לא יהא אחראי לאי-ביצוע או עיכוב בביצוע התחייבויותיו הנובע ממאורעות מחוץ לשליטתו הסבירה, לרבות — אך ללא הגבלה — אסונות טבע, מלחמה, שביתות, תקלות תשתית ארציות, מחלות מגפה או חקיקה ממשלתית. הצד הנפגע יודיע לצד השני בהקדם האפשרי ויפעל לצמצום ההשפעה.",
+          "appliesTo": ["contract", "workOrder"],
+          "required": false,
+          "notes": "Standard force majeure clause"
+        },
+        {
+          "id": "general-amendments-in-writing",
+          "name": "שינויים בכתב בלבד",
+          "text": "כל שינוי, תוספת או ויתור בתנאי הסכם זה טעון אישור בכתב חתום על ידי שני הצדדים. הסכמות בעל-פה, כולל הסכמות שהתקבלו בצ'אט, בדוא\"ל לא פורמלי או בשיחת טלפון, אינן מחייבות אלא אם אושרו בכתב.",
+          "appliesTo": ["contract", "workOrder"],
+          "required": true,
+          "notes": "All amendments must be in writing and signed"
+        }
+      ]
+    },
+    "clientObligations": {
+      "name": "התחייבויות הלקוח",
+      "category": "התחייבויות הלקוח",
+      "clauses": [
+        {
+          "id": "client-materials-feedback",
+          "name": "אספקת חומרים ומשוב בזמן",
+          "text": "הלקוח מתחייב לספק לספק השירות את כל החומרים, המידע והגישות הנדרשים לביצוע הפרויקט במועד שנקבע. הלקוח יגיב על תוצרים שהוגשו לאישורו תוך 3 ימי עבודה. עיכוב מצד הלקוח יגרור הארכת לוח הזמנים בצורה יחסית ובהתאם, ללא כל אחריות מצד ספק השירות.",
+          "appliesTo": ["contract", "workOrder"],
+          "required": true,
+          "notes": "Client must supply materials and respond within 3 business days"
+        }
+      ]
+    },
+    "confidentiality": {
+      "name": "סודיות",
+      "category": "סודיות",
+      "clauses": [
+        {
+          "id": "confidentiality-mutual-nda",
+          "name": "סודיות הדדית",
+          "text": "כל צד מתחייב לשמור בסוד את המידע הסודי שנחשף לו על ידי הצד האחר במסגרת ביצוע הסכם זה, ולא לגלותו לצד שלישי כלשהו ללא הסכמה מפורשת בכתב. התחייבות זו תעמוד בתוקפה לתקופה של 3 שנים מתום ההסכם. \"מידע סודי\" אינו כולל מידע שנמצא כבר בנחלת הכלל.",
+          "appliesTo": ["contract", "workOrder"],
+          "required": false,
+          "notes": "Mutual NDA, 3-year post-agreement term"
+        }
+      ]
+    },
+    "warrantyAndCompletion": {
+      "name": "אחריות ואישור סיום",
+      "category": "אחריות ואישור סיום",
+      "clauses": [
+        {
+          "id": "warranty-completion-criteria",
+          "name": "קריטריוני השלמת פרויקט",
+          "text": "הפרויקט ייחשב כמושלם עם מסירת כל התוצרים שהוגדרו בהסכם ועם קבלת אישור בכתב מהלקוח. היה ולא ניתן אישור בתוך 5 ימי עבודה ממועד המסירה, ובהעדר הודעה מפורשת על ליקויים, יראו את הפרויקט כמאושר. ספק השירות מתחייב לתקן ליקויים מהותיים שהתגלו עד 14 יום ממועד האישור.",
+          "appliesTo": ["contract", "workOrder"],
+          "required": true,
+          "notes": "Completion by delivery + written approval or 5-day silent acceptance; 14-day bug fix window"
+        }
+      ]
+    }
+  },
+  "paymentPatterns": [
+    {
+      "id": "two-installments-35-65",
+      "name": "2 תשלומים — 35%/65%",
+      "description": "35% מקדמה בתחילת עבודה + 65% תשלום סופי עם סיום הפרויקט",
+      "installments": [35, 65],
+      "usage": "פרויקט רגיל"
+    },
+    {
+      "id": "three-installments-40-30-30",
+      "name": "3 תשלומים — 40%/30%/30%",
+      "description": "40% מקדמה + 30% באמצע הפרויקט + 30% בסיום",
+      "installments": [40, 30, 30],
+      "usage": "פרויקט ארוך (5+ תוצרים)"
+    }
+  ],
+  "serviceTemplates": [
+    {
+      "type": "consulting",
+      "name": "ייעוץ מקצועי",
+      "typicalPricing": [
+        {
+          "desc": "שעת ייעוץ",
+          "qty": 1,
+          "price": 350
+        }
+      ],
+      "typicalTimeline": "לפי הסכמה בין הצדדים",
+      "typicalDeliverables": "סיכומי פגישות, המלצות בכתב, ליווי שוטף לפי הצורך",
+      "relevantClauses": [
+        "payment-advance-start",
+        "payment-late-penalty",
+        "termination-right",
+        "ip-transfer-on-payment",
+        "revisions-included",
+        "general-governing-law",
+        "general-amendments-in-writing",
+        "client-materials-feedback",
+        "confidentiality-mutual-nda",
+        "warranty-completion-criteria"
+      ]
+    },
+    {
+      "type": "creative-project",
+      "name": "פרויקט יצירתי",
+      "typicalPricing": [
+        {
+          "desc": "פרויקט יצירתי — שלב א׳",
+          "qty": 1,
+          "price": 3500
+        },
+        {
+          "desc": "תיקונים נוספים (לפי שעה)",
+          "qty": 1,
+          "price": 200
+        }
+      ],
+      "typicalTimeline": "2-6 שבועות, בהתאם להיקף הפרויקט",
+      "typicalDeliverables": "קבצים סופיים בפורמטים מוסכמים, עד 2 סבבי תיקונים לכל תוצר",
+      "relevantClauses": [
+        "payment-advance-start",
+        "payment-late-penalty",
+        "termination-right",
+        "ip-transfer-on-payment",
+        "ip-portfolio-usage",
+        "revisions-included",
+        "general-governing-law",
+        "general-force-majeure",
+        "general-amendments-in-writing",
+        "client-materials-feedback",
+        "confidentiality-mutual-nda",
+        "warranty-completion-criteria"
+      ]
+    }
+  ],
+  "standardTerms": {
+    "quoteValidity": "30 יום",
+    "vatNote": "המחיר אינו כולל מע\"מ",
+    "hourlyRates": {
+      "standard": 200,
+      "senior": 400
+    },
+    "revisionRounds": 2,
+    "feedbackWindow": "3 ימי עבודה",
+    "warrantyPeriod": "14 ימי עבודה",
+    "cancellationNotice": "14 יום בכתב",
+    "suspensionThreshold": "15 ימים עיכוב בתשלום",
+    "advancedPaymentPercentage": "35-40%",
+    "projectTypes": [
+      "ייעוץ",
+      "עיצוב",
+      "פיתוח",
+      "הפקה יצירתית",
+      "בנק שעות"
+    ]
+  }
+}

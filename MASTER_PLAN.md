@@ -17,6 +17,9 @@
 - [x] Stale form fix on project switch
 - [x] Universal button outline override for dark mode
 - [x] 122 tests passing
+- [x] Hub-page navigation — dashboard, clients/projects views, nav sidebar, doc-type switcher
+- [x] Outlined button aesthetic — all buttons converted from solid fills to outlined style
+- [x] Open source preparation — sample clauses, .gitignore, LICENSE, README
 
 ## Open Tasks
 
@@ -28,8 +31,10 @@
 | **TASK-019** | **Button design tokens** — replace !important overrides with proper CSS custom properties for buttons | **P2** | TODO |
 | **TASK-013** | **AI learns user preferences** — track patterns (no timelines, payment splits, clause removals). Store in user-preferences.json | **P2** | TODO |
 | **TASK-014** | **Font selector in profile** — font picker in settings, apply to DOCX generation | **P2** | TODO |
-| **TASK-020** | **Hub-page navigation** — Replace sidebar tree with object hubs: Clients list → Client hub (details + projects) → Project hub (3 doc-type cards + history) → Chat+Form for selected doc. Breadcrumb in header for navigation. Icon-only sidebar rail for top-level sections (Home, Clients, Projects, Docs, Settings). Most impactful UX change. | **P0** | IN PROGRESS |
-| **TASK-005** | **Collapsible sidebar** — CSS ready, needs toggle button | **P3** | TODO |
+| **TASK-020** | **Hub-page navigation** | **P0** | DONE |
+| **TASK-021** | **Configurable form layout** — make form sections/fields dynamic instead of hardcoded HTML. Users can customize what appears in their documents. | **P1** | TODO |
+| **TASK-022** | **Premium clause pack import** — UI for importing/purchasing curated clause packs. Supports the open-core business model. | **P2** | TODO |
+| **TASK-005** | **Collapsible sidebar** — CSS ready, needs toggle button | **P3** | DONE (nav sidebar has collapse) |
 | **TASK-006** | **Extract hardcoded fixes into doc-skills** — parse-service-options, strip-bullet-prefix, extend split-sentences | **P3** | TODO |
 | **TASK-008** | **Onboarding flow** — doc scan primary, chat-driven fallback for new users | **P3** | TODO |
 | **TASK-010** | **Mobile responsive** — three-panel layout needs mobile stacking | **P3** | TODO |
