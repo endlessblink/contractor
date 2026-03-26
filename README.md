@@ -1,21 +1,33 @@
-# Contractor
+# Doc Maker
 
-Self-hosted document generator for quotes, contracts, and work orders. Built for Hebrew RTL with full English support. AI-powered document drafting with multi-provider support.
+AI-powered document generator for freelancers. Create professional quotes, contracts, and work orders in minutes — with Hebrew RTL support built in.
 
-![Chat interface](docs/screenshot-chat.png)
-![Document creation form](docs/screenshot-form.png)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node.js 20+](https://img.shields.io/badge/node-20%2B-green.svg)](https://nodejs.org)
+
+## Overview
+
+Doc Maker is a self-hosted application for generating professional business documents. The AI chat assistant helps you draft quotes (הצעת מחיר), contracts (חוזה עבודה), and work orders (הזמנת עבודה) in both Hebrew and English.
+
+**Key capabilities:**
+- Generate DOCX documents with professional formatting
+- Hebrew-first RTL layout with proper bidirectional text support
+- AI-powered chat interface for guided document creation
+- Smart clause database that learns from your existing contracts
+- Multi-provider AI support (Anthropic, OpenAI, OpenRouter)
+- Client and project management dashboard
+- Dark/light theme
 
 ## Features
 
-- Generate professional DOCX documents (quotes, contracts, work orders)
-- Full Hebrew RTL support with proper bidirectional text handling
-- AI-assisted document drafting via chat interface
-- Multi-provider AI: Anthropic (Claude), OpenAI (GPT), OpenRouter
-- Claude Code OAuth support (zero API key needed)
-- Reference document analysis — learn clause patterns from existing documents
-- Clause database with 110+ Hebrew business/legal clauses
-- Project management — organize documents by client/project
-- Setup wizard for first-run configuration
+- **Dashboard** — View project stats, manage clients and documents at a glance
+- **AI Chat** — Natural language guidance for filling out document forms
+- **Clause Database** — 110+ Hebrew legal/business clauses with smart recommendations
+- **Learn References** — Auto-extract clauses and patterns from your existing documents
+- **Professional Output** — DOCX generation with Heebo fonts and modern styling
+- **Multi-Provider AI** — Use Claude, ChatGPT, or OpenRouter models
+- **Dark Mode** — Easy on the eyes, works offline-first where possible
+- **Client Management** — Organize documents by client and project
 
 ## Quick Start
 
@@ -23,76 +35,126 @@ Self-hosted document generator for quotes, contracts, and work orders. Built for
 git clone https://github.com/endlessblink/contractor.git
 cd contractor
 npm install
+cp .env.example .env     # Add your AI API key (optional)
 npm start
 ```
 
-Open `http://localhost:6831` in your browser. The setup wizard will guide you through initial configuration.
+Open **http://localhost:6831** in your browser. A setup wizard will guide you through configuration on first run.
 
-## AI Provider Setup
+### Prerequisites
 
-Contractor supports three AI providers. Configure in Settings (gear icon).
+- Node.js 20 or later
+- npm or yarn
 
-### Anthropic (Default)
+### AI Provider Setup (Optional)
 
-1. Get an API key from [console.anthropic.com](https://console.anthropic.com)
-2. Enter it in Settings → AI Provider → API Key
-3. Recommended model: `claude-haiku-4-5-20251001`
+The app works with multiple AI providers. Configure in **Settings** (gear icon) at runtime:
 
-### Claude Code OAuth (Zero Config)
+**Anthropic (Default)**
+- Get an API key from [console.anthropic.com](https://console.anthropic.com)
+- Model: `claude-haiku-4-5-20251001` (recommended)
 
-If you have [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed:
+**OpenAI**
+- Get an API key from [platform.openai.com](https://platform.openai.com)
+- Model: `gpt-4o-mini` (recommended)
 
-1. Run `claude login` in your terminal
-2. In Settings, check "Use Claude Code OAuth"
-3. No API key needed
+**OpenRouter**
+- Get an API key from [openrouter.ai](https://openrouter.ai)
+- Model: any slug, e.g. `anthropic/claude-3.5-sonnet`
 
-### OpenAI
+**Claude Code OAuth** (No API key)
+- If you have [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed
+- Run `claude login` in your terminal
+- Enable in Settings → Use Claude Code OAuth
 
-1. Get an API key from [platform.openai.com](https://platform.openai.com)
-2. Select "OpenAI" as provider in Settings
-3. Recommended model: `gpt-4o-mini`
+## Building Your Knowledge Base
 
-### OpenRouter
+The most powerful feature is the clause database. Here's how to populate it:
 
-1. Get an API key from [openrouter.ai](https://openrouter.ai)
-2. Select "OpenRouter" as provider in Settings
-3. Use any model slug, e.g. `anthropic/claude-3.5-sonnet`
+1. **Collect reference documents** — Gather your existing contracts, quotes, or work orders in a folder
+2. **Access learn panel** — In the left sidebar, click the docs icon to open the documents panel
+3. **Upload references** — Use "Learn from References" (למידה ממסמכי עזר) to upload your documents
+4. **AI extraction** — The system automatically extracts clauses, templates, and payment patterns
+5. **Use smart recommendations** — When creating new documents, the AI suggests relevant clauses based on what it learned
+
+Each document you analyze strengthens the AI's understanding of your business terms and legal language. The clause database is stored in `knowledge/clauses-db.json` and grows with every reference document processed.
+
+## Tech Stack
+
+- **Backend** — Node.js with ES modules
+- **Frontend** — Vanilla JavaScript (no build required for UI)
+- **Documents** — `docx` npm package (DOCX generation)
+- **Fonts** — Heebo (Hebrew primary) + Arial (fallback)
+- **AI** — Multi-provider abstraction (Anthropic, OpenAI, OpenRouter)
+
+## Configuration
+
+Settings are stored in `data/user-profile.json` and can be edited via the UI or directly:
+
+| Field | Description |
+|-------|-------------|
+| `name` / `nameEn` | Your name (Hebrew / English) |
+| `company` | Company name |
+| `title` / `titleEn` | Professional title |
+| `email`, `phone`, `website` | Contact details for document footer |
+| `logoPath` | Path to your logo file |
+| `aiProvider` | `anthropic`, `openai`, or `openrouter` |
+| `aiModel` | Model identifier (e.g., `claude-haiku-4-5-20251001`) |
+| `aiApiKey` | Provider API key (if not using OAuth) |
 
 ## Project Structure
 
 ```
 src/
-  server.mjs          — Express backend (API + static files)
-  generate-quote.mjs  — DOCX document generator
-  ai-provider.mjs     — Multi-provider AI abstraction
-  data-layer.mjs      — Data access utilities
+  server.mjs              — Express backend + API routes
+  generate-quote.mjs      — DOCX document generator
+  ai-provider.mjs         — Multi-provider AI abstraction
+  render-preview.mjs      — Document preview rendering
+  shared/
+    skills/               — AI output validation/formatting pipeline
+    doc-skills/           — Document-specific formatting skills
+
 public/
-  index.html           — Single-page frontend
+  index.html              — Single-page application (no build needed)
+  js/                     — Generated bundles (skills pipeline, preview, etc.)
+
 assets/
-  logo.png             — Your logo (used in document footer)
-  fonts/               — Heebo font files for DOCX
+  logo.png                — Logo for document footer (customize this)
+  fonts/                  — Heebo font files for DOCX generation
+
 knowledge/
-  clauses-db.json      — Hebrew business clause database
+  clauses-db.json         — Hebrew business clause database (auto-generated)
+
 data/
-  user-profile.json    — Your settings (auto-created on first run)
+  user-profile.json       — Your settings (auto-created on first run)
 ```
 
-## Configuration
+## Commands
 
-All settings are stored in `data/user-profile.json` and can be edited via the Settings modal in the UI.
+```bash
+npm start                 # Start server on port 6831
+npm run generate          # Generate a document from current form state
+npm run build             # Build for standalone executable
+npm test                  # Run test suite (if applicable)
+```
 
-| Field | Description |
-|-------|-------------|
-| name / nameEn | Your name (Hebrew / English) |
-| company | Company name |
-| title / titleEn | Professional title |
-| email, phone, website | Contact details for document footer |
-| logoPath | Path to logo file |
-| aiProvider | `anthropic`, `openai`, or `openrouter` |
-| aiModel | Model identifier |
-| aiApiKey | Provider API key |
-| useClaudeOAuth | Use Claude Code OAuth instead of API key |
+## Building an Executable
+
+Doc Maker can be packaged as a standalone executable for distribution:
+
+```bash
+npm run build             # All platforms (Linux, macOS, Windows)
+npm run build:linux       # Linux x64
+npm run build:mac         # macOS (both arm64 and x64)
+npm run build:win         # Windows x64
+```
+
+Executables are built into `dist/executables/` and include all assets, fonts, and the clause database.
 
 ## License
 
-MIT
+MIT License — see [LICENSE](LICENSE) file for details.
+
+## Premium Clause Pack (Coming Soon)
+
+A curated Hebrew legal clause database specifically for Israeli freelancers will be available for purchase. Subscribe to updates on [the project repo](https://github.com/endlessblink/contractor).

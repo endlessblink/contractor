@@ -15,7 +15,7 @@ import express from 'express';
 import serveStatic from 'serve-static';
 import { fileURLToPath } from 'url';
 import { dirname, join, extname } from 'path';
-import { readFileSync, readdirSync, statSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
+import { readFileSync, readdirSync, statSync, mkdirSync, writeFileSync, rmSync, existsSync, copyFileSync } from 'fs';
 import { homedir } from 'os';
 import multer from 'multer';
 import { generateDocument } from './generate-quote.mjs';
@@ -75,10 +75,22 @@ mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!PROJECTS_DIR.startsWith('/snapshot/')) mkdirSync(PROJECTS_DIR, { recursive: true });
 if (!KNOWLEDGE_DIR.startsWith('/snapshot/')) mkdirSync(KNOWLEDGE_DIR, { recursive: true });
 
+// ─── Auto-initialize clause database from sample if missing ──────────────────
+const clausesDbPath = join(KNOWLEDGE_DIR, 'clauses-db.json');
+const clausesSamplePath = join(KNOWLEDGE_DIR, 'clauses-db.sample.json');
+if (!existsSync(clausesDbPath)) {
+  if (existsSync(clausesSamplePath)) {
+    copyFileSync(clausesSamplePath, clausesDbPath);
+    console.log('No clause database found — initialized from sample. Scan your own contracts to build your knowledge base.');
+  } else {
+    writeFileSync(clausesDbPath, JSON.stringify({ categories: {}, serviceTemplates: {}, paymentPatterns: [], standardTerms: {} }, null, 2), 'utf-8');
+  }
+}
+
 // ─── Load clause database on startup ─────────────────────────────────────────
 let clausesDb = null;
 try {
-  const dbRaw = readFileSync(join(KNOWLEDGE_DIR, 'clauses-db.json'), 'utf-8');
+  const dbRaw = readFileSync(clausesDbPath, 'utf-8');
   clausesDb = JSON.parse(dbRaw);
   const categoryCount = Object.keys(clausesDb.clauses).length;
   const clauseCount = Object.values(clausesDb.clauses).reduce((sum, cat) => sum + cat.clauses.length, 0);
