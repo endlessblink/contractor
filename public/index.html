@@ -6178,6 +6178,9 @@
 
       window._activeDocType = newDocType;
 
+      // Clear stale recommendations — they were for the previous doc type
+      window._clauseRecommendations = null;
+
       // Existing clause filtering logic
       updateClausesSectionVisibility();
       if (clausesDbCache) renderClauseCategories();
@@ -6356,37 +6359,42 @@
         applyClauseState(pending.selectedClauses, pending.clauseEdits);
       }
 
-      // Re-apply filtering after re-render
+      // Re-apply filtering SYNCHRONOUSLY after all state is restored
+      applyClauseFiltering();
+    }
+
+    function applyClauseFiltering() {
       var showAll = localStorage.getItem('showAllClauses') === 'true';
-      if (!showAll) {
+      if (showAll) {
+        // Show everything
         if (window._clauseRecommendations) {
-          setTimeout(() => applySmartRecommendations(window._clauseRecommendations), 50);
-        } else {
-          // No AI scores — hide unchecked non-required clauses
-          setTimeout(function() {
-            document.querySelectorAll('#clausesCategoriesContainer .clause-item').forEach(function(item) {
-              var cb = item.querySelector('input[type="checkbox"]');
-              var isRequired = item.classList.contains('required');
-              if (!isRequired && cb && !cb.checked) {
-                item.classList.add('clause-hidden');
-              }
-            });
-            document.querySelectorAll('#clausesCategoriesContainer .clause-category').forEach(function(cat) {
-              var visible = cat.querySelectorAll('.clause-item:not(.clause-hidden)').length;
-              cat.classList.toggle('all-hidden', visible === 0);
-            });
-            var visibleItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item:not(.clause-hidden)').length;
-            var totalItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item').length;
-            if (typeof updateClauseCounter === 'function') updateClauseCounter(visibleItems, totalItems);
-            var toggleBtn = document.getElementById('showAllClausesToggle');
-            if (toggleBtn) toggleBtn.textContent = '\u05D4\u05E6\u05D2 \u05D0\u05EA \u05DB\u05DC \u05D4\u05E1\u05E2\u05D9\u05E4\u05D9\u05DD (' + totalItems + ')';
-          }, 50);
+          applySmartRecommendations(window._clauseRecommendations);
         }
-      } else {
-        if (window._clauseRecommendations) {
-          setTimeout(() => applySmartRecommendations(window._clauseRecommendations), 50);
-        }
+        return;
       }
+      if (window._clauseRecommendations) {
+        applySmartRecommendations(window._clauseRecommendations);
+        return;
+      }
+      // No AI scores — hide unchecked non-required clauses
+      document.querySelectorAll('#clausesCategoriesContainer .clause-item').forEach(function(item) {
+        var cb = item.querySelector('input[type="checkbox"]');
+        var isRequired = item.classList.contains('required');
+        if (!isRequired && cb && !cb.checked) {
+          item.classList.add('clause-hidden');
+        } else {
+          item.classList.remove('clause-hidden');
+        }
+      });
+      document.querySelectorAll('#clausesCategoriesContainer .clause-category').forEach(function(cat) {
+        var visible = cat.querySelectorAll('.clause-item:not(.clause-hidden)').length;
+        cat.classList.toggle('all-hidden', visible === 0);
+      });
+      var visibleItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item:not(.clause-hidden)').length;
+      var totalItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item').length;
+      if (typeof updateClauseCounter === 'function') updateClauseCounter(visibleItems, totalItems);
+      var toggleBtn = document.getElementById('showAllClausesToggle');
+      if (toggleBtn) toggleBtn.textContent = '\u05D4\u05E6\u05D2 \u05D0\u05EA \u05DB\u05DC \u05D4\u05E1\u05E2\u05D9\u05E4\u05D9\u05DD (' + totalItems + ')';
     }
 
     // ── Clause Recommendations (Auto + Manual) ──
@@ -6622,29 +6630,8 @@
           const total = document.querySelectorAll('#clausesCategoriesContainer .clause-item').length;
           updateClauseCounter(total, total);
         } else {
-          // Re-apply filtering from stored recommendations, or hide unchecked+non-required
-          if (window._clauseRecommendations) {
-            applySmartRecommendations(window._clauseRecommendations);
-          } else {
-            // No AI scores yet — hide clauses that aren't checked and aren't required
-            document.querySelectorAll('#clausesCategoriesContainer .clause-item').forEach(function(item) {
-              var cb = item.querySelector('input[type="checkbox"]');
-              var isRequired = item.classList.contains('required');
-              if (!isRequired && cb && !cb.checked) {
-                item.classList.add('clause-hidden');
-              } else {
-                item.classList.remove('clause-hidden');
-              }
-            });
-            // Hide categories where all items are hidden
-            document.querySelectorAll('#clausesCategoriesContainer .clause-category').forEach(function(cat) {
-              var visible = cat.querySelectorAll('.clause-item:not(.clause-hidden)').length;
-              cat.classList.toggle('all-hidden', visible === 0);
-            });
-            var visibleItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item:not(.clause-hidden)').length;
-            var totalItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item').length;
-            updateClauseCounter(visibleItems, totalItems);
-          }
+          localStorage.setItem('showAllClauses', 'false');
+          applyClauseFiltering();
           showAllClausesToggle.textContent = 'הצג את כל הסעיפים';
         }
       });
