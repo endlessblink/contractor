@@ -1405,6 +1405,82 @@ app.delete('/api/projects/:id', (req, res) => {
   }
 });
 
+// ── Demo data endpoints ──
+app.post('/api/load-demo', (req, res) => {
+  try {
+    const demoClient = {
+      id: 'demo-client', name: '\u05E1\u05D8\u05D5\u05D3\u05D9\u05D5 \u05DC\u05D3\u05D5\u05D2\u05DE\u05D4 \u05D1\u05E2\u05F4\u05DE',
+      company: '\u05E1\u05D8\u05D5\u05D3\u05D9\u05D5 \u05DC\u05D3\u05D5\u05D2\u05DE\u05D4',
+      contactName: '\u05D9\u05E9\u05E8\u05D0\u05DC \u05D9\u05E9\u05E8\u05D0\u05DC\u05D9',
+      email: 'demo@example.com', phone: '050-000-0000',
+      notes: '\u05DC\u05E7\u05D5\u05D7 \u05DC\u05D3\u05D5\u05D2\u05DE\u05D4 \u2014 \u05E0\u05D9\u05EA\u05DF \u05DC\u05DE\u05D7\u05D5\u05E7',
+      defaultPaymentStructure: '', isDemo: true,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+    const clientsPath = join(DATA_DIR, 'clients.json');
+    let clients = [];
+    try { clients = JSON.parse(readFileSync(clientsPath, 'utf8')); } catch {}
+    clients = clients.filter(c => c.id !== 'demo-client');
+    clients.push(demoClient);
+    writeFileSync(clientsPath, JSON.stringify(clients, null, 2));
+
+    const demoProject = {
+      name: '\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8 \u05DC\u05D3\u05D5\u05D2\u05DE\u05D4 \u2014 \u05E2\u05D9\u05E6\u05D5\u05D1 \u05D0\u05EA\u05E8',
+      id: 'demo-project', clientId: 'demo-client', isDemo: true,
+      createdAt: new Date().toISOString(), lastModified: new Date().toISOString(),
+      activeDocType: 'quote', docTypes: ['quote'],
+      chatHistory: [],
+      formStates: {
+        quote: {
+          clientName: demoClient.name, company: demoClient.company, docType: 'quote',
+          projectDescription: '\u05E2\u05D9\u05E6\u05D5\u05D1 \u05D5\u05E4\u05D9\u05EA\u05D5\u05D7 \u05D0\u05EA\u05E8 \u05EA\u05D3\u05DE\u05D9\u05EA \u05DC\u05E2\u05E1\u05E7',
+          serviceDetails: '\u05E2\u05D9\u05E6\u05D5\u05D1 \u05D0\u05EA\u05E8 \u05EA\u05D3\u05DE\u05D9\u05EA \u05D1\u05DF 5 \u05E2\u05DE\u05D5\u05D3\u05D9\u05DD \u05DB\u05D5\u05DC\u05DC: \u05E2\u05DE\u05D5\u05D3 \u05D1\u05D9\u05EA, \u05D0\u05D5\u05D3\u05D5\u05EA, \u05E9\u05D9\u05E8\u05D5\u05EA\u05D9\u05DD, \u05EA\u05D9\u05E7 \u05E2\u05D1\u05D5\u05D3\u05D5\u05EA \u05D5\u05D9\u05E6\u05D9\u05E8\u05EA \u05E7\u05E9\u05E8.\n\u05E2\u05D9\u05E6\u05D5\u05D1 \u05E8\u05E1\u05E4\u05D5\u05E0\u05E1\u05D9\u05D1\u05D9 \u05DE\u05DC\u05D0 \u05DC\u05DE\u05D5\u05D1\u05D9\u05D9\u05DC \u05D5\u05D8\u05D0\u05D1\u05DC\u05D8.\n\u05D4\u05EA\u05D0\u05DE\u05EA \u05E6\u05D1\u05E2\u05D9\u05DD \u05D5\u05D8\u05D9\u05E4\u05D5\u05D2\u05E8\u05E4\u05D9\u05D4 \u05DC\u05DE\u05D9\u05EA\u05D5\u05D2 \u05D4\u05DC\u05E7\u05D5\u05D7.\n\u05D4\u05D8\u05DE\u05E2\u05EA \u05D8\u05D5\u05E4\u05E1 \u05D9\u05E6\u05D9\u05E8\u05EA \u05E7\u05E9\u05E8.',
+          pricingItems: [
+            { desc: '\u05E2\u05D9\u05E6\u05D5\u05D1 \u05D0\u05EA\u05E8 \u05EA\u05D3\u05DE\u05D9\u05EA \u2014 5 \u05E2\u05DE\u05D5\u05D3\u05D9\u05DD', qty: 1, price: 8000, option: '' },
+            { desc: '\u05EA\u05D5\u05E1\u05E4\u05EA \u2014 \u05D1\u05DC\u05D5\u05D2 / \u05DE\u05E2\u05E8\u05DB\u05EA \u05EA\u05D5\u05DB\u05DF', qty: 1, price: 2000, option: '\u05D0\u05D5\u05E4\u05E6\u05D9\u05D4' }
+          ],
+          paymentStructure: '2-installments',
+          timeline: '\u05E9\u05DC\u05D1 \u05D0\u05F3 \u2014 \u05D0\u05E4\u05D9\u05D5\u05DF \u05D5\u05E2\u05D9\u05E6\u05D5\u05D1: \u05E9\u05D1\u05D5\u05E2 1-2\n\u05E9\u05DC\u05D1 \u05D1\u05F3 \u2014 \u05E4\u05D9\u05EA\u05D5\u05D7: \u05E9\u05D1\u05D5\u05E2 3-5\n\u05E9\u05DC\u05D1 \u05D2\u05F3 \u2014 \u05EA\u05D9\u05E7\u05D5\u05E0\u05D9\u05DD \u05D5\u05D0\u05E1\u05E4\u05E7\u05D4: \u05E9\u05D1\u05D5\u05E2 6',
+          notes: '\u05D4\u05DE\u05D7\u05D9\u05E8 \u05D0\u05D9\u05E0\u05D5 \u05DB\u05D5\u05DC\u05DC \u05DE\u05E2\u05F4\u05DE.\n\u05D4\u05D4\u05E6\u05E2\u05D4 \u05D1\u05EA\u05D5\u05E7\u05E3 \u05DC-30 \u05D9\u05D5\u05DD.\n\u05DB\u05D5\u05DC\u05DC 2 \u05E1\u05D1\u05D1\u05D9 \u05EA\u05D9\u05E7\u05D5\u05E0\u05D9\u05DD.',
+          documentDate: new Date().toISOString().split('T')[0],
+          selectedClauses: ['advance-payment', 'late-payment', 'right-to-terminate', 'ip-transfer', 'revision-rounds', 'governing-law', 'force-majeure', 'amendments-in-writing', 'client-materials', 'mutual-nda', 'project-completion'],
+        }
+      }
+    };
+    const projDir = join(PROJECTS_DIR, demoProject.id);
+    mkdirSync(projDir, { recursive: true });
+    writeFileSync(join(projDir, 'project.json'), JSON.stringify(demoProject, null, 2));
+    const index = readIndex();
+    index.projects = index.projects.filter(p => p.id !== 'demo-project');
+    index.projects.push({ id: demoProject.id, name: demoProject.name, clientId: demoProject.clientId, isDemo: true, lastModified: demoProject.lastModified, docType: 'quote', docTypes: ['quote'] });
+    writeIndex(index);
+
+    res.json({ ok: true, clientId: demoClient.id, projectId: demoProject.id });
+  } catch (err) {
+    console.error('Load demo error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/demo-data', (req, res) => {
+  try {
+    const clientsPath = join(DATA_DIR, 'clients.json');
+    let clients = [];
+    try { clients = JSON.parse(readFileSync(clientsPath, 'utf8')); } catch {}
+    clients = clients.filter(c => c.id !== 'demo-client');
+    writeFileSync(clientsPath, JSON.stringify(clients, null, 2));
+    rmSync(join(PROJECTS_DIR, 'demo-project'), { recursive: true, force: true });
+    const index = readIndex();
+    index.projects = index.projects.filter(p => p.id !== 'demo-project');
+    if (index.activeProjectId === 'demo-project') index.activeProjectId = null;
+    writeIndex(index);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Delete demo error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 function handleSaveChat(req, res) {
   try {
     const { id } = req.params;
@@ -1521,6 +1597,117 @@ function handleSaveForm(req, res) {
 }
 app.put('/api/projects/:id/form', handleSaveForm);
 app.post('/api/projects/:id/form', handleSaveForm);
+
+// ─── Demo data endpoints ───────────────────────────────────────────────────────
+
+app.post('/api/load-demo', (req, res) => {
+  try {
+    const now = new Date().toISOString();
+
+    // Create demo client
+    const demoClient = {
+      id: 'demo-client',
+      name: 'סטודיו לדוגמה בע״מ',
+      company: 'סטודיו לדוגמה',
+      contactName: 'ישראל ישראלי',
+      email: 'demo@example.com',
+      phone: '050-000-0000',
+      notes: 'לקוח לדוגמה — ניתן למחוק',
+      defaultPaymentStructure: '',
+      isDemo: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const clientsData = loadClients();
+    clientsData.clients = clientsData.clients.filter(c => c.id !== 'demo-client');
+    clientsData.clients.push(demoClient);
+    saveClients(clientsData);
+
+    // Create demo project
+    const demoProject = {
+      name: 'פרויקט לדוגמה — עיצוב אתר',
+      id: 'demo-project',
+      clientId: 'demo-client',
+      isDemo: true,
+      createdAt: now,
+      lastModified: now,
+      activeDocType: 'quote',
+      docTypes: ['quote'],
+      chatHistory: [],
+      formStates: {
+        quote: {
+          clientName: 'סטודיו לדוגמה בע״מ',
+          company: 'סטודיו לדוגמה',
+          docType: 'quote',
+          projectDescription: 'עיצוב ופיתוח אתר תדמית לעסק',
+          serviceDetails: 'עיצוב אתר תדמית בן 5 עמודים כולל: עמוד בית, אודות, שירותים, תיק עבודות ויצירת קשר.\nעיצוב רספונסיבי מלא למובייל וטאבלט.\nהתאמת צבעים וטיפוגרפיה למיתוג הלקוח.\nהטמעת טופס יצירת קשר.',
+          pricingItems: [
+            { desc: 'עיצוב אתר תדמית — 5 עמודים', qty: 1, price: 8000, option: '' },
+            { desc: 'תוספת — בלוג / מערכת תוכן', qty: 1, price: 2000, option: 'אופציה' }
+          ],
+          paymentStructure: '2-installments',
+          timeline: 'שלב א׳ — אפיון ועיצוב: שבוע 1-2\nשלב ב׳ — פיתוח: שבוע 3-5\nשלב ג׳ — תיקונים ואספקה: שבוע 6',
+          notes: 'המחיר אינו כולל מע״מ.\nההצעה בתוקף ל-30 יום.\nכולל 2 סבבי תיקונים.',
+          documentDate: now.split('T')[0],
+          selectedClauses: ['advance-payment', 'late-payment', 'right-to-terminate', 'ip-transfer', 'revision-rounds', 'governing-law', 'force-majeure', 'amendments-in-writing', 'client-materials', 'mutual-nda', 'project-completion'],
+        }
+      }
+    };
+
+    writeProject('demo-project', demoProject);
+
+    // Add to index
+    const index = readIndex();
+    const existing = index.projects.findIndex(p => p.id === 'demo-project');
+    const entry = {
+      id: 'demo-project',
+      name: demoProject.name,
+      createdAt: now,
+      clientId: 'demo-client',
+      clientName: demoClient.name,
+      docType: 'quote',
+      docCount: 0,
+      lastModified: now,
+      isDemo: true,
+    };
+    if (existing >= 0) {
+      index.projects[existing] = entry;
+    } else {
+      index.projects.push(entry);
+    }
+    writeIndex(index);
+
+    res.json({ ok: true, clientId: demoClient.id, projectId: demoProject.id });
+  } catch (err) {
+    console.error('Load demo error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/demo-data', (req, res) => {
+  try {
+    // Remove demo client
+    const clientsData = loadClients();
+    clientsData.clients = clientsData.clients.filter(c => c.id !== 'demo-client');
+    saveClients(clientsData);
+
+    // Remove demo project from index
+    const index = readIndex();
+    index.projects = index.projects.filter(p => p.id !== 'demo-project');
+    if (index.activeProjectId === 'demo-project') index.activeProjectId = null;
+    writeIndex(index);
+
+    // Remove demo project directory
+    const projDir = join(PROJECTS_DIR, 'demo-project');
+    rmSync(projDir, { recursive: true, force: true });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Delete demo error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─── Existing endpoint: POST /api/chat ────────────────────────────────────────
 
