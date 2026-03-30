@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "setup": "bash setup.sh",
     "start": "node src/server.mjs",
     "generate": "node src/generate-quote.mjs",
     "test": "node --test tests/",

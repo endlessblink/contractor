@@ -34,12 +34,11 @@ Doc Maker is a self-hosted application for generating professional business docu
 ```bash
 git clone https://github.com/endlessblink/contractor.git
 cd contractor
-npm install
-cp .env.example .env     # Add your AI API key (optional)
+npm run setup
 npm start
 ```
 
-Open **http://localhost:6831** in your browser. A setup wizard will guide you through configuration on first run.
+The setup script installs dependencies, configures your AI provider, and initializes the clause database. Then open **http://localhost:6831** in your browser.
 
 ### Prerequisites
 
