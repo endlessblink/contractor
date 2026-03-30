@@ -2865,6 +2865,49 @@
     }
     .hub-modal-submit:hover { background: rgba(0, 210, 180, 0.14); border-color: var(--accent); }
 
+    /* ── Onboarding Wizard ── */
+    .onboarding-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000; backdrop-filter: blur(8px);
+    }
+    .onboarding-card {
+      background: var(--card-bg); border: 1px solid var(--border-strong);
+      border-radius: 16px; width: 500px; max-width: 90vw; max-height: 85vh;
+      overflow-y: auto; direction: rtl; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .onboarding-header { padding: 40px 40px 20px; }
+    .onboarding-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
+    .onboarding-header p { font-size: 0.9rem; color: var(--text-muted); margin: 0; }
+    .onboarding-body { padding: 0 40px 20px; }
+    .onboarding-footer { padding: 20px 40px 30px; display: flex; justify-content: center; gap: 12px; }
+    .onboarding-step { display: none; }
+    .onboarding-step.active { display: block; }
+    .onboarding-dots { display: flex; justify-content: center; gap: 8px; padding: 16px 0; }
+    .onboarding-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); }
+    .onboarding-dot.active { background: var(--accent); }
+    .onboarding-dot.done { background: var(--accent-text); }
+    .onboarding-btn {
+      padding: 10px 24px; border-radius: 8px; font-size: 0.88rem;
+      font-family: inherit; cursor: pointer; transition: all 150ms; border: 1px solid var(--border);
+      background: transparent; color: var(--text-secondary);
+    }
+    .onboarding-btn:hover { border-color: var(--accent-border); color: var(--accent-text); }
+    .onboarding-btn.primary {
+      background: var(--accent-subtle); border-color: var(--accent-border); color: var(--accent-text); font-weight: 600;
+    }
+    .onboarding-field { margin-bottom: 14px; text-align: right; }
+    .onboarding-field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+    .onboarding-field input, .onboarding-field select {
+      width: 100%; padding: 10px 14px; background: transparent;
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text-primary); font-size: 0.88rem; font-family: inherit;
+      box-sizing: border-box; direction: rtl;
+    }
+    .onboarding-field input:focus, .onboarding-field select:focus { outline: none; border-color: var(--accent-border); }
+    .onboarding-field input[dir="ltr"] { direction: ltr; }
+
     /* Doc type cards — legacy (kept for compat) */
     .doc-type-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; direction: rtl; }
     .doc-type-card {
@@ -5037,6 +5080,41 @@
       <div class="hub-modal-footer">
         <button class="hub-modal-submit" id="renameProjectSubmit">שמור</button>
         <button class="hub-modal-cancel" data-close-modal="renameProjectModal">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Onboarding Wizard ── -->
+  <div id="onboardingOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;z-index:2000;backdrop-filter:blur(8px);">
+    <div style="background:var(--card-bg);border:1px solid var(--border-strong);border-radius:16px;width:480px;max-width:90vw;max-height:85vh;overflow-y:auto;direction:rtl;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+      <div id="obDots" style="display:flex;justify-content:center;gap:8px;padding:20px 0 0;"></div>
+      <div class="ob-step" data-step="1" style="padding:30px 40px;">
+        <h1 style="font-size:1.5rem;font-weight:700;color:var(--text-primary);margin:0 0 8px;">ברוכים הבאים ל-Doc Maker</h1>
+        <p style="font-size:0.9rem;color:var(--text-muted);margin:0 0 20px;">כלי ליצירת הצעות מחיר, חוזים והזמנות עבודה בעברית</p>
+        <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;">בעזרת בינה מלאכותית, תוכל ליצור מסמכים מקצועיים תוך דקות.</p>
+        <div style="padding:20px 0 10px;"><button onclick="obNext()" style="padding:10px 28px;border-radius:8px;font-size:0.88rem;font-family:inherit;cursor:pointer;border:1px solid var(--accent-border);background:var(--accent-subtle);color:var(--accent-text);font-weight:600;">המשך</button></div>
+      </div>
+      <div class="ob-step" data-step="2" style="display:none;padding:20px 40px 30px;">
+        <h1 style="font-size:1.3rem;font-weight:700;color:var(--text-primary);margin:0 0 6px;">חיבור AI</h1>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 20px;">בחר ספק AI והזן מפתח API</p>
+        <div style="margin-bottom:14px;text-align:right;"><label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">ספק AI</label><select id="obAiProvider" style="width:100%;padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.88rem;font-family:inherit;direction:rtl;"><option value="anthropic">Anthropic (Claude) — מומלץ</option><option value="openai">OpenAI (GPT)</option><option value="openrouter">OpenRouter</option></select></div>
+        <div style="margin-bottom:14px;text-align:right;"><label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">מפתח API</label><input type="password" id="obAiKey" dir="ltr" placeholder="sk-..." style="width:100%;padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.88rem;font-family:inherit;box-sizing:border-box;" /></div>
+        <div style="padding:10px 0;display:flex;justify-content:center;gap:10px;"><button onclick="obPrev()" style="padding:9px 20px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);">חזור</button><button onclick="obNext()" style="padding:9px 20px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--accent-border);background:var(--accent-subtle);color:var(--accent-text);font-weight:600;">המשך</button><button onclick="obNext()" style="padding:9px 14px;border-radius:8px;font-size:0.75rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-muted);">דלג</button></div>
+      </div>
+      <div class="ob-step" data-step="3" style="display:none;padding:20px 40px 30px;">
+        <h1 style="font-size:1.3rem;font-weight:700;color:var(--text-primary);margin:0 0 6px;">הפרופיל שלך</h1>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 16px;">הפרטים יופיעו על המסמכים שתיצור</p>
+        <div style="margin-bottom:10px;text-align:right;"><label style="display:block;font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:5px;">שם</label><input type="text" id="obName" placeholder="השם שלך" style="width:100%;padding:9px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;font-family:inherit;box-sizing:border-box;direction:rtl;" /></div>
+        <div style="margin-bottom:10px;text-align:right;"><label style="display:block;font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:5px;">חברה</label><input type="text" id="obCompany" placeholder="שם העסק (אופציונלי)" style="width:100%;padding:9px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;font-family:inherit;box-sizing:border-box;direction:rtl;" /></div>
+        <div style="margin-bottom:10px;text-align:right;"><label style="display:block;font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:5px;">אימייל</label><input type="email" id="obEmail" dir="ltr" placeholder="you@example.com" style="width:100%;padding:9px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;font-family:inherit;box-sizing:border-box;" /></div>
+        <div style="margin-bottom:10px;text-align:right;"><label style="display:block;font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:5px;">טלפון</label><input type="tel" id="obPhone" dir="ltr" placeholder="050-000-0000" style="width:100%;padding:9px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;font-family:inherit;box-sizing:border-box;" /></div>
+        <div style="padding:10px 0;display:flex;justify-content:center;gap:10px;"><button onclick="obPrev()" style="padding:9px 20px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);">חזור</button><button onclick="obNext()" style="padding:9px 20px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--accent-border);background:var(--accent-subtle);color:var(--accent-text);font-weight:600;">המשך</button><button onclick="obNext()" style="padding:9px 14px;border-radius:8px;font-size:0.75rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-muted);">דלג</button></div>
+      </div>
+      <div class="ob-step" data-step="4" style="display:none;padding:20px 40px 30px;">
+        <h1 style="font-size:1.3rem;font-weight:700;color:var(--text-primary);margin:0 0 6px;">רוצה לראות דוגמה?</h1>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 16px;">נטען פרויקט לדוגמה עם לקוח, הצעת מחיר מלאה וסעיפים משפטיים</p>
+        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">תוכל למחוק את הדוגמה בכל עת.</p>
+        <div style="padding:16px 0 10px;display:flex;justify-content:center;gap:10px;"><button onclick="obPrev()" style="padding:9px 20px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);">חזור</button><button onclick="obLoadDemo()" style="padding:9px 22px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--accent-border);background:var(--accent-subtle);color:var(--accent-text);font-weight:600;">כן, טען דוגמה</button><button onclick="obFinish()" style="padding:9px 20px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);">לא תודה</button></div>
       </div>
     </div>
   </div>
@@ -9494,6 +9572,45 @@
       document.title = 'office-work' + (currentProfile.company ? ' — ' + currentProfile.company : '');
     }
 
+    // ── Onboarding Wizard Logic ──
+    var _obStep = 1;
+    function showOnboarding() {
+      var el = document.getElementById('onboardingOverlay');
+      if (el) { el.style.display = 'flex'; updateObStep(1); }
+    }
+    function updateObStep(step) {
+      _obStep = step;
+      document.querySelectorAll('.ob-step').forEach(function(s) { s.style.display = parseInt(s.dataset.step) === step ? 'block' : 'none'; });
+      var dots = document.getElementById('obDots');
+      if (dots) { dots.innerHTML = [1,2,3,4].map(function(i) { return '<div style="width:8px;height:8px;border-radius:50%;background:' + (i === step ? 'var(--accent)' : i < step ? 'var(--accent-text)' : 'var(--border-strong)') + ';transition:all 150ms;"></div>'; }).join(''); }
+    }
+    window.obNext = function() {
+      if (_obStep === 2) {
+        var provider = document.getElementById('obAiProvider').value;
+        var key = document.getElementById('obAiKey').value.trim();
+        if (provider && key) fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aiProvider: provider, aiApiKey: key }) });
+      }
+      if (_obStep === 3) {
+        var body = {};
+        var n = document.getElementById('obName').value.trim(); if (n) { body.name = n; localStorage.setItem('ownerName', n); }
+        var c = document.getElementById('obCompany').value.trim(); if (c) body.company = c;
+        var e = document.getElementById('obEmail').value.trim(); if (e) body.email = e;
+        var p = document.getElementById('obPhone').value.trim(); if (p) body.phone = p;
+        if (Object.keys(body).length) fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      }
+      if (_obStep < 4) updateObStep(_obStep + 1);
+    };
+    window.obPrev = function() { if (_obStep > 1) updateObStep(_obStep - 1); };
+    window.obLoadDemo = async function() {
+      try { await fetch('/api/load-demo', { method: 'POST' }); } catch (e) { console.warn('Demo load failed:', e); }
+      obFinish();
+    };
+    window.obFinish = async function() {
+      try { await fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ setupComplete: true }) }); } catch (e) {}
+      document.getElementById('onboardingOverlay').style.display = 'none';
+      if (window._navigate) window._navigate('home');
+    };
+
     // First-run setup check
     async function checkSetup() {
       try {
@@ -9501,8 +9618,7 @@
         if (res.ok) {
           const status = await res.json();
           if (!status.setupComplete && !status.hasProfile) {
-            await loadProfile();
-            openSettings();
+            showOnboarding();
             return;
           }
         }
