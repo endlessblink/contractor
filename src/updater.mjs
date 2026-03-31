@@ -13,60 +13,92 @@ function getPlatformSuffix() {
 export async function checkForUpdate(silent = false) {
   if (typeof process.pkg === 'undefined') return;
   try {
+    console.log('Checking for updates...');
     const res = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
-      { headers: { 'User-Agent': 'contractor-updater' } }
+      { headers: { 'User-Agent': 'contractor-updater' }, signal: AbortSignal.timeout(10000) }
     );
-    if (!res.ok) return;
+    if (!res.ok) {
+      if (!silent) console.log('⚠️  Could not check for updates (HTTP ' + res.status + ')');
+      return;
+    }
 
     const release = await res.json();
     const latest = release.tag_name?.replace(/^v/, '');
     if (!latest || latest === CURRENT_VERSION) {
-      if (!silent) console.log(`✓ Up to date (v${CURRENT_VERSION})`);
+      console.log('✓ Up to date (v' + CURRENT_VERSION + ')');
       return;
     }
 
-    console.log(`\n🆕 Update available: v${CURRENT_VERSION} → v${latest}`);
+    console.log('\n🆕 Update available: v' + CURRENT_VERSION + ' → v' + latest);
     const suffix = getPlatformSuffix();
     const asset = release.assets?.find(a => a.name.includes(suffix));
-    if (!asset) { console.log('No binary for your platform.'); return; }
+    if (!asset) {
+      console.log('⚠️  No binary available for your platform (' + suffix + ')');
+      console.log('   Download manually: https://github.com/' + GITHUB_REPO + '/releases/tag/v' + latest);
+      return;
+    }
 
     const totalMB = asset.size ? (asset.size / 1024 / 1024).toFixed(0) : '?';
-    console.log(`Downloading update (${totalMB} MB)...`);
-    const dlRes = await fetch(asset.browser_download_url);
-    if (!dlRes.ok) return;
+    console.log('📥 Downloading v' + latest + ' (' + totalMB + ' MB)...');
+    console.log('   From: ' + asset.browser_download_url);
+
+    const dlRes = await fetch(asset.browser_download_url, { signal: AbortSignal.timeout(300000) });
+    if (!dlRes.ok) {
+      console.log('❌ Download failed (HTTP ' + dlRes.status + ')');
+      console.log('   Download manually: https://github.com/' + GITHUB_REPO + '/releases/tag/v' + latest);
+      return;
+    }
 
     const totalBytes = parseInt(dlRes.headers.get('content-length') || asset.size || 0);
     const tmpPath = process.execPath + '.new';
     const writer = createWriteStream(tmpPath);
     let downloaded = 0;
     let lastPct = -1;
+    const startTime = Date.now();
 
     await new Promise((resolve, reject) => {
       dlRes.body.on('data', (chunk) => {
         downloaded += chunk.length;
         if (totalBytes > 0) {
           const pct = Math.floor((downloaded / totalBytes) * 100);
-          if (pct !== lastPct && pct % 5 === 0) {
-            const bar = '█'.repeat(Math.floor(pct / 5)) + '░'.repeat(20 - Math.floor(pct / 5));
-            process.stdout.write(`\r  [${bar}] ${pct}% (${(downloaded / 1024 / 1024).toFixed(1)} / ${(totalBytes / 1024 / 1024).toFixed(1)} MB)`);
+          if (pct !== lastPct && (pct % 5 === 0 || pct === 100)) {
+            const bar = '\u2588'.repeat(Math.floor(pct / 5)) + '\u2591'.repeat(20 - Math.floor(pct / 5));
+            const elapsed = (Date.now() - startTime) / 1000;
+            const speed = elapsed > 0 ? (downloaded / 1024 / 1024 / elapsed).toFixed(1) : '?';
+            process.stdout.write('\r   [' + bar + '] ' + pct + '% (' + (downloaded / 1024 / 1024).toFixed(1) + '/' + (totalBytes / 1024 / 1024).toFixed(1) + ' MB, ' + speed + ' MB/s)');
             lastPct = pct;
+          }
+        } else {
+          // No content-length — show bytes downloaded
+          if (downloaded % (5 * 1024 * 1024) < 65536) {
+            process.stdout.write('\r   Downloaded ' + (downloaded / 1024 / 1024).toFixed(1) + ' MB...');
           }
         }
       });
       dlRes.body.pipe(writer);
       writer.on('finish', () => { process.stdout.write('\n'); resolve(); });
-      writer.on('error', reject);
+      writer.on('error', (err) => {
+        process.stdout.write('\n');
+        reject(err);
+      });
     });
 
+    console.log('📦 Installing update...');
     const backupPath = process.execPath + '.old';
     if (existsSync(backupPath)) { try { unlinkSync(backupPath); } catch {} }
     renameSync(process.execPath, backupPath);
     renameSync(tmpPath, process.execPath);
     try { chmodSync(process.execPath, 0o755); } catch {}
 
-    console.log(`✅ Updated to v${latest}. Restart the app.`);
-  } catch {
-    // Never crash on update failure
+    console.log('✅ Updated to v' + latest + '! Restart the app to use the new version.');
+  } catch (err) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      console.log('⚠️  Update check timed out. Continuing with current version.');
+    } else {
+      console.log('⚠️  Update failed: ' + (err.message || err));
+      console.log('   The app will continue running with v' + CURRENT_VERSION);
+      console.log('   Download manually: https://github.com/' + GITHUB_REPO + '/releases');
+    }
   }
 }
