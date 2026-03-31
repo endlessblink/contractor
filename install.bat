@@ -43,9 +43,9 @@ echo WshShell.Run "http://localhost:6831" >> "%INSTALL_DIR%\DocMaker.vbs"
 
 echo   Creating shortcuts...
 
-powershell -Command "$ws=New-Object -ComObject WScript.Shell; $sc=$ws.CreateShortcut([Environment]::GetFolderPath('Desktop')+'\Doc Maker.lnk'); $sc.TargetPath='wscript.exe'; $sc.Arguments='\"'+$Env:LOCALAPPDATA+'\Doc Maker\DocMaker.vbs\"'; $sc.IconLocation=$Env:LOCALAPPDATA+'\Doc Maker\contractor-win-x64.exe,0'; $sc.WorkingDirectory=$Env:LOCALAPPDATA+'\Doc Maker'; $sc.Description='AI document generator'; $sc.Save()"
+powershell -NoProfile -Command "try { $ws=New-Object -ComObject WScript.Shell; $desktop=[Environment]::GetFolderPath('Desktop'); $sc=$ws.CreateShortcut(\"$desktop\Doc Maker.lnk\"); $sc.TargetPath='wscript.exe'; $sc.Arguments='\"'+$Env:LOCALAPPDATA+'\Doc Maker\DocMaker.vbs\"'; $sc.IconLocation=$Env:LOCALAPPDATA+'\Doc Maker\contractor-win-x64.exe,0'; $sc.WorkingDirectory=$Env:LOCALAPPDATA+'\Doc Maker'; $sc.Save(); Write-Host '  Desktop shortcut created' } catch { Write-Host '  Warning: Could not create Desktop shortcut' }"
 
-powershell -Command "$ws=New-Object -ComObject WScript.Shell; $sc=$ws.CreateShortcut($Env:APPDATA+'\Microsoft\Windows\Start Menu\Programs\Doc Maker.lnk'); $sc.TargetPath='wscript.exe'; $sc.Arguments='\"'+$Env:LOCALAPPDATA+'\Doc Maker\DocMaker.vbs\"'; $sc.IconLocation=$Env:LOCALAPPDATA+'\Doc Maker\contractor-win-x64.exe,0'; $sc.WorkingDirectory=$Env:LOCALAPPDATA+'\Doc Maker'; $sc.Description='AI document generator'; $sc.Save()"
+powershell -NoProfile -Command "try { $ws=New-Object -ComObject WScript.Shell; $programs=[Environment]::GetFolderPath('Programs'); $sc=$ws.CreateShortcut(\"$programs\Doc Maker.lnk\"); $sc.TargetPath='wscript.exe'; $sc.Arguments='\"'+$Env:LOCALAPPDATA+'\Doc Maker\DocMaker.vbs\"'; $sc.IconLocation=$Env:LOCALAPPDATA+'\Doc Maker\contractor-win-x64.exe,0'; $sc.WorkingDirectory=$Env:LOCALAPPDATA+'\Doc Maker'; $sc.Save(); Write-Host '  Start Menu shortcut created' } catch { Write-Host '  Warning: Could not create Start Menu shortcut' }"
 
 echo   Creating uninstaller...
 
