@@ -1,36 +1,31 @@
 @echo off
-chcp 65001 >nul 2>&1
 title Doc Maker - Installer
 
 echo.
-echo   ╔═══════════════════════════════════════╗
-echo   ║       Doc Maker - Installer           ║
-echo   ║       v1.1.4                          ║
-echo   ╚═══════════════════════════════════════╝
+echo   ========================================
+echo     Doc Maker - Installer v1.1.4
+echo   ========================================
 echo.
 
-:: Check for admin (not required, install to user dir)
 set "INSTALL_DIR=%LOCALAPPDATA%\Doc Maker"
 set "EXE_NAME=contractor-win-x64.exe"
-set "APP_NAME=Doc Maker"
 set "DOWNLOAD_URL=https://github.com/endlessblink/contractor/releases/download/v1.1.4/%EXE_NAME%"
 
 echo   Install location: %INSTALL_DIR%
 echo.
 
-:: Create install directory
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 
-:: Download executable
-echo   Downloading Doc Maker v1.1.4...
-echo   This may take a minute (about 180 MB)
+echo   Downloading Doc Maker (about 180 MB)...
+echo   Please wait...
 echo.
 
-powershell -Command "& { $ProgressPreference = 'SilentlyContinue'; try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $wc = New-Object System.Net.WebClient; $wc.DownloadFile('%DOWNLOAD_URL%', '%INSTALL_DIR%\%EXE_NAME%') } catch { Write-Host '  ERROR: Download failed.' -ForegroundColor Red; Write-Host '  Please check your internet connection.'; Write-Host '  Or download manually from: https://github.com/endlessblink/contractor/releases'; exit 1 } }"
+powershell -Command "$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile('%DOWNLOAD_URL%','%INSTALL_DIR%\%EXE_NAME%')"
 
 if not exist "%INSTALL_DIR%\%EXE_NAME%" (
     echo.
-    echo   Download failed. Please try again or download manually from:
+    echo   ERROR: Download failed.
+    echo   Please download manually from:
     echo   https://github.com/endlessblink/contractor/releases
     echo.
     pause
@@ -39,62 +34,49 @@ if not exist "%INSTALL_DIR%\%EXE_NAME%" (
 
 echo   Download complete!
 echo.
-
-:: Create VBS launcher (runs exe without terminal window)
 echo   Creating launcher...
-(
-    echo Set WshShell = CreateObject^("WScript.Shell"^)
-    echo WshShell.Run Chr^(34^) ^& "%INSTALL_DIR%\%EXE_NAME%" ^& Chr^(34^), 0, False
-    echo WScript.Sleep 2000
-    echo WshShell.Run "http://localhost:6831"
-) > "%INSTALL_DIR%\Doc Maker.vbs"
 
-:: Create Start Menu shortcut
-echo   Creating Start Menu shortcut...
-set "START_MENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs"
-powershell -Command "& { $ws = New-Object -ComObject WScript.Shell; $sc = $ws.CreateShortcut('%START_MENU%\Doc Maker.lnk'); $sc.TargetPath = 'wscript.exe'; $sc.Arguments = '"%INSTALL_DIR%\Doc Maker.vbs"'; $sc.IconLocation = '%INSTALL_DIR%\%EXE_NAME%,0'; $sc.WorkingDirectory = '%INSTALL_DIR%'; $sc.Description = 'AI-powered document generator'; $sc.Save() }"
+echo Set WshShell = CreateObject("WScript.Shell") > "%INSTALL_DIR%\DocMaker.vbs"
+echo WshShell.Run Chr(34) ^& "%INSTALL_DIR%\%EXE_NAME%" ^& Chr(34), 0, False >> "%INSTALL_DIR%\DocMaker.vbs"
+echo WScript.Sleep 2000 >> "%INSTALL_DIR%\DocMaker.vbs"
+echo WshShell.Run "http://localhost:6831" >> "%INSTALL_DIR%\DocMaker.vbs"
 
-:: Create Desktop shortcut
-echo   Creating Desktop shortcut...
-powershell -Command "& { $ws = New-Object -ComObject WScript.Shell; $sc = $ws.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Doc Maker.lnk'); $sc.TargetPath = 'wscript.exe'; $sc.Arguments = '"%INSTALL_DIR%\Doc Maker.vbs"'; $sc.IconLocation = '%INSTALL_DIR%\%EXE_NAME%,0'; $sc.WorkingDirectory = '%INSTALL_DIR%'; $sc.Description = 'AI-powered document generator'; $sc.Save() }"
+echo   Creating shortcuts...
 
-:: Create uninstaller
+powershell -Command "$ws=New-Object -ComObject WScript.Shell; $sc=$ws.CreateShortcut([Environment]::GetFolderPath('Desktop')+'\Doc Maker.lnk'); $sc.TargetPath='wscript.exe'; $sc.Arguments='\"'+$Env:LOCALAPPDATA+'\Doc Maker\DocMaker.vbs\"'; $sc.IconLocation=$Env:LOCALAPPDATA+'\Doc Maker\contractor-win-x64.exe,0'; $sc.WorkingDirectory=$Env:LOCALAPPDATA+'\Doc Maker'; $sc.Description='AI document generator'; $sc.Save()"
+
+powershell -Command "$ws=New-Object -ComObject WScript.Shell; $sc=$ws.CreateShortcut($Env:APPDATA+'\Microsoft\Windows\Start Menu\Programs\Doc Maker.lnk'); $sc.TargetPath='wscript.exe'; $sc.Arguments='\"'+$Env:LOCALAPPDATA+'\Doc Maker\DocMaker.vbs\"'; $sc.IconLocation=$Env:LOCALAPPDATA+'\Doc Maker\contractor-win-x64.exe,0'; $sc.WorkingDirectory=$Env:LOCALAPPDATA+'\Doc Maker'; $sc.Description='AI document generator'; $sc.Save()"
+
 echo   Creating uninstaller...
-(
+
+> "%INSTALL_DIR%\Uninstall.bat" (
     echo @echo off
     echo title Doc Maker - Uninstall
-    echo echo.
-    echo echo   Uninstalling Doc Maker...
-    echo echo.
-    echo taskkill /f /im "%EXE_NAME%" 2^>nul
+    echo echo Uninstalling Doc Maker...
+    echo taskkill /f /im contractor-win-x64.exe 2^>nul
     echo timeout /t 2 /nobreak ^>nul
-    echo del "%START_MENU%\Doc Maker.lnk" 2^>nul
-    echo del "%USERPROFILE%\Desktop\Doc Maker.lnk" 2^>nul
-    echo rmdir /s /q "%INSTALL_DIR%" 2^>nul
-    echo echo   Doc Maker has been uninstalled.
+    echo del "%%USERPROFILE%%\Desktop\Doc Maker.lnk" 2^>nul
+    echo del "%%APPDATA%%\Microsoft\Windows\Start Menu\Programs\Doc Maker.lnk" 2^>nul
     echo echo.
+    echo echo Doc Maker uninstalled.
+    echo echo Delete this folder manually: %%~dp0
     echo pause
-) > "%INSTALL_DIR%\Uninstall.bat"
-
-echo.
-echo   ╔═══════════════════════════════════════╗
-echo   ║   Installation complete!              ║
-echo   ║                                       ║
-echo   ║   Start: Desktop shortcut or          ║
-echo   ║          Start Menu ^> Doc Maker       ║
-echo   ║                                       ║
-echo   ║   Uninstall: %INSTALL_DIR%\Uninstall.bat  ║
-echo   ╚═══════════════════════════════════════╝
-echo.
-
-:: Launch the app
-set /p LAUNCH="  Launch Doc Maker now? [Y/n]: "
-if /i "%LAUNCH%" neq "n" (
-    echo   Starting Doc Maker...
-    start "" wscript.exe "%INSTALL_DIR%\Doc Maker.vbs"
 )
 
 echo.
-echo   Done! You can close this window.
+echo   ========================================
+echo     Installation complete!
 echo.
+echo     Start: Desktop shortcut or
+echo            Start Menu - Doc Maker
+echo   ========================================
+echo.
+
+set /p LAUNCH="  Launch now? [Y/n]: "
+if /i not "%LAUNCH%"=="n" (
+    start "" wscript.exe "%INSTALL_DIR%\DocMaker.vbs"
+)
+
+echo.
+echo   Done!
 pause
