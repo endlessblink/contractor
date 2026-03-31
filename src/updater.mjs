@@ -2,7 +2,7 @@ import { createWriteStream, existsSync, renameSync, chmodSync, unlinkSync } from
 import { spawn } from 'child_process';
 
 const GITHUB_REPO = 'endlessblink/contractor';
-export const CURRENT_VERSION = '1.1.0';
+export const CURRENT_VERSION = '1.1.4';
 
 function getPlatformSuffix() {
   const { platform, arch } = process;
@@ -94,11 +94,16 @@ export async function checkForUpdate(silent = false) {
     renameSync(tmpPath, process.execPath);
     try { chmodSync(process.execPath, 0o755); } catch {}
 
-    console.log('✅ Updated to v' + latest + '! Restarting...');
-    // Auto-restart the app
-    const child = spawn(process.execPath, [], { detached: true, stdio: 'ignore' });
-    child.unref();
-    process.exit(0);
+    console.log('✅ Updated to v' + latest + '! Restarting in 3 seconds...');
+    setTimeout(() => {
+      // Auto-restart: use platform-specific approach
+      if (process.platform === 'win32') {
+        spawn('cmd', ['/c', 'timeout', '/t', '2', '/nobreak', '>', 'nul', '&&', 'start', '""', process.execPath], { detached: true, stdio: 'ignore', shell: true });
+      } else {
+        spawn(process.execPath, [], { detached: true, stdio: 'ignore' });
+      }
+      process.exit(0);
+    }, 1000);
   } catch (err) {
     if (err.name === 'TimeoutError' || err.name === 'AbortError') {
       console.log('⚠️  Update check timed out. Continuing with current version.');
