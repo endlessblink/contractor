@@ -1,7 +1,7 @@
 !include "MUI2.nsh"
 
 ; ── App Info ──
-!define APPNAME "Doc Maker"
+!define APPNAME "Contractor"
 !define APPEXE "contractor-win-x64.exe"
 !define APPVERSION "1.1.4"
 !define PUBLISHER "Noam Naumovsky Productions"
@@ -41,7 +41,7 @@ Section "Install"
   File "..\dist\executables\${APPEXE}"
 
   ; VBS launcher (no terminal window)
-  FileOpen $0 "$INSTDIR\Doc Maker.vbs" w
+  FileOpen $0 "$INSTDIR\Contractor.vbs" w
   FileWrite $0 'Set WshShell = CreateObject("WScript.Shell")$\r$\n'
   FileWrite $0 'WshShell.Run Chr(34) & "$INSTDIR\${APPEXE}" & Chr(34), 0, False$\r$\n'
   FileWrite $0 'WScript.Sleep 2000$\r$\n'
@@ -53,11 +53,11 @@ Section "Install"
 
   ; Start Menu shortcuts
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
-  CreateShortcut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "wscript.exe" '"$INSTDIR\Doc Maker.vbs"' "$INSTDIR\${APPEXE}" 0
+  CreateShortcut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "wscript.exe" '"$INSTDIR\Contractor.vbs"' "$INSTDIR\${APPEXE}" 0
   CreateShortcut "$SMPROGRAMS\${APPNAME}\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
 
   ; Desktop shortcut
-  CreateShortcut "$DESKTOP\${APPNAME}.lnk" "wscript.exe" '"$INSTDIR\Doc Maker.vbs"' "$INSTDIR\${APPEXE}" 0
+  CreateShortcut "$DESKTOP\${APPNAME}.lnk" "wscript.exe" '"$INSTDIR\Contractor.vbs"' "$INSTDIR\${APPEXE}" 0
 
   ; Registry for Add/Remove Programs
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME}"
@@ -76,7 +76,7 @@ Section "Uninstall"
 
   ; Remove files
   Delete "$INSTDIR\${APPEXE}"
-  Delete "$INSTDIR\Doc Maker.vbs"
+  Delete "$INSTDIR\Contractor.vbs"
   Delete "$INSTDIR\Uninstall.exe"
 
   ; Remove data directory

@@ -107,6 +107,6 @@ jobs:
           iscc installer/docmaker.iss
       - uses: softprops/action-gh-release@v1
         with:
-          files: installer/Output/DocMaker-Setup.exe
+          files: installer/Output/Contractor-Setup.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
