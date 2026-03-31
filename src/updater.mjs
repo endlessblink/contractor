@@ -1,7 +1,7 @@
 import { createWriteStream, existsSync, renameSync, chmodSync, unlinkSync } from 'fs';
 
 const GITHUB_REPO = 'endlessblink/contractor';
-export const CURRENT_VERSION = '1.0.0';
+export const CURRENT_VERSION = '1.1.0';
 
 function getPlatformSuffix() {
   const { platform, arch } = process;
@@ -31,15 +31,31 @@ export async function checkForUpdate(silent = false) {
     const asset = release.assets?.find(a => a.name.includes(suffix));
     if (!asset) { console.log('No binary for your platform.'); return; }
 
-    console.log('Downloading update...');
+    const totalMB = asset.size ? (asset.size / 1024 / 1024).toFixed(0) : '?';
+    console.log(`Downloading update (${totalMB} MB)...`);
     const dlRes = await fetch(asset.browser_download_url);
     if (!dlRes.ok) return;
 
+    const totalBytes = parseInt(dlRes.headers.get('content-length') || asset.size || 0);
     const tmpPath = process.execPath + '.new';
     const writer = createWriteStream(tmpPath);
+    let downloaded = 0;
+    let lastPct = -1;
+
     await new Promise((resolve, reject) => {
+      dlRes.body.on('data', (chunk) => {
+        downloaded += chunk.length;
+        if (totalBytes > 0) {
+          const pct = Math.floor((downloaded / totalBytes) * 100);
+          if (pct !== lastPct && pct % 5 === 0) {
+            const bar = '█'.repeat(Math.floor(pct / 5)) + '░'.repeat(20 - Math.floor(pct / 5));
+            process.stdout.write(`\r  [${bar}] ${pct}% (${(downloaded / 1024 / 1024).toFixed(1)} / ${(totalBytes / 1024 / 1024).toFixed(1)} MB)`);
+            lastPct = pct;
+          }
+        }
+      });
       dlRes.body.pipe(writer);
-      writer.on('finish', resolve);
+      writer.on('finish', () => { process.stdout.write('\n'); resolve(); });
       writer.on('error', reject);
     });
 
