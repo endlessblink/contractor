@@ -57,32 +57,34 @@ export async function checkForUpdate(silent = false) {
     let lastPct = -1;
     const startTime = Date.now();
 
-    await new Promise((resolve, reject) => {
-      dlRes.body.on('data', (chunk) => {
-        downloaded += chunk.length;
-        if (totalBytes > 0) {
-          const pct = Math.floor((downloaded / totalBytes) * 100);
-          if (pct !== lastPct && (pct % 5 === 0 || pct === 100)) {
-            const bar = '\u2588'.repeat(Math.floor(pct / 5)) + '\u2591'.repeat(20 - Math.floor(pct / 5));
-            const elapsed = (Date.now() - startTime) / 1000;
-            const speed = elapsed > 0 ? (downloaded / 1024 / 1024 / elapsed).toFixed(1) : '?';
-            process.stdout.write('\r   [' + bar + '] ' + pct + '% (' + (downloaded / 1024 / 1024).toFixed(1) + '/' + (totalBytes / 1024 / 1024).toFixed(1) + ' MB, ' + speed + ' MB/s)');
-            lastPct = pct;
-          }
-        } else {
-          // No content-length — show bytes downloaded
-          if (downloaded % (5 * 1024 * 1024) < 65536) {
-            process.stdout.write('\r   Downloaded ' + (downloaded / 1024 / 1024).toFixed(1) + ' MB...');
-          }
+    // Use ReadableStream reader (works in pkg where .on('data') doesn't)
+    const reader = dlRes.body.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      writer.write(value);
+      downloaded += value.length;
+      if (totalBytes > 0) {
+        const pct = Math.floor((downloaded / totalBytes) * 100);
+        if (pct !== lastPct && (pct % 5 === 0 || pct === 100)) {
+          const bar = '\u2588'.repeat(Math.floor(pct / 5)) + '\u2591'.repeat(20 - Math.floor(pct / 5));
+          const elapsed = (Date.now() - startTime) / 1000;
+          const speed = elapsed > 0 ? (downloaded / 1024 / 1024 / elapsed).toFixed(1) : '?';
+          process.stdout.write('\r   [' + bar + '] ' + pct + '% (' + (downloaded / 1024 / 1024).toFixed(1) + '/' + (totalBytes / 1024 / 1024).toFixed(1) + ' MB, ' + speed + ' MB/s)');
+          lastPct = pct;
         }
-      });
-      dlRes.body.pipe(writer);
-      writer.on('finish', () => { process.stdout.write('\n'); resolve(); });
-      writer.on('error', (err) => {
-        process.stdout.write('\n');
-        reject(err);
-      });
+      } else {
+        if (downloaded % (5 * 1024 * 1024) < 65536) {
+          process.stdout.write('\r   Downloaded ' + (downloaded / 1024 / 1024).toFixed(1) + ' MB...');
+        }
+      }
+    }
+    await new Promise((resolve, reject) => {
+      writer.end();
+      writer.on('finish', resolve);
+      writer.on('error', reject);
     });
+    process.stdout.write('\n');
 
     console.log('📦 Installing update...');
     const backupPath = process.execPath + '.old';
