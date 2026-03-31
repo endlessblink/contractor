@@ -2993,6 +2993,23 @@ async function launchBrowser() {
   return puppeteer.launch(opts);
 }
 
+// ─── Reset flag (for tutorial recording / fresh start) ────────────────────────
+if (process.argv.includes('--reset')) {
+  console.log('🔄 Resetting all data to fresh state...');
+  try {
+    rmSync(join(DATA_DIR, 'clients.json'), { force: true });
+    rmSync(join(DATA_DIR, 'user-profile.json'), { force: true });
+    rmSync(join(PROJECTS_DIR), { recursive: true, force: true });
+    mkdirSync(PROJECTS_DIR, { recursive: true });
+    writeFileSync(join(PROJECTS_DIR, '_index.json'), JSON.stringify({ projects: [], activeProjectId: null }));
+    // Reset clause DB to sample
+    const samplePath = join(KNOWLEDGE_DIR, 'clauses-db.sample.json');
+    const dbPath = join(KNOWLEDGE_DIR, 'clauses-db.json');
+    if (existsSync(samplePath)) { copyFileSync(samplePath, dbPath); }
+    console.log('✅ Data reset complete. Starting fresh...\n');
+  } catch (err) { console.error('Reset error:', err.message); }
+}
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, async () => {
