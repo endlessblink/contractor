@@ -20,7 +20,7 @@ echo   Downloading Doc Maker (about 180 MB)...
 echo   Please wait...
 echo.
 
-powershell -Command "$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile('%DOWNLOAD_URL%','%INSTALL_DIR%\%EXE_NAME%')"
+powershell -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%DOWNLOAD_URL%' -OutFile '%INSTALL_DIR%\%EXE_NAME%' -UseBasicParsing"
 
 if not exist "%INSTALL_DIR%\%EXE_NAME%" (
     echo.
