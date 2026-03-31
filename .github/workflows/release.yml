@@ -32,6 +32,59 @@ jobs:
           node-version: '20'
       - run: npm ci
       - run: node build.mjs --target ${{ matrix.target }}
+
+      # Smoke test: start the executable and verify it responds
+      - name: Smoke test (Linux)
+        if: matrix.target == 'linux'
+        run: |
+          chmod +x dist/executables/contractor-linux-x64
+          dist/executables/contractor-linux-x64 &
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:6831/ || echo "000")
+          kill %1 2>/dev/null || true
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Smoke test passed (HTTP $STATUS)"
+          else
+            echo "❌ Smoke test FAILED (HTTP $STATUS)"
+            exit 1
+          fi
+
+      - name: Smoke test (macOS)
+        if: matrix.target == 'mac'
+        run: |
+          chmod +x dist/executables/contractor-macos-arm64
+          dist/executables/contractor-macos-arm64 &
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:6831/ || echo "000")
+          kill %1 2>/dev/null || true
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Smoke test passed (HTTP $STATUS)"
+          else
+            echo "❌ Smoke test FAILED (HTTP $STATUS)"
+            exit 1
+          fi
+
+      - name: Smoke test (Windows)
+        if: matrix.target == 'win'
+        shell: pwsh
+        run: |
+          Start-Process -FilePath "dist\executables\contractor-win-x64.exe" -WindowStyle Hidden
+          Start-Sleep -Seconds 8
+          try {
+            $response = Invoke-WebRequest -Uri "http://localhost:6831/" -UseBasicParsing -TimeoutSec 10
+            if ($response.StatusCode -eq 200) {
+              Write-Host "✅ Smoke test passed (HTTP 200)"
+            } else {
+              Write-Host "❌ Smoke test FAILED (HTTP $($response.StatusCode))"
+              exit 1
+            }
+          } catch {
+            Write-Host "❌ Smoke test FAILED: $_"
+            exit 1
+          } finally {
+            Stop-Process -Name "contractor-win-x64" -Force -ErrorAction SilentlyContinue
+          }
+
       - uses: softprops/action-gh-release@v1
         with:
           files: dist/executables/contractor-${{ matrix.suffix }}
