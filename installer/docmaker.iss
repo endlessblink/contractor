@@ -10,7 +10,7 @@ OutputBaseFilename=DocMaker-Setup
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=lowest
-SetupIconFile=..\assets\logo.png
+; SetupIconFile requires .ico format — using default for now
 WizardStyle=modern
 UninstallDisplayIcon={app}\contractor-win-x64.exe
 
