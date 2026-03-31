@@ -2,7 +2,7 @@ import { createWriteStream, existsSync, renameSync, chmodSync, unlinkSync } from
 import { spawn } from 'child_process';
 
 const GITHUB_REPO = 'endlessblink/contractor';
-export const CURRENT_VERSION = '1.1.4';
+export const CURRENT_VERSION = '1.2.0';
 
 function getPlatformSuffix() {
   const { platform, arch } = process;

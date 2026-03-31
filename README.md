@@ -1,4 +1,4 @@
-# Doc Maker
+# Contractor
 
 AI-powered document generator for freelancers. Create professional quotes, contracts, and work orders in minutes — with Hebrew RTL support built in.
 
@@ -7,7 +7,7 @@ AI-powered document generator for freelancers. Create professional quotes, contr
 
 ## Overview
 
-Doc Maker is a self-hosted application for generating professional business documents. The AI chat assistant helps you draft quotes (הצעת מחיר), contracts (חוזה עבודה), and work orders (הזמנת עבודה) in both Hebrew and English.
+Contractor is a self-hosted application for generating professional business documents. The AI chat assistant helps you draft quotes (הצעת מחיר), contracts (חוזה עבודה), and work orders (הזמנת עבודה) in both Hebrew and English.
 
 **Key capabilities:**
 - Generate DOCX documents with professional formatting
@@ -139,7 +139,7 @@ npm test                  # Run test suite (if applicable)
 
 ## Building an Executable
 
-Doc Maker can be packaged as a standalone executable for distribution:
+Contractor can be packaged as a standalone executable for distribution:
 
 ```bash
 npm run build             # All platforms (Linux, macOS, Windows)
