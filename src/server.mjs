@@ -2237,11 +2237,16 @@ app.post('/api/learn-references', async (req, res) => {
       scanDirs.push({ path: join(REFERENCES_DIR, sub), label: sub });
     }
 
+    console.log('[learn-references] REFERENCES_DIR:', REFERENCES_DIR);
+    console.log('[learn-references] Scanning locations:', scanDirs.map(d => d.path));
+
     for (const { path: dirPath, label } of scanDirs) {
       let files;
       try {
         files = readdirSync(dirPath);
-      } catch {
+        console.log('[learn-references] Found', files.length, 'files in', dirPath);
+      } catch (e) {
+        console.log('[learn-references] Cannot read', dirPath, ':', e.code);
         continue;
       }
 
@@ -2983,10 +2988,14 @@ app.listen(PORT, async () => {
   const aiConfig = getProviderConfig();
   console.log(`AI Provider: ${aiConfig.provider} (${aiConfig.model}) — ${aiConfig.configured ? 'configured' : 'NOT configured'}`);
   if (IS_PKG || process.env.OFFICE_WORK_OPEN === '1') {
-    try {
-      const { default: open } = await import('open');
-      setTimeout(() => open(`http://localhost:${PORT}`), 800);
-    } catch { /* open not available */ }
+    setTimeout(() => {
+      const url = `http://localhost:${PORT}`;
+      if (process.platform === 'win32') {
+        exec(`start "" "${url}"`, { shell: true });
+      } else {
+        import('open').then(m => m.default(url)).catch(() => {});
+      }
+    }, 800);
   }
   // Version check — no auto-update, just check and report
   setTimeout(async () => {

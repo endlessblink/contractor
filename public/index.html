@@ -9626,10 +9626,8 @@
           if (headerVerEl && status.version) headerVerEl.textContent = 'v' + status.version;
           var bannerEl = document.getElementById('settingsUpdateBanner');
           var textEl = document.getElementById('settingsUpdateText');
-          var linkEl = document.getElementById('settingsUpdateLink');
           if (bannerEl && status.update) {
             textEl.textContent = 'עדכון זמין: v' + status.update.current + ' → v' + status.update.latest;
-            linkEl.href = status.update.url;
             bannerEl.style.display = 'block';
           } else if (bannerEl) {
             bannerEl.style.display = 'none';
