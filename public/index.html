@@ -5240,14 +5240,19 @@
           <p style="font-size:0.75rem;color:var(--text-muted);line-height:1.6;margin:0 0 16px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;">
             <strong style="color:var(--text-secondary);">הבהרה משפטית:</strong> כלי זה אינו מהווה תחליף לייעוץ משפטי או חשבונאי מקצועי. המסמכים שנוצרים הם תבניות בלבד והמשתמש אחראי לוודא שהם מותאמים לצרכיו ותואמים את הדין החל. היוצר אינו נושא באחריות משפטית כלשהי בגין שימוש במסמכים שנוצרו באמצעות כלי זה.
           </p>
-          <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 8px;">v1.2.0 — Noam Naumovsky Productions</p>
+          <p id="settingsVersion" style="font-size:0.78rem;color:var(--text-muted);margin:0 0 8px;">Noam Naumovsky Productions</p>
+          <div id="settingsUpdateBanner" style="display:none;margin-bottom:12px;padding:10px 14px;border:1px solid var(--accent-border);border-radius:8px;font-size:0.78rem;">
+            <span style="color:var(--accent-text);font-weight:600;" id="settingsUpdateText"></span>
+            <a id="settingsUpdateLink" href="#" target="_blank" style="color:var(--accent-text);margin-right:8px;text-decoration:underline;">הורד עדכון</a>
+          </div>
           <div style="display:flex;gap:14px;font-size:0.78rem;margin-bottom:16px;">
             <a href="https://github.com/endlessblink" target="_blank" style="color:var(--accent-text);text-decoration:none;">GitHub</a>
             <a href="https://www.linkedin.com/in/noamnaumovsky/" target="_blank" style="color:var(--accent-text);text-decoration:none;">LinkedIn</a>
             <a href="https://x.com/NNaumovsky" target="_blank" style="color:var(--accent-text);text-decoration:none;">X / Twitter</a>
           </div>
-          <div style="padding-top:14px;border-top:1px solid var(--border);display:flex;gap:10px;">
+          <div style="padding-top:14px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;">
             <button onclick="fetch('/api/user-profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupComplete:false})}).then(function(){var s=document.getElementById('settingsOverlay');if(s)s.style.display='none';showOnboarding();})" style="padding:7px 16px;border-radius:7px;font-size:0.78rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);">הצג אשף הגדרה</button>
+            <button onclick="window.open('https://github.com/endlessblink/contractor/releases/latest','_blank')" style="padding:7px 16px;border-radius:7px;font-size:0.78rem;font-family:inherit;cursor:pointer;border:1px solid var(--accent-border);background:transparent;color:var(--accent-text);">בדוק עדכונים</button>
             <button onclick="if(confirm('למחוק את כל הנתונים ולהתחיל מחדש?')){fetch('/api/user-profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupComplete:false})});fetch('/api/demo-data',{method:'DELETE'});localStorage.clear();location.reload();}" style="padding:7px 16px;border-radius:7px;font-size:0.78rem;font-family:inherit;cursor:pointer;border:1px solid rgba(248,113,113,0.3);background:transparent;color:#f87171;">איפוס נתונים</button>
           </div>
         </div>
@@ -9529,6 +9534,25 @@
       } catch {}
       populateForm();
       settingsOverlay.style.display = 'flex';
+      // Load version + update info
+      try {
+        const statusRes = await fetch('/api/setup-status');
+        if (statusRes.ok) {
+          const status = await statusRes.json();
+          var verEl = document.getElementById('settingsVersion');
+          if (verEl && status.version) verEl.textContent = 'v' + status.version + ' — Noam Naumovsky Productions';
+          var bannerEl = document.getElementById('settingsUpdateBanner');
+          var textEl = document.getElementById('settingsUpdateText');
+          var linkEl = document.getElementById('settingsUpdateLink');
+          if (bannerEl && status.update) {
+            textEl.textContent = 'עדכון זמין: v' + status.update.current + ' → v' + status.update.latest;
+            linkEl.href = status.update.url;
+            bannerEl.style.display = 'block';
+          } else if (bannerEl) {
+            bannerEl.style.display = 'none';
+          }
+        }
+      } catch {}
     }
 
     function closeSettings() {
@@ -9615,7 +9639,7 @@
 
     // ── Onboarding Wizard Logic ──
     var _obStep = 1;
-    function showOnboarding() {
+    window.showOnboarding = function() {
       var el = document.getElementById('onboardingOverlay');
       if (el) { el.style.display = 'flex'; updateObStep(1); }
     }
