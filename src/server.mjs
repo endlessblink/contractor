@@ -156,7 +156,8 @@ function loadUserProfile() {
 }
 
 let userProfile = loadUserProfile();
-console.log('Profile loaded: setupComplete=' + userProfile.setupComplete + ', name=' + (userProfile.name || '(empty)'));
+console.log('Profile loaded from: ' + USER_PROFILE_PATH);
+console.log('Profile loaded: setupComplete=' + userProfile.setupComplete + ', name=' + (userProfile.name || '(empty)') + ', apiKey=' + (userProfile.aiApiKey ? '***set***' : '(empty)'));
 
 // ─── Project helper functions ─────────────────────────────────────────────────
 

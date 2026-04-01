@@ -2,7 +2,7 @@ import { createWriteStream, existsSync, renameSync, chmodSync, unlinkSync } from
 import { spawn } from 'child_process';
 
 const GITHUB_REPO = 'endlessblink/contractor';
-export const CURRENT_VERSION = '1.4.2';
+export const CURRENT_VERSION = '1.4.3';
 
 function getPlatformSuffix() {
   const { platform, arch } = process;
@@ -81,7 +81,7 @@ export async function downloadAndInstall(asset) {
   console.log('✅ Update installed! Restarting...');
   setTimeout(() => {
     if (process.platform === 'win32') {
-      spawn('cmd', ['/c', 'timeout', '/t', '2', '/nobreak', '>', 'nul', '&&', 'start', '""', process.execPath], { detached: true, stdio: 'ignore', shell: true });
+      spawn('cmd', ['/c', 'ping -n 3 127.0.0.1 >nul && start "" "' + process.execPath + '"'], { detached: true, stdio: 'ignore' });
     } else {
       spawn(process.execPath, [], { detached: true, stdio: 'ignore' });
     }
