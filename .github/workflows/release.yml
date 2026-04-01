@@ -86,6 +86,7 @@ jobs:
           }
 
       - uses: softprops/action-gh-release@v1
+        if: matrix.target != 'win'
         with:
           files: dist/executables/contractor-${{ matrix.suffix }}
         env:
