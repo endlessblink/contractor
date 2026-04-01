@@ -9798,6 +9798,8 @@
       settingsOverlay.style.display = 'none';
     }
 
+    // Expose openSettings globally so rail button can call it
+    window.openSettings = openSettings;
     if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
     settingsCloseBtn.addEventListener('click', closeSettings);
     profileCancelBtn.addEventListener('click', closeSettings);
@@ -10978,8 +10980,8 @@
           return;
         }
         if (view === 'settings') {
-          var settingsOverlay = document.getElementById('settingsOverlay');
-          if (settingsOverlay) settingsOverlay.style.display = 'flex';
+          if (window.openSettings) window.openSettings();
+          else { var settingsOverlay = document.getElementById('settingsOverlay'); if (settingsOverlay) settingsOverlay.style.display = 'flex'; }
           return;
         }
         if (view === 'document') {
