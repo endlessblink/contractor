@@ -30,9 +30,9 @@ import { CURRENT_VERSION, checkForUpdate, checkUpdateAvailable, downloadAndInsta
 if (IS_PKG && process.platform === 'win32' && !process.argv.includes('--no-self-install')) {
   // Check both possible install locations: Inno Setup (%APPDATA%\Contractor) and data dir (~\.contractor)
   const appDataDir = process.env.APPDATA ? join(process.env.APPDATA, 'Contractor') : null;
-  const homeDir = join(homedir(), '.contractor');
+  const homeDataDir = join(homedir(), '.contractor');
   // Prefer the Inno Setup location if it exists, otherwise use home dir
-  const installDir = (appDataDir && existsSync(appDataDir)) ? appDataDir : homeDir;
+  const installDir = (appDataDir && existsSync(join(appDataDir, 'contractor-win-x64.exe'))) ? appDataDir : homeDataDir;
   const installedExe = join(installDir, 'contractor-win-x64.exe');
   const currentExe = process.execPath;
 
@@ -40,10 +40,10 @@ if (IS_PKG && process.platform === 'win32' && !process.argv.includes('--no-self-
   if (!currentExe.startsWith(installDir)) {
     mkdirSync(installDir, { recursive: true });
     try {
-      // Kill any running instance first
-      try { execSync('taskkill /f /im contractor-win-x64.exe', { stdio: 'ignore' }); } catch {}
+      // Kill any OTHER running instance (exclude our own PID)
+      try { execSync('wmic process where "name=\'contractor-win-x64.exe\' and processid!=' + process.pid + '" call terminate', { stdio: 'ignore', shell: true }); } catch {}
       // Brief sync pause for file handles to release
-      execSync('timeout /t 2 /nobreak >nul 2>&1', { stdio: 'ignore' });
+      execSync('ping -n 3 127.0.0.1 >nul', { stdio: 'ignore', shell: true });
       // Copy new exe to install dir
       copyFileSync(currentExe, installedExe);
       console.log('✅ Updated Contractor in ' + installDir);
