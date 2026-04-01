@@ -1,6 +1,6 @@
 [Setup]
 AppName=Contractor
-AppVersion=1.2.0
+AppVersion=1.2.3
 AppPublisher=Noam Naumovsky Productions
 AppPublisherURL=https://github.com/endlessblink/contractor
 DefaultDirName={userappdata}\Contractor
@@ -10,9 +10,10 @@ OutputBaseFilename=Contractor-Setup
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=lowest
-; SetupIconFile requires .ico format — using default for now
 WizardStyle=modern
 UninstallDisplayIcon={app}\contractor-win-x64.exe
+CloseApplications=force
+CloseApplicationsFilter=contractor-win-x64.exe
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -35,7 +36,15 @@ Filename: "wscript.exe"; Parameters: """{app}\Contractor.vbs"""; Description: "L
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   VBSContent: String;
+  ResultCode: Integer;
 begin
+  if CurStep = ssInstall then
+  begin
+    // Kill running instance before replacing the exe
+    Exec('taskkill', '/f /im contractor-win-x64.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec('taskkill', '/f /im wscript.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Sleep(1000);
+  end;
   if CurStep = ssPostInstall then
   begin
     VBSContent := 'Set WshShell = CreateObject("WScript.Shell")' + #13#10 +

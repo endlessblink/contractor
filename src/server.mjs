@@ -24,7 +24,7 @@ import { exec, execSync } from 'child_process';
 import { createRequire } from 'module';
 import { chatCompletion, chatCompletionStream, parseSSEStream, getProviderConfig } from './ai-provider.mjs';
 import { IS_PKG, USER_DATA_DIR, APP_DIR, initUserDataDir, resolveData, resolveAsset } from './app-paths.mjs';
-import { checkForUpdate } from './updater.mjs';
+import { CURRENT_VERSION } from './updater.mjs';
 const require = createRequire(import.meta.url);
 let pdfParser = null;
 function getPdfParser() {
@@ -695,6 +695,8 @@ app.get('/api/setup-status', (_req, res) => {
     setupComplete: userProfile.setupComplete,
     hasProfile: !!(userProfile.name || userProfile.nameEn),
     hasLogo: !!userProfile.logoPath,
+    version: CURRENT_VERSION,
+    update: global._updateAvailable || null,
   });
 });
 
@@ -2953,5 +2955,21 @@ app.listen(PORT, async () => {
       setTimeout(() => open(`http://localhost:${PORT}`), 800);
     } catch { /* open not available */ }
   }
-  setTimeout(() => checkForUpdate(true), 3000);
+  // Version check — no auto-update, just check and report
+  setTimeout(async () => {
+    try {
+      const res = await fetch('https://api.github.com/repos/endlessblink/contractor/releases/latest', { headers: { 'User-Agent': 'contractor' }, signal: AbortSignal.timeout(10000) });
+      if (res.ok) {
+        const release = await res.json();
+        const latest = release.tag_name?.replace(/^v/, '');
+        if (latest && latest !== CURRENT_VERSION) {
+          console.log('\n🆕 Update available: v' + CURRENT_VERSION + ' → v' + latest);
+          console.log('   Download from: https://github.com/endlessblink/contractor/releases/tag/v' + latest);
+          global._updateAvailable = { current: CURRENT_VERSION, latest, url: 'https://github.com/endlessblink/contractor/releases/tag/v' + latest };
+        } else {
+          console.log('✓ Up to date (v' + CURRENT_VERSION + ')');
+        }
+      }
+    } catch {}
+  }, 3000);
 });
