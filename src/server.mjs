@@ -155,6 +155,7 @@ function loadUserProfile() {
 }
 
 let userProfile = loadUserProfile();
+console.log('Profile loaded: setupComplete=' + userProfile.setupComplete + ', name=' + (userProfile.name || '(empty)'));
 
 // ─── Project helper functions ─────────────────────────────────────────────────
 
