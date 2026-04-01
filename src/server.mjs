@@ -3006,6 +3006,9 @@ if (process.argv.includes('--reset')) {
     const samplePath = join(KNOWLEDGE_DIR, 'clauses-db.sample.json');
     const dbPath = join(KNOWLEDGE_DIR, 'clauses-db.json');
     if (existsSync(samplePath)) { copyFileSync(samplePath, dbPath); }
+    // Reload in-memory state
+    userProfile = loadUserProfile();
+    try { clausesDb = JSON.parse(readFileSync(dbPath, 'utf8')); } catch { clausesDb = { clauses: {} }; }
     console.log('✅ Data reset complete. Starting fresh...\n');
   } catch (err) { console.error('Reset error:', err.message); }
 }
