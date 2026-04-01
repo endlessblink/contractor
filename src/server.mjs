@@ -754,38 +754,36 @@ app.post('/api/references/upload', upload.array('files', 20), (req, res) => {
   }
 });
 
-// List ALL reference documents (both old and new locations)
+// List ALL reference documents recursively
 app.get('/api/references', (_req, res) => {
   try {
     const results = [];
 
-    // Scan data/references/ (new location - user uploads)
-    const newRefsDir = join(DATA_DIR, 'references');
-    try {
-      for (const name of readdirSync(newRefsDir)) {
-        const ext = name.split('.').pop().toLowerCase();
-        if (!['docx', 'doc', 'pdf'].includes(ext)) continue;
-        const stat = statSync(join(newRefsDir, name));
-        results.push({ name, source: 'uploaded', size: stat.size, modified: stat.mtime.toISOString() });
-      }
-    } catch { /* empty */ }
-
-    // Scan old references dir (legacy location)
-    const oldRefsDir = join(PROJECT_DIR, 'document refrences - quotes');
-    if (existsSync(oldRefsDir)) {
-      const subDirs = ['2025', 'Jan-Feb 2026'];
-      for (const sub of subDirs) {
-        const subPath = join(oldRefsDir, sub);
+    function scanDir(dir, source, relPath) {
+      let entries;
+      try { entries = readdirSync(dir); } catch { return; }
+      for (const name of entries) {
+        const fullPath = join(dir, name);
         try {
-          for (const name of readdirSync(subPath)) {
-            const ext = name.split('.').pop().toLowerCase();
-            if (!['docx', 'doc', 'pdf'].includes(ext)) continue;
-            const stat = statSync(join(subPath, name));
-            results.push({ name, folder: sub, source: 'legacy', size: stat.size, modified: stat.mtime.toISOString() });
+          const s = statSync(fullPath);
+          if (s.isDirectory()) {
+            scanDir(fullPath, source, relPath ? `${relPath}/${name}` : name);
+            continue;
           }
-        } catch { /* empty */ }
+          const ext = name.split('.').pop().toLowerCase();
+          if (!['docx', 'doc', 'pdf'].includes(ext)) continue;
+          results.push({
+            name,
+            folder: relPath || undefined,
+            source,
+            size: s.size,
+            modified: s.mtime.toISOString(),
+          });
+        } catch { /* skip unreadable */ }
       }
     }
+
+    scanDir(REFERENCES_DIR, 'uploaded', '');
 
     results.sort((a, b) => new Date(b.modified) - new Date(a.modified));
     res.json({ references: results });
@@ -2227,64 +2225,57 @@ app.get('/api/download/:folder/:filename', (req, res) => {
 
 app.post('/api/learn-references', async (req, res) => {
   try {
-    // Scan reference documents — root dir + known subdirs
+    // Scan ALL reference documents recursively — no hardcoded paths
     const extractedDocs = [];
     const seenNames = new Set();
 
-    // Collect all scan locations: root dir first, then subdirs
-    const scanDirs = [{ path: REFERENCES_DIR, label: '' }];
-    for (const sub of ['2025', 'Jan-Feb 2026']) {
-      scanDirs.push({ path: join(REFERENCES_DIR, sub), label: sub });
+    function collectFiles(dir, relPath) {
+      let entries;
+      try { entries = readdirSync(dir); } catch { return; }
+      for (const name of entries) {
+        const fullPath = join(dir, name);
+        const rel = relPath ? `${relPath}/${name}` : name;
+        try {
+          if (statSync(fullPath).isDirectory()) {
+            collectFiles(fullPath, rel);
+            continue;
+          }
+        } catch { continue; }
+        const ext = name.split('.').pop().toLowerCase();
+        if (!['docx', 'pdf'].includes(ext)) continue;
+        const baseName = name.replace(/\.(docx|pdf)$/i, '');
+        if (seenNames.has(baseName)) continue;
+        // Prefer .docx over .pdf — check if docx sibling exists
+        if (ext === 'pdf' && entries.includes(baseName + '.docx')) continue;
+        seenNames.add(baseName);
+        collectedFiles.push({ fullPath, displayName: rel });
+      }
     }
 
+    const collectedFiles = [];
+    collectFiles(REFERENCES_DIR, '');
     console.log('[learn-references] REFERENCES_DIR:', REFERENCES_DIR);
-    console.log('[learn-references] Scanning locations:', scanDirs.map(d => d.path));
+    console.log('[learn-references] Found', collectedFiles.length, 'documents recursively');
 
-    for (const { path: dirPath, label } of scanDirs) {
-      let files;
+    for (const { fullPath, displayName } of collectedFiles) {
+      const ext = displayName.split('.').pop().toLowerCase();
+      let text = '';
       try {
-        files = readdirSync(dirPath);
-        console.log('[learn-references] Found', files.length, 'files in', dirPath);
-      } catch (e) {
-        console.log('[learn-references] Cannot read', dirPath, ':', e.code);
+        if (ext === 'docx') {
+          const result = await mammoth.extractRawText({ path: fullPath });
+          text = result.value;
+        } else if (ext === 'pdf') {
+          const buffer = readFileSync(fullPath);
+          const pdfData = await getPdfParser().parse(buffer);
+          text = pdfData.text;
+        }
+      } catch (err) {
+        console.error(`Error extracting text from ${displayName}:`, err.message);
         continue;
       }
 
-      for (const name of files) {
-        const ext = name.split('.').pop().toLowerCase();
-        if (!['docx', 'pdf'].includes(ext)) continue;
-
-        // Skip duplicates: prefer .docx over .pdf
-        const baseName = name.replace(/\.(docx|pdf)$/i, '');
-        if (seenNames.has(baseName)) continue;
-
-        if (ext === 'pdf') {
-          const docxVersion = baseName + '.docx';
-          if (files.includes(docxVersion)) continue;
-        }
-
-        seenNames.add(baseName);
-
-        const filePath = join(dirPath, name);
-        const displayName = label ? `${label}/${name}` : name;
-        let text = '';
-        try {
-          if (ext === 'docx') {
-            const result = await mammoth.extractRawText({ path: filePath });
-            text = result.value;
-          } else if (ext === 'pdf') {
-            const buffer = readFileSync(filePath);
-            const pdfData = await getPdfParser().parse(buffer);
-            text = pdfData.text;
-          }
-        } catch (err) {
-          console.error(`Error extracting text from ${displayName}:`, err.message);
-          continue;
-        }
-
-        if (text && text.trim().length > 10) {
-          extractedDocs.push({ name: displayName, text: text.slice(0, 15000) });
-        }
+      if (text && text.trim().length > 10) {
+        extractedDocs.push({ name: displayName, text: text.slice(0, 15000) });
       }
     }
 
