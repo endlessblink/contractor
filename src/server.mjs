@@ -24,7 +24,7 @@ import { exec, execSync } from 'child_process';
 import { createRequire } from 'module';
 import { chatCompletion, chatCompletionStream, parseSSEStream, getProviderConfig } from './ai-provider.mjs';
 import { IS_PKG, USER_DATA_DIR, APP_DIR, initUserDataDir, resolveData, resolveAsset } from './app-paths.mjs';
-import { CURRENT_VERSION } from './updater.mjs';
+import { CURRENT_VERSION, checkForUpdate, checkUpdateAvailable, downloadAndInstall } from './updater.mjs';
 const require = createRequire(import.meta.url);
 let pdfParser = null;
 function getPdfParser() {
@@ -698,6 +698,34 @@ app.get('/api/setup-status', (_req, res) => {
     version: CURRENT_VERSION,
     update: global._updateAvailable || null,
   });
+});
+
+// Check for updates (returns info without downloading)
+app.post('/api/check-update', async (_req, res) => {
+  try {
+    const info = await checkUpdateAvailable();
+    if (!info) return res.json({ upToDate: true, version: CURRENT_VERSION });
+    global._updateAvailable = info;
+    res.json({ upToDate: false, ...info });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Download and install update (replaces exe + restarts)
+app.post('/api/install-update', async (_req, res) => {
+  try {
+    const info = global._updateAvailable || await checkUpdateAvailable();
+    if (!info) return res.json({ upToDate: true, version: CURRENT_VERSION });
+    if (!info.asset) return res.status(400).json({ error: 'No binary available for this platform', url: info.url });
+    // Respond immediately — the download + restart happens async
+    res.json({ status: 'downloading', latest: info.latest });
+    await downloadAndInstall(info.asset);
+  } catch (err) {
+    // If headers already sent, just log
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+    else console.error('Update install failed:', err.message);
+  }
 });
 
 // ─── Reference document management endpoints ─────────────────────────────────
@@ -2198,16 +2226,20 @@ app.get('/api/download/:folder/:filename', (req, res) => {
 
 app.post('/api/learn-references', async (req, res) => {
   try {
-    // Scan reference documents
-    const subDirs = ['2025', 'Jan-Feb 2026'];
+    // Scan reference documents — root dir + known subdirs
     const extractedDocs = [];
     const seenNames = new Set();
 
-    for (const sub of subDirs) {
-      const subPath = join(REFERENCES_DIR, sub);
+    // Collect all scan locations: root dir first, then subdirs
+    const scanDirs = [{ path: REFERENCES_DIR, label: '' }];
+    for (const sub of ['2025', 'Jan-Feb 2026']) {
+      scanDirs.push({ path: join(REFERENCES_DIR, sub), label: sub });
+    }
+
+    for (const { path: dirPath, label } of scanDirs) {
       let files;
       try {
-        files = readdirSync(subPath);
+        files = readdirSync(dirPath);
       } catch {
         continue;
       }
@@ -2220,15 +2252,15 @@ app.post('/api/learn-references', async (req, res) => {
         const baseName = name.replace(/\.(docx|pdf)$/i, '');
         if (seenNames.has(baseName)) continue;
 
-        // Check if .docx version exists when we encounter a .pdf
         if (ext === 'pdf') {
           const docxVersion = baseName + '.docx';
-          if (files.includes(docxVersion)) continue; // skip pdf, docx will be processed
+          if (files.includes(docxVersion)) continue;
         }
 
         seenNames.add(baseName);
 
-        const filePath = join(subPath, name);
+        const filePath = join(dirPath, name);
+        const displayName = label ? `${label}/${name}` : name;
         let text = '';
         try {
           if (ext === 'docx') {
@@ -2240,12 +2272,12 @@ app.post('/api/learn-references', async (req, res) => {
             text = pdfData.text;
           }
         } catch (err) {
-          console.error(`Error extracting text from ${sub}/${name}:`, err.message);
+          console.error(`Error extracting text from ${displayName}:`, err.message);
           continue;
         }
 
         if (text && text.trim().length > 10) {
-          extractedDocs.push({ name: `${sub}/${name}`, text: text.slice(0, 15000) });
+          extractedDocs.push({ name: displayName, text: text.slice(0, 15000) });
         }
       }
     }
