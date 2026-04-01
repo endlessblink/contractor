@@ -319,12 +319,13 @@
     }
     .settings-modal {
       background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
-      width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto;
+      width: 100%; max-width: 520px; max-height: 85vh; display: flex; flex-direction: column;
       box-shadow: 0 24px 60px rgba(0,0,0,0.35); animation: slideUp 0.2s ease-out;
+      overflow: hidden;
     }
     .settings-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 20px 20px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 20px 20px 0; flex-shrink: 0;
     }
     .settings-header h2 { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
     .settings-close {
@@ -333,22 +334,127 @@
       border-radius: 6px; transition: color 0.15s, background 0.15s;
     }
     .settings-close:hover { color: var(--text-primary); background: var(--elevated-bg); }
-    .settings-body { padding: 20px; }
+
+    /* Tab navigation */
+    .settings-tabs {
+      display: flex; gap: 0; padding: 0 20px; flex-shrink: 0;
+      border-bottom: 1px solid var(--border); margin-top: 16px;
+    }
+    .settings-tab-btn {
+      font-family: 'Heebo', sans-serif; font-size: 0.82rem; font-weight: 600;
+      color: var(--text-muted); background: none; border: none;
+      padding: 10px 16px 12px; cursor: pointer; position: relative;
+      transition: color 0.2s; white-space: nowrap;
+    }
+    .settings-tab-btn::after {
+      content: ''; position: absolute; bottom: -1px; right: 0; left: 0;
+      height: 2px; background: transparent; border-radius: 2px 2px 0 0;
+      transition: background 0.2s;
+    }
+    .settings-tab-btn:hover { color: var(--text-secondary); }
+    .settings-tab-btn.active { color: var(--accent-text); }
+    .settings-tab-btn.active::after { background: var(--accent); }
+
+    /* Tab panels */
+    .settings-body { padding: 20px; overflow-y: auto; flex: 1; min-height: 0; }
+    .settings-tab-panel { display: none; }
+    .settings-tab-panel.active { display: block; }
+
     .settings-form-group { margin-bottom: 14px; }
     .settings-form-group label {
       display: block; margin-bottom: 5px; font-size: 0.82rem;
       font-weight: 600; color: var(--text-secondary); letter-spacing: 0.02em;
     }
-    .settings-form-group input {
+    .settings-form-group input,
+    .settings-form-group select {
       width: 100%; padding: 9px 12px; border: 1.5px solid var(--input-border);
       border-radius: 8px; background: var(--input-bg); color: var(--text-primary);
       font-size: 0.9rem; font-family: 'Heebo', sans-serif; outline: none;
       transition: border-color 0.15s, background-color 0.3s; box-sizing: border-box;
     }
-    .settings-form-group input:focus {
+    .settings-form-group input:focus,
+    .settings-form-group select:focus {
       border-color: var(--input-focus-border); background: var(--input-bg-focus);
       box-shadow: 0 0 0 3px var(--accent-subtle);
     }
+    .settings-form-group select { appearance: none; cursor: pointer; }
+
+    /* Logo upload area */
+    .settings-logo-upload {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .settings-logo-upload input[type="file"] {
+      flex: 1; padding: 7px 10px; font-size: 0.8rem;
+    }
+
+    /* AI section sub-heading */
+    .settings-ai-section-title {
+      font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+
+    /* Test connection button */
+    .settings-test-btn {
+      font-family: 'Heebo', sans-serif; padding: 8px 16px;
+      background: var(--accent-subtle); border: 1px solid var(--accent-border);
+      border-radius: 8px; color: var(--accent-text); font-size: 0.8rem;
+      cursor: pointer; transition: background 0.2s, border-color 0.2s;
+    }
+    .settings-test-btn:hover {
+      background: rgba(0, 210, 180, 0.14); border-color: var(--accent);
+    }
+
+    /* About section */
+    .settings-about-title {
+      font-size: 1.05rem; font-weight: 700; color: var(--text-primary);
+      margin: 0 0 4px;
+    }
+    .settings-about-version {
+      font-size: 0.78rem; color: var(--text-muted); margin: 0 0 16px;
+    }
+    .settings-about-desc {
+      font-size: 0.82rem; color: var(--text-secondary); line-height: 1.65; margin: 0 0 16px;
+    }
+    .settings-legal {
+      font-size: 0.75rem; color: var(--text-muted); line-height: 1.6;
+      margin: 0 0 16px; padding: 10px 14px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--elevated-bg);
+    }
+    .settings-legal strong { color: var(--text-secondary); }
+    .settings-social-links {
+      display: flex; gap: 14px; font-size: 0.8rem; margin-bottom: 20px;
+    }
+    .settings-social-links a {
+      color: var(--accent-text); text-decoration: none; transition: opacity 0.15s;
+    }
+    .settings-social-links a:hover { opacity: 0.8; }
+    .settings-about-actions {
+      padding-top: 14px; border-top: 1px solid var(--border);
+      display: flex; flex-wrap: wrap; gap: 10px;
+    }
+    .settings-about-actions button {
+      font-family: 'Heebo', sans-serif; padding: 7px 16px; border-radius: 7px;
+      font-size: 0.78rem; cursor: pointer; border: 1px solid var(--border);
+      background: transparent; color: var(--text-secondary); transition: background 0.15s, border-color 0.15s;
+    }
+    .settings-about-actions button:hover { background: var(--elevated-bg); }
+    .settings-about-actions .danger-btn {
+      border-color: rgba(248,113,113,0.3); color: #f87171;
+    }
+    .settings-about-actions .danger-btn:hover { background: rgba(248,113,113,0.08); }
+    .settings-about-actions .accent-btn {
+      border-color: var(--accent-border); color: var(--accent-text);
+    }
+    .settings-about-actions .accent-btn:hover { background: var(--accent-subtle); }
+
+    /* Footer bar in settings */
+    .settings-footer {
+      padding: 14px 20px; border-top: 1px solid var(--border);
+      display: flex; gap: 10px; flex-shrink: 0;
+    }
+
     .settings-actions {
       display: flex; gap: 10px; margin-top: 20px; justify-content: flex-start;
     }
@@ -4041,6 +4147,9 @@
       <button class="rail-btn" data-view="docs" data-tooltip="מסמכים" aria-label="מסמכים">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       </button>
+      <button class="rail-btn" data-view="document" data-tooltip="בונה מסמכים" aria-label="בונה מסמכים" id="railDocBuilder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/></svg>
+      </button>
       <div style="flex:1"></div>
       <button class="rail-btn" data-view="knowledge" data-tooltip="בסיס ידע" aria-label="בסיס ידע">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -5134,62 +5243,73 @@
   <div class="settings-overlay" id="settingsOverlay" style="display:none">
     <div class="settings-modal">
       <div class="settings-header">
-        <h2>הגדרות פרופיל</h2>
+        <h2>הגדרות</h2>
         <span id="settingsHeaderVersion" style="font-size:0.7rem;color:var(--text-muted);font-weight:400;margin-left:auto;margin-right:12px;"></span>
         <button class="settings-close" id="settingsCloseBtn">&times;</button>
       </div>
+
+      <!-- Tab navigation -->
+      <div class="settings-tabs">
+        <button class="settings-tab-btn active" data-settings-tab="profile" onclick="switchSettingsTab('profile')">פרופיל</button>
+        <button class="settings-tab-btn" data-settings-tab="ai" onclick="switchSettingsTab('ai')">AI</button>
+        <button class="settings-tab-btn" data-settings-tab="about" onclick="switchSettingsTab('about')">אודות</button>
+      </div>
+
       <div class="settings-body">
-        <div class="settings-form-group">
-          <label>שם (עברית)</label>
-          <input type="text" id="profileName" placeholder="השם שלך" dir="rtl">
-        </div>
-        <div class="settings-form-group">
-          <label>Name (English)</label>
-          <input type="text" id="profileNameEn" placeholder="Your name in English" dir="ltr">
-        </div>
-        <div class="settings-form-group">
-          <label>חברה</label>
-          <input type="text" id="profileCompany" placeholder="שם החברה" dir="ltr">
-        </div>
-        <div class="settings-form-group">
-          <label>תפקיד</label>
-          <input type="text" id="profileTitle" placeholder="התפקיד שלך" dir="rtl">
-        </div>
-        <div class="settings-form-group">
-          <label>אימייל</label>
-          <input type="email" id="profileEmail" placeholder="email@example.com" dir="ltr">
-        </div>
-        <div class="settings-form-group">
-          <label>אתר</label>
-          <input type="text" id="profileWebsite" placeholder="example.com" dir="ltr">
-        </div>
-        <div class="settings-form-group">
-          <label>טלפון</label>
-          <input type="tel" id="profilePhone" placeholder="050-1234567" dir="ltr">
-        </div>
-        <div class="settings-form-group">
-          <label>לוגו</label>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="file" id="profileLogo" accept="image/*" style="flex:1">
-            <span id="profileLogoStatus" style="font-size:12px;color:var(--text-muted)"></span>
+
+        <!-- Tab 1: Profile -->
+        <div class="settings-tab-panel active" id="settingsTabProfile">
+          <div class="settings-form-group">
+            <label>שם (עברית)</label>
+            <input type="text" id="profileName" placeholder="השם שלך" dir="rtl">
+          </div>
+          <div class="settings-form-group">
+            <label>Name (English)</label>
+            <input type="text" id="profileNameEn" placeholder="Your name in English" dir="ltr">
+          </div>
+          <div class="settings-form-group">
+            <label>חברה</label>
+            <input type="text" id="profileCompany" placeholder="שם החברה" dir="ltr">
+          </div>
+          <div class="settings-form-group">
+            <label>תפקיד</label>
+            <input type="text" id="profileTitle" placeholder="התפקיד שלך" dir="rtl">
+          </div>
+          <div class="settings-form-group">
+            <label>אימייל</label>
+            <input type="email" id="profileEmail" placeholder="email@example.com" dir="ltr">
+          </div>
+          <div class="settings-form-group">
+            <label>אתר</label>
+            <input type="text" id="profileWebsite" placeholder="example.com" dir="ltr">
+          </div>
+          <div class="settings-form-group">
+            <label>טלפון</label>
+            <input type="tel" id="profilePhone" placeholder="050-1234567" dir="ltr">
+          </div>
+          <div class="settings-form-group">
+            <label>לוגו</label>
+            <div class="settings-logo-upload">
+              <input type="file" id="profileLogo" accept="image/*">
+              <span id="profileLogoStatus" style="font-size:12px;color:var(--text-muted)"></span>
+            </div>
           </div>
         </div>
-        <!-- AI Provider Settings -->
-        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-          <h3 style="color: #e2e8f0; font-size: 15px; margin-bottom: 16px; font-weight: 600;">AI Provider Settings</h3>
 
-          <div class="form-group" style="margin-bottom: 14px;">
-            <label for="settingsAiProvider" style="display: block; color: #94a3b8; font-size: 13px; margin-bottom: 6px;">AI Provider</label>
-            <select id="settingsAiProvider" style="width: 100%; padding: 10px 12px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e2e8f0; font-size: 14px;">
+        <!-- Tab 2: AI -->
+        <div class="settings-tab-panel" id="settingsTabAi">
+          <div class="settings-form-group">
+            <label for="settingsAiProvider">AI Provider</label>
+            <select id="settingsAiProvider">
               <option value="anthropic">Anthropic (Claude)</option>
               <option value="openai">OpenAI (GPT)</option>
               <option value="openrouter">OpenRouter</option>
             </select>
           </div>
 
-          <div class="form-group" style="margin-bottom: 14px;">
-            <label for="settingsAiModel" style="display: block; color: #94a3b8; font-size: 13px; margin-bottom: 6px;">Model</label>
-            <select id="settingsAiModel" style="width: 100%; padding: 10px 12px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e2e8f0; font-size: 14px;">
+          <div class="settings-form-group">
+            <label for="settingsAiModel">Model</label>
+            <select id="settingsAiModel">
               <optgroup label="Anthropic" data-provider="anthropic">
                 <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (Recommended)</option>
                 <option value="claude-opus-4-6">Claude Opus 4.6</option>
@@ -5208,54 +5328,61 @@
             </select>
           </div>
 
-          <div class="form-group" style="margin-bottom: 14px;">
-            <label for="settingsAiApiKey" style="display: block; color: #94a3b8; font-size: 13px; margin-bottom: 6px;">API Key</label>
-            <input type="password" id="settingsAiApiKey" placeholder="sk-..." style="width: 100%; padding: 10px 12px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e2e8f0; font-size: 14px;">
+          <div class="settings-form-group">
+            <label for="settingsAiApiKey">API Key</label>
+            <input type="password" id="settingsAiApiKey" placeholder="sk-...">
           </div>
 
-          <div class="form-group" style="margin-bottom: 14px;" id="claudeOAuthGroup">
-            <label style="display: flex; align-items: center; gap: 8px; color: #94a3b8; font-size: 13px; cursor: pointer;">
-              <input type="checkbox" id="settingsUseClaudeOAuth" style="accent-color: #6366f1;">
+          <div class="settings-form-group" id="claudeOAuthGroup">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;">
+              <input type="checkbox" id="settingsUseClaudeOAuth" style="accent-color:var(--accent);">
               Use Claude Code OAuth (no API key needed)
             </label>
-            <p style="color: #64748b; font-size: 11px; margin-top: 4px;">Requires Claude Code CLI to be logged in. Run: claude login</p>
+            <p style="color:var(--text-muted);font-size:0.72rem;margin-top:4px;">Requires Claude Code CLI to be logged in. Run: claude login</p>
           </div>
 
-          <button id="testAiConnection" type="button" style="padding: 8px 16px; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.3); border-radius: 8px; color: #a5b4fc; font-size: 13px; cursor: pointer; transition: all 0.2s;">
-            Test Connection
-          </button>
-          <span id="aiTestResult" style="margin-left: 12px; font-size: 13px;"></span>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+            <button id="testAiConnection" type="button" class="settings-test-btn">Test Connection</button>
+            <span id="aiTestResult" style="font-size:0.8rem;"></span>
+          </div>
         </div>
 
-        <div class="settings-actions">
-          <button class="btn-primary" id="profileSaveBtn">שמור</button>
-          <button class="btn-secondary" id="profileCancelBtn">ביטול</button>
-        </div>
+        <!-- Tab 3: About -->
+        <div class="settings-tab-panel" id="settingsTabAbout">
+          <p class="settings-about-title">Contractor</p>
+          <p id="settingsVersion" class="settings-about-version">Noam Naumovsky Productions</p>
 
-        <!-- About Section -->
-        <div style="margin-top:30px;padding-top:20px;border-top:1px solid var(--border);">
-          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin:0 0 12px;">אודות Contractor</h3>
-          <p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6;margin:0 0 12px;">
-            כלי ליצירת הצעות מחיר, חוזים והזמנות עבודה בעברית, בעזרת בינה מלאכותית.
-          </p>
-          <p style="font-size:0.75rem;color:var(--text-muted);line-height:1.6;margin:0 0 16px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;">
-            <strong style="color:var(--text-secondary);">הבהרה משפטית:</strong> כלי זה אינו מהווה תחליף לייעוץ משפטי או חשבונאי מקצועי. המסמכים שנוצרים הם תבניות בלבד והמשתמש אחראי לוודא שהם מותאמים לצרכיו ותואמים את הדין החל. היוצר אינו נושא באחריות משפטית כלשהי בגין שימוש במסמכים שנוצרו באמצעות כלי זה.
-          </p>
-          <p id="settingsVersion" style="font-size:0.78rem;color:var(--text-muted);margin:0 0 8px;">Noam Naumovsky Productions</p>
-          <div id="settingsUpdateBanner" style="display:none;margin-bottom:12px;padding:10px 14px;border:1px solid var(--accent-border);border-radius:8px;font-size:0.78rem;">
+          <div id="settingsUpdateBanner" style="display:none;margin-bottom:14px;padding:10px 14px;border:1px solid var(--accent-border);border-radius:8px;font-size:0.78rem;">
             <span style="color:var(--accent-text);font-weight:600;" id="settingsUpdateText"></span>
           </div>
-          <div style="display:flex;gap:14px;font-size:0.78rem;margin-bottom:16px;">
-            <a href="https://github.com/endlessblink" target="_blank" style="color:var(--accent-text);text-decoration:none;">GitHub</a>
-            <a href="https://www.linkedin.com/in/noamnaumovsky/" target="_blank" style="color:var(--accent-text);text-decoration:none;">LinkedIn</a>
-            <a href="https://x.com/NNaumovsky" target="_blank" style="color:var(--accent-text);text-decoration:none;">X / Twitter</a>
+
+          <p class="settings-about-desc">
+            כלי ליצירת הצעות מחיר, חוזים והזמנות עבודה בעברית, בעזרת בינה מלאכותית.
+          </p>
+
+          <div class="settings-legal">
+            <strong>הבהרה משפטית:</strong> כלי זה אינו מהווה תחליף לייעוץ משפטי או חשבונאי מקצועי. המסמכים שנוצרים הם תבניות בלבד והמשתמש אחראי לוודא שהם מותאמים לצרכיו ותואמים את הדין החל. היוצר אינו נושא באחריות משפטית כלשהי בגין שימוש במסמכים שנוצרו באמצעות כלי זה.
           </div>
-          <div style="padding-top:14px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;">
-            <button onclick="fetch('/api/user-profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupComplete:false})}).then(function(){var s=document.getElementById('settingsOverlay');if(s)s.style.display='none';showOnboarding();})" style="padding:7px 16px;border-radius:7px;font-size:0.78rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);">הצג אשף הגדרה</button>
-            <button id="checkUpdateBtn" onclick="checkAndInstallUpdate()" style="padding:7px 16px;border-radius:7px;font-size:0.78rem;font-family:inherit;cursor:pointer;border:1px solid var(--accent-border);background:transparent;color:var(--accent-text);">בדוק עדכונים</button>
-            <button onclick="if(confirm('למחוק את כל הנתונים ולהתחיל מחדש?')){fetch('/api/user-profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupComplete:false})});fetch('/api/demo-data',{method:'DELETE'});localStorage.clear();location.reload();}" style="padding:7px 16px;border-radius:7px;font-size:0.78rem;font-family:inherit;cursor:pointer;border:1px solid rgba(248,113,113,0.3);background:transparent;color:#f87171;">איפוס נתונים</button>
+
+          <div class="settings-social-links">
+            <a href="https://github.com/endlessblink" target="_blank">GitHub</a>
+            <a href="https://www.linkedin.com/in/noamnaumovsky/" target="_blank">LinkedIn</a>
+            <a href="https://x.com/NNaumovsky" target="_blank">X / Twitter</a>
+          </div>
+
+          <div class="settings-about-actions">
+            <button onclick="fetch('/api/user-profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupComplete:false})}).then(function(){var s=document.getElementById('settingsOverlay');if(s)s.style.display='none';showOnboarding();})">הצג אשף הגדרה</button>
+            <button id="checkUpdateBtn" class="accent-btn" onclick="checkAndInstallUpdate()">בדוק עדכונים</button>
+            <button class="danger-btn" onclick="if(confirm('למחוק את כל הנתונים ולהתחיל מחדש?')){fetch('/api/user-profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupComplete:false})});fetch('/api/demo-data',{method:'DELETE'});localStorage.clear();location.reload();}">איפוס נתונים</button>
           </div>
         </div>
+
+      </div>
+
+      <!-- Footer with save/cancel (visible on Profile and AI tabs) -->
+      <div class="settings-footer" id="settingsFooter">
+        <button class="btn-primary" id="profileSaveBtn">שמור</button>
+        <button class="btn-secondary" id="profileCancelBtn">ביטול</button>
       </div>
     </div>
     <!-- App Footer -->
@@ -9512,6 +9639,21 @@
     }
   }
 
+  // ─── Settings Tab Switching ──────────────────────────────────────────
+  function switchSettingsTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.settings-tab-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-settings-tab') === tabName);
+    });
+    // Update tab panels
+    document.getElementById('settingsTabProfile').classList.toggle('active', tabName === 'profile');
+    document.getElementById('settingsTabAi').classList.toggle('active', tabName === 'ai');
+    document.getElementById('settingsTabAbout').classList.toggle('active', tabName === 'about');
+    // Show/hide footer (save/cancel) — only on profile and ai tabs
+    var footer = document.getElementById('settingsFooter');
+    if (footer) footer.style.display = (tabName === 'about') ? 'none' : 'flex';
+  }
+
   // ─── Settings / Profile ─────────────────────────────────────────────
   (function() {
     const settingsBtn      = document.getElementById('settingsBtn');
@@ -9614,6 +9756,7 @@
         if (res.ok) currentProfile = await res.json();
       } catch {}
       populateForm();
+      switchSettingsTab('profile');
       settingsOverlay.style.display = 'flex';
       // Load version + update info
       try {
@@ -10822,6 +10965,19 @@
         if (view === 'settings') {
           var settingsOverlay = document.getElementById('settingsOverlay');
           if (settingsOverlay) settingsOverlay.style.display = 'flex';
+          return;
+        }
+        if (view === 'document') {
+          // Navigate to last active project's document view
+          var projects = window._allProjects || [];
+          var activeId = navState.projectId;
+          var proj = activeId ? projects.find(function(p) { return p.id === activeId; }) : projects[0];
+          if (proj) {
+            var docType = proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote';
+            navigate('document', { clientId: proj.clientId, projectId: proj.id, docType: docType });
+          } else {
+            navigate('home');
+          }
           return;
         }
         // projects and clients navigate directly to their views
