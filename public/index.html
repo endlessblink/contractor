@@ -5135,6 +5135,7 @@
     <div class="settings-modal">
       <div class="settings-header">
         <h2>הגדרות פרופיל</h2>
+        <span id="settingsHeaderVersion" style="font-size:0.7rem;color:var(--text-muted);font-weight:400;margin-left:auto;margin-right:12px;"></span>
         <button class="settings-close" id="settingsCloseBtn">&times;</button>
       </div>
       <div class="settings-body">
@@ -9621,7 +9622,9 @@
         if (statusRes.ok) {
           const status = await statusRes.json();
           var verEl = document.getElementById('settingsVersion');
+          var headerVerEl = document.getElementById('settingsHeaderVersion');
           if (verEl && status.version) verEl.textContent = 'v' + status.version + ' — Noam Naumovsky Productions';
+          if (headerVerEl && status.version) headerVerEl.textContent = 'v' + status.version;
           var bannerEl = document.getElementById('settingsUpdateBanner');
           var textEl = document.getElementById('settingsUpdateText');
           var linkEl = document.getElementById('settingsUpdateLink');
