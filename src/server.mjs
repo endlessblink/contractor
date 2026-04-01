@@ -20,11 +20,42 @@ import { homedir } from 'os';
 import multer from 'multer';
 import { generateDocument } from './generate-quote.mjs';
 import mammoth from 'mammoth';
-import { exec, execSync } from 'child_process';
+import { exec, execSync, spawn } from 'child_process';
 import { createRequire } from 'module';
 import { chatCompletion, chatCompletionStream, parseSSEStream, getProviderConfig } from './ai-provider.mjs';
 import { IS_PKG, USER_DATA_DIR, APP_DIR, initUserDataDir, resolveData, resolveAsset } from './app-paths.mjs';
 import { CURRENT_VERSION, checkForUpdate, checkUpdateAvailable, downloadAndInstall } from './updater.mjs';
+
+// ─── Self-install: if exe is run from outside the install dir, copy it there ──
+if (IS_PKG && process.platform === 'win32' && !process.argv.includes('--no-self-install')) {
+  // Check both possible install locations: Inno Setup (%APPDATA%\Contractor) and data dir (~\.contractor)
+  const appDataDir = process.env.APPDATA ? join(process.env.APPDATA, 'Contractor') : null;
+  const homeDir = join(homedir(), '.contractor');
+  // Prefer the Inno Setup location if it exists, otherwise use home dir
+  const installDir = (appDataDir && existsSync(appDataDir)) ? appDataDir : homeDir;
+  const installedExe = join(installDir, 'contractor-win-x64.exe');
+  const currentExe = process.execPath;
+
+  // If we're NOT running from the install dir, copy ourselves there and relaunch
+  if (!currentExe.startsWith(installDir)) {
+    mkdirSync(installDir, { recursive: true });
+    try {
+      // Kill any running instance first
+      try { execSync('taskkill /f /im contractor-win-x64.exe', { stdio: 'ignore' }); } catch {}
+      // Brief sync pause for file handles to release
+      execSync('timeout /t 2 /nobreak >nul 2>&1', { stdio: 'ignore' });
+      // Copy new exe to install dir
+      copyFileSync(currentExe, installedExe);
+      console.log('✅ Updated Contractor in ' + installDir);
+      // Launch from installed location and exit
+      spawn(installedExe, ['--no-self-install'], { detached: true, stdio: 'ignore' });
+      process.exit(0);
+    } catch (err) {
+      console.error('Self-install failed:', err.message, '— continuing from current location');
+    }
+  }
+}
+
 const require = createRequire(import.meta.url);
 let pdfParser = null;
 function getPdfParser() {
