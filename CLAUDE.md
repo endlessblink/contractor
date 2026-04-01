@@ -148,10 +148,23 @@ All AI output (FORM_DATA / FORM_UPDATE) passes through a modular skills pipeline
 - Skills are pure functions on a SkillContext object — no DOM or Node.js dependencies
 - Phase 2 (future): run pipeline server-side in the AI response stream before sending to client
 
+## Delivery Workflow (MANDATORY)
+
+**The user tests from a packaged executable on a Windows VM.** Source-only changes are invisible to them. After EVERY code change, you MUST complete the full cycle:
+
+1. `npm run build` — rebuild the executable
+2. `git add` + `git commit` — commit all changes
+3. `git push` — push to GitHub
+
+If bumping the version, also create a GitHub release with the built executables so the in-app update button can find them.
+
+**Never stop at just editing files.** If you changed code, build and push it.
+
 ## Commands
 
 ```bash
-node src/server.mjs           # Start the server (port 6831)
+node src/server.mjs           # Start the server (port 6831) — dev only
 node src/generate-quote.mjs   # Generate current quote (standalone)
 npm run build:skills          # Rebuild skills pipeline bundle
+npm run build                 # Build packaged executables (dist/executables/)
 ```
