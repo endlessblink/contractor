@@ -27,7 +27,7 @@ import mammoth from 'mammoth';
 import { exec, execSync } from 'child_process';
 import { createRequire } from 'module';
 import { chatCompletion, chatCompletionStream, parseSSEStream, getProviderConfig } from './ai-provider.mjs';
-import { IS_PKG, USER_DATA_DIR, APP_DIR, initUserDataDir, resolveData, resolveAsset } from './app-paths.mjs';
+import { IS_PKG, USER_DATA_DIR, APP_DIR, SNAPSHOT_DIR, initUserDataDir, resolveData, resolveAsset } from './app-paths.mjs';
 import { CURRENT_VERSION, checkForUpdate, checkUpdateAvailable, downloadAndInstall } from './updater.mjs';
 
 const require = createRequire(import.meta.url);
@@ -82,13 +82,13 @@ if (!KNOWLEDGE_DIR.startsWith('/snapshot/')) mkdirSync(KNOWLEDGE_DIR, { recursiv
 
 // ─── Auto-initialize clause database from sample if missing ──────────────────
 const clausesDbPath = join(KNOWLEDGE_DIR, 'clauses-db.json');
-const clausesSamplePath = join(KNOWLEDGE_DIR, 'clauses-db.sample.json');
+const clausesSamplePath = join(SNAPSHOT_DIR, 'knowledge', 'clauses-db.sample.json');
 if (!existsSync(clausesDbPath)) {
   if (existsSync(clausesSamplePath)) {
     copyFileSync(clausesSamplePath, clausesDbPath);
     console.log('No clause database found — initialized from sample. Scan your own contracts to build your knowledge base.');
   } else {
-    writeFileSync(clausesDbPath, JSON.stringify({ categories: {}, serviceTemplates: {}, paymentPatterns: [], standardTerms: {} }, null, 2), 'utf-8');
+    writeFileSync(clausesDbPath, JSON.stringify({ clauses: {}, serviceTemplates: [], paymentPatterns: [], standardTerms: {} }, null, 2), 'utf-8');
   }
 }
 
@@ -360,7 +360,7 @@ function getRefDocList() {
 }
 
 function buildClausesPromptSection() {
-  if (!clausesDb) return '';
+  if (!clausesDb?.clauses) return '';
 
   let section = '\n\n## מאגר סעיפים משפטיים מלא\n';
   section += 'להלן כל הסעיפים המשפטיים הזמינים, מאורגנים לפי קטגוריה. השתמש בסעיפים אלו בעת יצירת מסמכים — בחר את הסעיפים הרלוונטיים לפי סוג המסמך וסוג הפרויקט.\n';
@@ -376,14 +376,14 @@ function buildClausesPromptSection() {
 
   // Add payment patterns
   section += '\n### מבנה תשלומים\n';
-  for (const pattern of clausesDb.paymentPatterns) {
+  for (const pattern of clausesDb.paymentPatterns || []) {
     section += `- **${pattern.name}**: ${pattern.description} (${pattern.usage})\n`;
   }
 
   // Add service templates
   section += '\n### תבניות שירות לפי סוג פרויקט\n';
   section += 'כאשר יוצרים מסמך, בחר את הסעיפים הרלוונטיים לפי סוג הפרויקט:\n';
-  for (const template of clausesDb.serviceTemplates) {
+  for (const template of clausesDb.serviceTemplates || []) {
     section += `\n**${template.name}** (${template.type}):\n`;
     section += `- תמחור טיפוסי: ${JSON.stringify(template.typicalPricing)}\n`;
     section += `- לוח זמנים: ${template.typicalTimeline}\n`;

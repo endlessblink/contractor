@@ -40,6 +40,7 @@
       "public/**/*",
       "assets/**/*",
       "knowledge/clauses-db.json",
+      "knowledge/clauses-db.sample.json",
       "data/user-profile.example.json"
     ],
     "targets": ["node20-linux-x64", "node20-macos-arm64", "node20-macos-x64", "node20-win-x64"],

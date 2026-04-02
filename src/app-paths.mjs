@@ -9,10 +9,13 @@ const __dirname = dirname(__filename);
 // Detect if running inside a pkg binary
 export const IS_PKG = typeof process.pkg !== 'undefined';
 
+// Snapshot directory — where bundled read-only assets live (inside pkg snapshot or project root in dev)
+export const SNAPSHOT_DIR = join(__dirname, '..');
+
 // App directory (where executable lives, or project root in dev)
 export const APP_DIR = IS_PKG
   ? dirname(process.execPath)
-  : join(__dirname, '..');
+  : SNAPSHOT_DIR;
 
 // User data directory — always writable, persists across updates
 export const USER_DATA_DIR = IS_PKG
@@ -25,11 +28,11 @@ export function initUserDataDir() {
 
   const seeds = [
     {
-      src: join(APP_DIR, 'knowledge', 'clauses-db.json'),
+      src: join(SNAPSHOT_DIR, 'knowledge', 'clauses-db.json'),
       dest: join(USER_DATA_DIR, 'knowledge', 'clauses-db.json'),
     },
     {
-      src: join(APP_DIR, 'data', 'user-profile.example.json'),
+      src: join(SNAPSHOT_DIR, 'data', 'user-profile.example.json'),
       dest: join(USER_DATA_DIR, 'user-profile.json'),
     },
   ];
