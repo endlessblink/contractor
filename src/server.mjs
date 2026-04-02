@@ -121,7 +121,16 @@ function extractJSON(rawText) {
   const objStart = text.indexOf('{');
   const objEnd = text.lastIndexOf('}');
   if (objStart !== -1 && objEnd > objStart) {
-    try { return JSON.parse(text.slice(objStart, objEnd + 1)); } catch (e) { console.log('[extractJSON] strategy 3 (braces) failed:', e.message); }
+    const candidate = text.slice(objStart, objEnd + 1);
+    try { return JSON.parse(candidate); } catch (e) { console.log('[extractJSON] strategy 3 (braces) failed:', e.message); }
+    // 3b. Repair common JSON issues: trailing commas, missing brackets
+    try {
+      const repaired = candidate
+        .replace(/,\s*([\]}])/g, '$1')           // trailing commas
+        .replace(/(["\d\]}])\s*\n\s*"/g, '$1,"') // missing commas between properties
+        .replace(/\n/g, ' ');
+      return JSON.parse(repaired);
+    } catch (e) { console.log('[extractJSON] strategy 3b (repair) failed:', e.message); }
   }
   const arrStart = text.indexOf('[');
   const arrEnd = text.lastIndexOf(']');
@@ -2288,11 +2297,6 @@ app.post('/api/learn-references', async (req, res) => {
       return res.status(404).json({ error: 'No reference documents found to analyze' });
     }
 
-    // Combine all text
-    const combinedText = extractedDocs
-      .map((doc, i) => `=== מסמך ${i + 1}: ${doc.name} ===\n${doc.text}`)
-      .join('\n\n---\n\n');
-
     // Load existing clauses DB for reference
     let existingDb = null;
     try {
@@ -2305,46 +2309,73 @@ app.post('/api/learn-references', async (req, res) => {
 
     const systemPrompt = buildExtractionPrompt(existingClauseIds);
 
-    // Limit total text to avoid timeout (cap at ~40K chars for Haiku)
-    const maxTotalChars = 40000;
-    let totalChars = 0;
-    const limitedDocs = [];
+    // Process documents in batches of ~15K chars each to avoid timeouts
+    const BATCH_CHAR_LIMIT = 15000;
+    const batches = [];
+    let currentBatch = [];
+    let currentChars = 0;
     for (const doc of extractedDocs) {
-      if (totalChars + doc.text.length > maxTotalChars && limitedDocs.length > 0) break;
-      limitedDocs.push(doc);
-      totalChars += doc.text.length;
+      if (currentChars + doc.text.length > BATCH_CHAR_LIMIT && currentBatch.length > 0) {
+        batches.push(currentBatch);
+        currentBatch = [];
+        currentChars = 0;
+      }
+      currentBatch.push(doc);
+      currentChars += doc.text.length;
     }
-    const limitedText = limitedDocs
-      .map((doc, i) => `=== מסמך ${i + 1}: ${doc.name} ===\n${doc.text}`)
-      .join('\n\n---\n\n');
-    console.log(`Learn: sending ${limitedDocs.length}/${extractedDocs.length} docs (${totalChars} chars) to API...`);
+    if (currentBatch.length > 0) batches.push(currentBatch);
 
-    const learnController = new AbortController();
-    const learnTimeout = setTimeout(() => learnController.abort(), 90000);
+    console.log(`[learn-references] Processing ${extractedDocs.length} docs in ${batches.length} batches`);
 
-    let apiData;
-    try {
-      apiData = await chatCompletion({
-        system: systemPrompt,
-        messages: [{ role: 'user', content: `נתח את ${limitedDocs.length} המסמכים הבאים והחזר JSON מלא:\n\n${limitedText}` }],
-        maxTokens: 8192,
-        signal: learnController.signal,
-      });
-    } catch (err) {
-      console.error('AI API error (learn-references):', err.message);
-      return res.status(502).json({ error: err.message });
-    } finally {
-      clearTimeout(learnTimeout);
+    // Process each batch and collect all parsed results
+    const allParsedResults = [];
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      const batchText = batch
+        .map((doc, j) => `=== מסמך ${j + 1}: ${doc.name} ===\n${doc.text}`)
+        .join('\n\n---\n\n');
+      console.log(`[learn-references] Batch ${i + 1}/${batches.length}: ${batch.length} docs, ${batchText.length} chars`);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 180000);
+
+      try {
+        const apiData = await chatCompletion({
+          system: systemPrompt,
+          messages: [{ role: 'user', content: `נתח את ${batch.length} המסמכים הבאים והחזר JSON מלא:\n\n${batchText}` }],
+          maxTokens: 16384,
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        const rawText = apiData.text;
+        console.log(`[learn-references] Batch ${i + 1} response: ${rawText?.length || 0} chars`);
+
+        const parsed = extractJSON(rawText);
+        if (parsed) {
+          allParsedResults.push(parsed);
+        } else {
+          console.error(`[learn-references] Batch ${i + 1} returned invalid JSON, skipping`);
+        }
+      } catch (err) {
+        clearTimeout(timeout);
+        console.error(`[learn-references] Batch ${i + 1} failed: ${err.message}, continuing...`);
+      }
     }
 
-    const rawText = apiData.text;
-    console.log(`[learn-references] AI response length: ${rawText?.length || 0}`);
-
-    const parsed = extractJSON(rawText);
-    if (!parsed) {
-      console.error('[learn-references] Failed to parse JSON. Raw:', rawText?.slice(0, 500));
-      return res.status(502).json({ error: 'Claude did not return valid JSON', raw: rawText?.slice(0, 500) });
+    if (allParsedResults.length === 0) {
+      return res.status(502).json({ error: 'All batches failed to return valid data' });
     }
+
+    // Merge all batch results into one parsed object
+    const parsed = { newClauses: [], paymentPatterns: [], serviceTemplates: [], profileData: {} };
+    for (const r of allParsedResults) {
+      if (r.newClauses) parsed.newClauses.push(...r.newClauses);
+      if (r.paymentPatterns) parsed.paymentPatterns.push(...r.paymentPatterns);
+      if (r.serviceTemplates) parsed.serviceTemplates.push(...r.serviceTemplates);
+      if (r.profileData) Object.assign(parsed.profileData, r.profileData);
+    }
+    console.log(`[learn-references] Merged ${allParsedResults.length} batches: ${parsed.newClauses.length} clauses, ${parsed.serviceTemplates?.length || 0} templates`);
 
     // Merge new clauses into existing DB
     let db = existingDb || {
