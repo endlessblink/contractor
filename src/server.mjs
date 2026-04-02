@@ -11,6 +11,10 @@ try {
   }
 } catch { /* no .env file */ }
 
+// Keep process alive — catch unhandled errors instead of crashing
+process.on('uncaughtException', (err) => { console.error('Uncaught error:', err.message); });
+process.on('unhandledRejection', (err) => { console.error('Unhandled rejection:', err); });
+
 import express from 'express';
 import serveStatic from 'serve-static';
 import { fileURLToPath } from 'url';
@@ -2983,7 +2987,7 @@ app.listen(PORT, async () => {
     setTimeout(() => {
       const url = `http://localhost:${PORT}`;
       if (process.platform === 'win32') {
-        exec(`start "" "${url}"`, { shell: true });
+        exec(`start "" "${url}"`, { shell: true }, (err) => { if (err) console.log('Browser open failed:', err.message); });
       } else {
         import('open').then(m => m.default(url)).catch(() => {});
       }
