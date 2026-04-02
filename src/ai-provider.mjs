@@ -1,12 +1,9 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { USER_DATA_DIR, IS_PKG, APP_DIR } from './app-paths.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const DATA_DIR = join(__dirname, '..', 'data');
+const DATA_DIR = IS_PKG ? USER_DATA_DIR : join(APP_DIR, 'data');
 
 /**
  * Get the current AI provider configuration.
