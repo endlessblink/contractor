@@ -97,8 +97,15 @@ let clausesDb = null;
 try {
   const dbRaw = readFileSync(clausesDbPath, 'utf-8');
   clausesDb = JSON.parse(dbRaw);
-  const categoryCount = Object.keys(clausesDb.clauses).length;
-  const clauseCount = Object.values(clausesDb.clauses).reduce((sum, cat) => sum + cat.clauses.length, 0);
+  // Handle old schema: rename 'categories' to 'clauses' if needed
+  if (clausesDb.categories && !clausesDb.clauses) {
+    clausesDb.clauses = clausesDb.categories;
+    delete clausesDb.categories;
+    writeFileSync(clausesDbPath, JSON.stringify(clausesDb, null, 2), 'utf-8');
+    console.log('Migrated clauses DB: renamed "categories" → "clauses"');
+  }
+  const categoryCount = clausesDb.clauses ? Object.keys(clausesDb.clauses).length : 0;
+  const clauseCount = clausesDb.clauses ? Object.values(clausesDb.clauses).reduce((sum, cat) => sum + (cat.clauses || []).length, 0) : 0;
   console.log(`Loaded clauses DB: ${clauseCount} clauses in ${categoryCount} categories`);
 } catch { /* no clauses DB yet */ }
 
@@ -2330,8 +2337,8 @@ app.post('/api/learn-references', async (req, res) => {
       existingDb = JSON.parse(readFileSync(join(KNOWLEDGE_DIR, 'clauses-db.json'), 'utf-8'));
     } catch { /* no existing DB */ }
 
-    const existingClauseIds = existingDb
-      ? Object.values(existingDb.clauses).flatMap(cat => cat.clauses.map(c => c.id))
+    const existingClauseIds = existingDb?.clauses
+      ? Object.values(existingDb.clauses).flatMap(cat => (cat.clauses || []).map(c => c.id))
       : [];
 
     const systemPrompt = buildExtractionPrompt(existingClauseIds);
