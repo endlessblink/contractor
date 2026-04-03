@@ -671,6 +671,11 @@ const dynamicUpload = multer({
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(express.json({ limit: '20mb' }));
+// Log all POST requests for debugging
+app.use((req, _res, next) => {
+  if (req.method === 'POST') console.log(`[REQ] ${req.method} ${req.url} (${req.headers['content-type'] || 'no content-type'})`);
+  next();
+});
 app.use(serveStatic(join(__dirname, '..', 'public')));
 
 // ─── User Profile API ────────────────────────────────────────────────────────
@@ -746,9 +751,10 @@ app.post('/api/install-update', async (_req, res) => {
 // ─── Reference document management endpoints ─────────────────────────────────
 
 // Upload references to data/references/
-app.post('/api/references/upload', upload.array('files', 20), (req, res) => {
+app.post('/api/references/upload', (req, res, next) => { console.log('[upload-references] HIT endpoint'); next(); }, upload.array('files', 20), (req, res) => {
   try {
     const files = req.files || [];
+    console.log('[upload-references] Files received:', files.length, 'multer temp dir:', UPLOADS_DIR);
     if (files.length === 0) return res.status(400).json({ error: 'No files uploaded' });
 
     const results = [];

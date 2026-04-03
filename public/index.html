@@ -7634,11 +7634,13 @@
     });
 
     async function uploadFiles(files) {
+      console.log('[UPLOAD-DEBUG] uploadFiles called with', files.length, 'files');
+      console.log('[UPLOAD-DEBUG] Sending to: /api/references/upload');
       uploadStatus.textContent = `מעלה ${files.length} קבצ${files.length > 1 ? 'ים' : ''}...`;
       uploadStatus.className = 'upload-status';
 
       const formData = new FormData();
-      Array.from(files).forEach(f => formData.append('files', f));
+      Array.from(files).forEach(f => { formData.append('files', f); console.log('[UPLOAD-DEBUG] File:', f.name, f.size, 'bytes'); });
 
       try {
         const response = await fetch('/api/references/upload', {
@@ -7646,12 +7648,15 @@
           body: formData,
         });
 
+        console.log('[UPLOAD-DEBUG] Response status:', response.status, response.url);
+
         if (!response.ok) {
           const err = await response.json().catch(() => ({}));
           throw new Error(err.error || `Error ${response.status}`);
         }
 
         const result = await response.json();
+        console.log('[UPLOAD-DEBUG] Result:', JSON.stringify(result));
         const count  = result.uploaded || files.length;
         uploadStatus.textContent = `${count} קבצ${count > 1 ? 'ים' : ''} הועל${count > 1 ? 'ו' : ''} בהצלחה!`;
         uploadStatus.className = 'upload-status success';
@@ -7659,7 +7664,7 @@
         loadDocuments();
 
       } catch (err) {
-        console.error('Upload error:', err);
+        console.error('[UPLOAD-DEBUG] Upload error:', err);
         uploadStatus.textContent = 'שגיאה בהעלאה: ' + (err.message || 'נסה שוב');
         uploadStatus.className = 'upload-status error';
       }
@@ -9333,19 +9338,24 @@
     });
 
     async function uploadRefFiles(fileList) {
+      console.log('[KB-UPLOAD-DEBUG] uploadRefFiles called with', fileList.length, 'files');
       const formData = new FormData();
-      for (const file of fileList) formData.append('files', file);
+      for (const file of fileList) { formData.append('files', file); console.log('[KB-UPLOAD-DEBUG] File:', file.name); }
       try {
         analyzeKbStatus.textContent = 'מעלה...';
+        console.log('[KB-UPLOAD-DEBUG] Sending to: /api/references/upload');
         const res = await fetch('/api/references/upload', { method: 'POST', body: formData });
+        console.log('[KB-UPLOAD-DEBUG] Response:', res.status, res.url);
         const data = await res.json();
+        console.log('[KB-UPLOAD-DEBUG] Data:', JSON.stringify(data));
         if (data.success) {
           analyzeKbStatus.textContent = `הועלו ${data.uploaded} קבצים`;
           loadKbReferences();
         } else {
           analyzeKbStatus.textContent = 'שגיאה: ' + (data.error || '');
         }
-      } catch {
+      } catch (err) {
+        console.error('[KB-UPLOAD-DEBUG] Error:', err);
         analyzeKbStatus.textContent = 'שגיאה בהעלאה';
       }
     }
