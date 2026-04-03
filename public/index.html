@@ -6364,6 +6364,10 @@
       if (data.documentDate) document.getElementById('documentDate').value = data.documentDate;
 
       updateTotals();
+
+      // Clear any stale validation errors after AI fill
+      const docErrorEl = document.getElementById('docError');
+      if (docErrorEl) docErrorEl.classList.remove('visible');
     }
 
     // ── Variables needed by prefillForm (must be declared before the call) ──
@@ -6696,8 +6700,8 @@
           signal: recommendAbortController.signal,
         });
 
-        if (!res.ok) throw new Error(`Status ${res.status}`);
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `Status ${res.status}`);
 
         if (data.recommendations) {
           window._clauseRecommendations = data.recommendations;
@@ -6706,6 +6710,10 @@
       } catch (err) {
         if (err.name !== 'AbortError') {
           console.warn('[auto-recommend] Failed:', err.message);
+          // Show user-facing feedback for non-transient errors
+          if (err.message && !err.message.startsWith('Status 5')) {
+            if (typeof showError === 'function') showError(err.message);
+          }
         }
       } finally {
         isRecommending = false;
@@ -7091,6 +7099,10 @@
       updateTotals();
       if (typeof saveProjectForm === 'function') saveProjectForm();
       if (typeof saveProjectChat === 'function') saveProjectChat();
+
+      // Clear any stale validation errors after AI update
+      const docErrorEl = document.getElementById('docError');
+      if (docErrorEl) docErrorEl.classList.remove('visible');
     }
 
     function markAiChanged(el, tooltip) {
@@ -8578,6 +8590,7 @@
     }
 
     learnBtn.addEventListener('click', async () => {
+      if (learnBtn.disabled) return; // Prevent duplicate fires
       learnBtn.classList.add('loading');
       learnBtn.disabled = true;
       learnStatus.textContent = 'מנתח מסמכים... (זה עשוי לקחת כדקה)';
@@ -8813,7 +8826,7 @@
 
       function renderTemplateCards() {
         tmplCardsList.innerHTML = '';
-        const templates = (clausesDbCache && clausesDbCache.serviceTemplates) || [];
+        const templates = Array.isArray(clausesDbCache?.serviceTemplates) ? clausesDbCache.serviceTemplates : [];
         if (templates.length === 0) {
           tmplCardsList.innerHTML = '<div class="tmpl-empty">אין תבניות עדיין. לחץ "הוסף תבנית חדשה" כדי להתחיל.</div>';
           return;
@@ -10380,6 +10393,12 @@
       if (!docsMoved && docsPanel && docsBody) {
         while (docsPanel.firstChild) docsBody.appendChild(docsPanel.firstChild);
         docsMoved = true;
+      }
+      // Clear stale error/status messages from previous learn attempts
+      const ls = document.getElementById('learnStatus');
+      if (ls && ls.classList.contains('error')) {
+        ls.textContent = '';
+        ls.className = 'learn-status';
       }
       if (docsOverlay) docsOverlay.classList.add('visible');
     }

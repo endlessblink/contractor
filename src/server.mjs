@@ -2334,11 +2334,15 @@ app.post('/api/learn-references', async (req, res) => {
     // Load existing clauses DB for reference
     let existingDb = null;
     try {
-      existingDb = JSON.parse(readFileSync(join(KNOWLEDGE_DIR, 'clauses-db.json'), 'utf-8'));
-    } catch { /* no existing DB */ }
+      const raw = JSON.parse(readFileSync(join(KNOWLEDGE_DIR, 'clauses-db.json'), 'utf-8'));
+      // Validate schema: clauses must be a non-null object
+      if (raw && typeof raw.clauses === 'object' && raw.clauses !== null && !Array.isArray(raw.clauses)) {
+        existingDb = raw;
+      }
+    } catch { /* no existing DB or invalid JSON */ }
 
     const existingClauseIds = existingDb?.clauses
-      ? Object.values(existingDb.clauses).flatMap(cat => (cat.clauses || []).map(c => c.id))
+      ? Object.values(existingDb.clauses).flatMap(cat => (cat?.clauses || []).map(c => c.id))
       : [];
 
     const systemPrompt = buildExtractionPrompt(existingClauseIds);
@@ -2438,9 +2442,10 @@ app.post('/api/learn-references', async (req, res) => {
 
     // Pre-compute text fingerprints for dedup
     const textFingerprints = {};
-    for (const [catKey, catData] of Object.entries(db.clauses)) {
+    for (const [catKey, catData] of Object.entries(db.clauses || {})) {
       textFingerprints[catKey] = new Map();
-      for (const c of catData.clauses) {
+      for (const c of (catData?.clauses || [])) {
+        if (!c.text) continue;
         const fp = c.text.replace(/\s+/g, ' ').trim().slice(0, 100);
         textFingerprints[catKey].set(fp, c.id);
       }
@@ -2559,8 +2564,8 @@ app.post('/api/learn-references', async (req, res) => {
       updatedClauses,
       addedTemplates,
       addedPatterns,
-      totalClauses: Object.values(db.clauses).reduce((sum, cat) => sum + cat.clauses.length, 0),
-      totalCategories: Object.keys(db.clauses).length,
+      totalClauses: Object.values(db.clauses || {}).reduce((sum, cat) => sum + (cat?.clauses?.length || 0), 0),
+      totalCategories: Object.keys(db.clauses || {}).length,
       profileUpdated,
     });
   } catch (err) {
@@ -2594,7 +2599,7 @@ app.post('/api/recommend-clauses', async (req, res) => {
   try {
     const { formContext } = req.body || {};
     if (!clausesDb || !clausesDb.clauses) {
-      return res.status(400).json({ error: 'Clauses DB not loaded' });
+      return res.status(400).json({ error: 'מאגר הסעיפים לא נטען — יש ללמוד מסמכים תחילה (לחץ "למד מכל המסמכים" בהגדרות)' });
     }
 
     const docType = formContext?.docType || 'quote';
