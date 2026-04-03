@@ -369,46 +369,56 @@ function getRefDocList() {
 function buildClausesPromptSection() {
   if (!clausesDb?.clauses) return '';
 
+  try {
   let section = '\n\n## מאגר סעיפים משפטיים מלא\n';
   section += 'להלן כל הסעיפים המשפטיים הזמינים, מאורגנים לפי קטגוריה. השתמש בסעיפים אלו בעת יצירת מסמכים — בחר את הסעיפים הרלוונטיים לפי סוג המסמך וסוג הפרויקט.\n';
 
   // Add clause categories with IDs and short preview (full text used at generation time)
   for (const [key, category] of Object.entries(clausesDb.clauses)) {
-    section += `\n### ${category.category} (${category.clauses.length} סעיפים)\n`;
-    for (const clause of category.clauses) {
-      const docTypes = clause.appliesTo.join('/');
-      section += `- [${clause.id}] (${docTypes}${clause.required ? ' | חובה' : ''}): ${clause.text.slice(0, 80)}...\n`;
+    const clauses = Array.isArray(category?.clauses) ? category.clauses : [];
+    section += `\n### ${category?.category || key} (${clauses.length} סעיפים)\n`;
+    for (const clause of clauses) {
+      const docTypes = Array.isArray(clause?.appliesTo) ? clause.appliesTo.join('/') : 'all';
+      section += `- [${clause?.id || '?'}] (${docTypes}${clause?.required ? ' | חובה' : ''}): ${(clause?.text || '').slice(0, 80)}...\n`;
     }
   }
 
   // Add payment patterns
-  section += '\n### מבנה תשלומים\n';
-  for (const pattern of clausesDb.paymentPatterns || []) {
-    section += `- **${pattern.name}**: ${pattern.description} (${pattern.usage})\n`;
+  const patterns = Array.isArray(clausesDb.paymentPatterns) ? clausesDb.paymentPatterns : [];
+  if (patterns.length > 0) {
+    section += '\n### מבנה תשלומים\n';
+    for (const pattern of patterns) {
+      section += `- **${pattern?.name || ''}**: ${pattern?.description || ''} (${pattern?.usage || ''})\n`;
+    }
   }
 
   // Add service templates
-  section += '\n### תבניות שירות לפי סוג פרויקט\n';
-  section += 'כאשר יוצרים מסמך, בחר את הסעיפים הרלוונטיים לפי סוג הפרויקט:\n';
-  for (const template of clausesDb.serviceTemplates || []) {
-    section += `\n**${template.name}** (${template.type}):\n`;
-    section += `- תמחור טיפוסי: ${JSON.stringify(template.typicalPricing)}\n`;
-    section += `- לוח זמנים: ${template.typicalTimeline}\n`;
-    section += `- תוצרים: ${template.typicalDeliverables}\n`;
-    section += `- סעיפים רלוונטיים: ${template.relevantClauses.join(', ')}\n`;
+  const templates = Array.isArray(clausesDb.serviceTemplates) ? clausesDb.serviceTemplates : [];
+  if (templates.length > 0) {
+    section += '\n### תבניות שירות לפי סוג פרויקט\n';
+    section += 'כאשר יוצרים מסמך, בחר את הסעיפים הרלוונטיים לפי סוג הפרויקט:\n';
+    for (const template of templates) {
+      section += `\n**${template?.name || ''}** (${template?.type || ''}):\n`;
+      section += `- תמחור טיפוסי: ${JSON.stringify(template?.typicalPricing || {})}\n`;
+      section += `- לוח זמנים: ${template?.typicalTimeline || ''}\n`;
+      section += `- תוצרים: ${template?.typicalDeliverables || ''}\n`;
+      section += `- סעיפים רלוונטיים: ${Array.isArray(template?.relevantClauses) ? template.relevantClauses.join(', ') : ''}\n`;
+    }
   }
 
   // Add standard terms
-  section += '\n### תנאים סטנדרטיים\n';
-  const terms = clausesDb.standardTerms;
-  section += `- תוקף הצעה: ${terms.quoteValidity}\n`;
-  section += `- מע"מ: ${terms.vatNote}\n`;
-  section += `- תעריפים שעתיים: רגיל ${terms.hourlyRates.standard} ₪, פיתוח ${terms.hourlyRates.development} ₪, בכיר ${terms.hourlyRates.senior} ₪\n`;
-  section += `- סבבי תיקונים: ${terms.revisionRounds}\n`;
-  section += `- חלון משוב: ${terms.feedbackWindow}\n`;
-  section += `- תקופת אחריות: ${terms.warrantyPeriod}\n`;
-  section += `- הודעת ביטול: ${terms.cancellationNotice}\n`;
-  section += `- סף השהיית פרויקט: ${terms.suspensionThreshold}\n`;
+  const terms = clausesDb.standardTerms || {};
+  if (Object.keys(terms).length > 0) {
+    section += '\n### תנאים סטנדרטיים\n';
+  if (terms.quoteValidity) section += `- תוקף הצעה: ${terms.quoteValidity}\n`;
+  if (terms.vatNote) section += `- מע"מ: ${terms.vatNote}\n`;
+  if (terms.hourlyRates) section += `- תעריפים שעתיים: רגיל ${terms.hourlyRates.standard || '?'} ₪, פיתוח ${terms.hourlyRates.development || '?'} ₪, בכיר ${terms.hourlyRates.senior || '?'} ₪\n`;
+  if (terms.revisionRounds) section += `- סבבי תיקונים: ${terms.revisionRounds}\n`;
+  if (terms.feedbackWindow) section += `- חלון משוב: ${terms.feedbackWindow}\n`;
+  if (terms.warrantyPeriod) section += `- תקופת אחריות: ${terms.warrantyPeriod}\n`;
+  if (terms.cancellationNotice) section += `- הודעת ביטול: ${terms.cancellationNotice}\n`;
+  if (terms.suspensionThreshold) section += `- סף השהיית פרויקט: ${terms.suspensionThreshold}\n`;
+  }
 
   section += '\n### הנחיות לשימוש בסעיפים\n';
   section += '1. **הצעת מחיר**: כלול רק סעיפים עם appliesTo שכולל "quote". בדרך כלל: תנאי תשלום, סעיף ביטול, תוקף הצעה, והערת AI אם רלוונטי.\n';
@@ -423,6 +433,10 @@ function buildClausesPromptSection() {
   section += 'האפליקציה תזהה את הבלוק ותציע למשתמש לשמור את הסעיף.\n';
 
   return section;
+  } catch (err) {
+    console.error('buildClausesPromptSection error:', err.message);
+    return '';
+  }
 }
 
 function getSystemPrompt() {
