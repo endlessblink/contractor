@@ -11245,17 +11245,10 @@
           }
         }
 
-        // 3. No URL view param (bare "/" load) → auto-resume last active project
+        // 3. No URL view param (bare "/" load) → go to homepage
         if (!urlView) {
-          var activeId = projRes.activeProjectId;
-          if (activeId && (projRes.projects || []).some(function(p) { return p.id === activeId; })) {
-            var proj = (projRes.projects || []).find(function(p) { return p.id === activeId; });
-            var docType = proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote';
-            waitForSwitchProject(function() {
-              navigate('document', { clientId: proj.clientId, projectId: activeId, docType: docType });
-            });
-            return;
-          }
+          navigate('home');
+          return;
         }
 
         // 4. Fallback → dashboard
