@@ -754,12 +754,14 @@ app.post('/api/references/upload', upload.array('files', 20), (req, res) => {
     const results = [];
     const refsDir = join(DATA_DIR, 'references');
 
+    console.log('[upload-references] Saving to:', refsDir);
     for (const file of files) {
       const destPath = join(refsDir, file.originalname);
       const fileData = readFileSync(file.path);
       writeFileSync(destPath, fileData);
       rmSync(file.path);
       results.push({ filename: file.originalname, size: file.size });
+      console.log('[upload-references] Saved:', file.originalname, fileData.length, 'bytes');
     }
 
     res.json({ success: true, uploaded: results.length, files: results });
@@ -2269,7 +2271,12 @@ app.post('/api/learn-references', async (req, res) => {
     const collectedFiles = [];
     collectFiles(REFERENCES_DIR, '');
     console.log('[learn-references] REFERENCES_DIR:', REFERENCES_DIR);
-    console.log('[learn-references] Found', collectedFiles.length, 'documents recursively');
+    // Debug: list actual files in the directory
+    try {
+      const dirContents = readdirSync(REFERENCES_DIR);
+      console.log('[learn-references] Dir contents (' + dirContents.length + '):', dirContents.slice(0, 10).join(', '));
+    } catch (e) { console.log('[learn-references] Cannot list dir:', e.code); }
+    console.log('[learn-references] Found', collectedFiles.length, 'documents (docx/pdf only)');
 
     for (const { fullPath, displayName } of collectedFiles) {
       const ext = displayName.split('.').pop().toLowerCase();

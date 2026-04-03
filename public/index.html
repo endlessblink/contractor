@@ -7641,7 +7641,7 @@
       Array.from(files).forEach(f => formData.append('files', f));
 
       try {
-        const response = await fetch('/api/upload', {
+        const response = await fetch('/api/references/upload', {
           method: 'POST',
           body: formData,
         });
