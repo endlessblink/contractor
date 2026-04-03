@@ -9841,7 +9841,10 @@
       try {
         const resp = await fetch('/api/ai-status');
         const data = await resp.json();
-        if (data.configured) {
+        if (data.connectionError) {
+          resultEl.textContent = `\u2717 ${data.connectionError.slice(0, 100)}`;
+          resultEl.style.color = '#f87171';
+        } else if (data.configured) {
           resultEl.textContent = `\u2713 Connected: ${data.provider} (${data.model})`;
           resultEl.style.color = '#4ade80';
         } else {
