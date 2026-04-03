@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 import { build } from 'esbuild';
 import { execSync } from 'child_process';
-import { mkdirSync } from 'fs';
+import { mkdirSync, readFileSync } from 'fs';
+
+// Read version from updater.mjs
+const updaterSrc = readFileSync('src/updater.mjs', 'utf-8');
+const versionMatch = updaterSrc.match(/CURRENT_VERSION\s*=\s*'([^']+)'/);
+const VERSION = versionMatch ? versionMatch[1] : 'unknown';
+console.log(`Version: ${VERSION}`);
 
 const args = process.argv.slice(2);
 const idx = args.indexOf('--target');
@@ -42,7 +48,7 @@ console.log('✅ dist/bundle.cjs created');
 console.log(`\n📦 Step 2: Packaging with @yao-pkg/pkg...`);
 
 for (const t of targets) {
-  const outName = `contractor-${t.replace('node20-', '')}`;
+  const outName = `contractor-${t.replace('node20-', '')}-v${VERSION}`;
   console.log(`  → ${outName}`);
   execSync(
     `npx @yao-pkg/pkg dist/bundle.cjs --target ${t} --output dist/executables/${outName} --config package.json`,
