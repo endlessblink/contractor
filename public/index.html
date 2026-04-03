@@ -9135,7 +9135,7 @@
       const projectParam = currentProjectId ? `?projectId=${encodeURIComponent(currentProjectId)}` : '';
 
       try {
-        const response = await fetch(`/api/upload${projectParam}`, {
+        const response = await fetch(`/api/references/upload${projectParam}`, {
           method: 'POST',
           body: formData,
         });

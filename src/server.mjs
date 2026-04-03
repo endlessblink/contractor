@@ -676,7 +676,21 @@ app.use((req, _res, next) => {
   if (req.method === 'POST') console.log(`[REQ] ${req.method} ${req.url} (${req.headers['content-type'] || 'no content-type'})`);
   next();
 });
-app.use(serveStatic(join(__dirname, '..', 'public')));
+app.use(serveStatic(join(__dirname, '..', 'public'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html') || path.endsWith('/')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
+
+// Force fresh HTML on every load (prevent browser caching old version)
+app.get('/', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(join(__dirname, '..', 'public', 'index.html'));
+});
 
 // ─── User Profile API ────────────────────────────────────────────────────────
 
