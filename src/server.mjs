@@ -2922,15 +2922,19 @@ app.post('/api/import', upload.single('backup'), (req, res) => {
 });
 
 // ─── AI provider status ──────────────────────────────────────────────────────
-app.get('/api/ai-status', (req, res) => {
+app.get('/api/ai-status', async (req, res) => {
   try {
     const config = getProviderConfig();
-    res.json({
-      configured: config.configured,
-      provider: config.provider,
-      model: config.model,
-      useClaudeOAuth: config.useClaudeOAuth,
-    });
+    if (!config.configured) {
+      return res.json({ configured: false, provider: config.provider, model: config.model });
+    }
+    // Actually test the API connection with a minimal request
+    try {
+      await chatCompletion({ system: 'Reply with just OK', messages: [{ role: 'user', content: 'test' }], maxTokens: 5 });
+      res.json({ configured: true, provider: config.provider, model: config.model, useClaudeOAuth: config.useClaudeOAuth });
+    } catch (apiErr) {
+      res.json({ configured: true, provider: config.provider, model: config.model, connectionError: apiErr.message });
+    }
   } catch (err) {
     res.json({ configured: false, error: err.message });
   }
