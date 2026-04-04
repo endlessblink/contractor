@@ -25,7 +25,7 @@
 
 | ID | Task | Priority | Status |
 |----|------|----------|--------|
-| **TASK-012** | **E2E tests for chat→form flow** — Playwright tests verifying FORM_DATA/FORM_UPDATE modify form correctly | **P1** | TODO |
+| ~~**TASK-012**~~ | ✅ **E2E tests for chat→form flow** — Playwright tests verifying FORM_DATA/FORM_UPDATE modify form correctly | **P1** | ✅ **DONE** (2026-04-04) |
 | **TASK-003** | **Preview panel** — togglePreview button exists, render-preview.mjs built, but not wired as modal | **P2** | TODO |
 | **TASK-009** | **Light mode polish** — clause text, form sections, chat bubbles need color fixes in light mode | **P2** | TODO |
 | **TASK-019** | **Button design tokens** — replace !important overrides with proper CSS custom properties for buttons | **P2** | TODO |
