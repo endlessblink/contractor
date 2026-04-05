@@ -40,7 +40,6 @@
     "assets": [
       "public/**/*",
       "assets/**/*",
-      "knowledge/clauses-db.json",
       "knowledge/clauses-db.sample.json",
       "data/user-profile.example.json"
     ],
