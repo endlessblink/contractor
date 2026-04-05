@@ -774,13 +774,11 @@ app.post('/api/install-update', async (_req, res) => {
     const info = global._updateAvailable || await checkUpdateAvailable();
     if (!info) return res.json({ upToDate: true, version: CURRENT_VERSION });
     if (!info.asset) return res.status(400).json({ error: 'No binary available for this platform', url: info.url });
-    // Respond immediately — the download + restart happens async
-    res.json({ status: 'downloading', latest: info.latest });
     await downloadAndInstall(info.asset);
+    // If we get here, the process is about to exit — but respond just in case
+    res.json({ status: 'installed', latest: info.latest });
   } catch (err) {
-    // If headers already sent, just log
-    if (!res.headersSent) res.status(500).json({ error: err.message });
-    else console.error('Update install failed:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

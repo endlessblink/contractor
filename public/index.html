@@ -9647,12 +9647,16 @@
       const installRes = await fetch('/api/install-update', { method: 'POST' });
       const installData = await installRes.json();
 
+      if (!installRes.ok || installData.error) {
+        throw new Error(installData.error || 'Update install failed');
+      }
+
       if (installData.upToDate) {
         btn.textContent = '✓ הגרסה מעודכנת';
         return;
       }
 
-      if (installData.status === 'downloading') {
+      if (installData.status === 'downloading' || installData.status === 'installed') {
         btn.textContent = 'מתקין... האפליקציה תאתחל בקרוב';
         if (textEl) textEl.textContent = 'מתקין עדכון, אנא המתן...';
         // Server will restart — poll until it comes back
@@ -9665,15 +9669,16 @@
         }, 5000);
       }
     } catch (err) {
-      btn.textContent = 'שגיאה בעדכון';
+      btn.textContent = 'שגיאה: ' + (err.message || 'עדכון נכשל');
       btn.style.color = '#f87171';
+      if (textEl) textEl.textContent = 'שגיאה בעדכון: ' + (err.message || '');
       console.error('Update failed:', err);
       setTimeout(() => {
         btn.textContent = origText;
         btn.style.color = '';
         btn.style.opacity = '';
         btn.disabled = false;
-      }, 3000);
+      }, 5000);
     }
   }
 
@@ -9713,7 +9718,10 @@
     async function loadProfile() {
       try {
         const res = await fetch('/api/user-profile');
-        if (res.ok) currentProfile = await res.json();
+        if (res.ok) {
+          currentProfile = await res.json();
+          if (currentProfile.name) localStorage.setItem('ownerName', currentProfile.name);
+        }
       } catch {}
     }
 
@@ -9851,7 +9859,9 @@
         if (res.ok) {
           const result = await res.json();
           currentProfile = result.profile;
+          if (currentProfile.name) localStorage.setItem('ownerName', currentProfile.name);
           updateHeaderFromProfile();
+          renderDashboard();
           closeSettings();
         }
       } catch (err) { console.error('Failed to save profile:', err); }

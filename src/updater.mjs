@@ -1,8 +1,8 @@
 import { createWriteStream, existsSync, renameSync, chmodSync, unlinkSync } from 'fs';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 
 const GITHUB_REPO = 'endlessblink/contractor';
-export const CURRENT_VERSION = '1.6.5';
+export const CURRENT_VERSION = '1.6.6';
 
 function getPlatformSuffix() {
   const { platform, arch } = process;
@@ -73,10 +73,31 @@ export async function downloadAndInstall(asset) {
 
   console.log('📦 Installing update...');
   const backupPath = process.execPath + '.old';
-  if (existsSync(backupPath)) { try { unlinkSync(backupPath); } catch {} }
-  renameSync(process.execPath, backupPath);
-  renameSync(tmpPath, process.execPath);
-  try { chmodSync(process.execPath, 0o755); } catch {}
+
+  try {
+    if (existsSync(backupPath)) { try { unlinkSync(backupPath); } catch {} }
+    renameSync(process.execPath, backupPath);
+    renameSync(tmpPath, process.execPath);
+    try { chmodSync(process.execPath, 0o755); } catch {}
+
+    // macOS: remove quarantine attribute so Gatekeeper doesn't block it
+    if (process.platform === 'darwin') {
+      try {
+        execSync('xattr -d com.apple.quarantine "' + process.execPath + '"', { stdio: 'ignore' });
+      } catch {} // xattr may fail if attribute doesn't exist — that's fine
+    }
+  } catch (err) {
+    // Rename failed — restore backup if possible
+    console.error('❌ Update install failed:', err.message);
+    try {
+      if (existsSync(backupPath) && !existsSync(process.execPath)) {
+        renameSync(backupPath, process.execPath);
+      }
+    } catch {}
+    // Clean up downloaded file
+    try { unlinkSync(tmpPath); } catch {}
+    throw new Error('Failed to replace executable: ' + err.message + '. Try downloading manually from GitHub.');
+  }
 
   console.log('✅ Update installed! Restarting...');
   setTimeout(() => {
