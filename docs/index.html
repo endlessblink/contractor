@@ -226,13 +226,11 @@
     /* ── Hero ─────────────────────────────────────── */
     .hero {
       position: relative;
-      min-height: 90vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       text-align: center;
-      padding: 120px 24px 128px;
+      padding: 140px 24px 80px;
       overflow: hidden;
     }
 
@@ -494,19 +492,17 @@
 
     .screenshots-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 28px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
     }
 
     .screenshot-wrap {
       position: relative;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .screenshot-wrap:nth-child(1) {
-      transform: rotate(-1deg);
-      margin-top: -20px;
-    }
-    .screenshot-wrap:nth-child(2) {
-      transform: rotate(1deg);
+    .screenshot-wrap:hover {
+      transform: translateY(-6px) scale(1.02);
+      z-index: 2;
     }
 
     .screenshot-frame {
@@ -566,6 +562,7 @@
 
     @media (max-width: 768px) {
       .screenshots-grid { grid-template-columns: 1fr; }
+      .screenshot-wrap:hover { transform: none; }
       .screenshot-wrap:nth-child(1),
       .screenshot-wrap:nth-child(2) {
         transform: none;
@@ -907,7 +904,7 @@
           </span>
         </div>
         <div class="hero-image-wrap">
-          <img src="contractor-cover.png" alt="צילום מסך של Contractor" class="hero-image" width="960" height="540">
+          <img src="screenshot-dashboard.png" alt="צילום מסך של Contractor" class="hero-image" width="960" height="540">
         </div>
       </div>
     </section>
@@ -980,7 +977,18 @@
               </div>
               <img src="screenshot-form.png" alt="טופס יצירת מסמך" loading="lazy" width="800" height="500">
             </div>
-            <p class="screenshot-caption">טופס חכם עם מילוי אוטומטי ובחירת סעיפים</p>
+            <p class="screenshot-caption">טופס חכם עם תמחור ומילוי אוטומטי</p>
+          </div>
+          <div class="screenshot-wrap reveal">
+            <div class="screenshot-frame">
+              <div class="screenshot-chrome">
+                <span class="chrome-dot chrome-dot--red"></span>
+                <span class="chrome-dot chrome-dot--yellow"></span>
+                <span class="chrome-dot chrome-dot--green"></span>
+              </div>
+              <img src="screenshot-knowledge.png" alt="בסיס ידע ולמידה ממסמכים" loading="lazy" width="800" height="500">
+            </div>
+            <p class="screenshot-caption">בסיס ידע — למידה אוטומטית מהמסמכים שלך</p>
           </div>
         </div>
       </div>
