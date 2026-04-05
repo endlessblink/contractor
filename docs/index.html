@@ -47,8 +47,10 @@
       color: var(--text-primary);
       line-height: 1.6;
       overflow-x: hidden;
-      background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
-      background-size: 24px 24px;
+      background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E"),
+        radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 200px 200px, 24px 24px;
     }
 
     section {
@@ -71,6 +73,17 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    @keyframes heroGlowDrift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -20px) scale(1.05); }
+      66% { transform: translate(-20px, 15px) scale(0.95); }
+    }
+
     .reveal {
       opacity: 0;
       transform: translateY(28px);
@@ -89,13 +102,18 @@
     .hero-stagger > *:nth-child(1) { animation-delay: 0.05s; }
     .hero-stagger > *:nth-child(2) { animation-delay: 0.15s; }
     .hero-stagger > *:nth-child(3) { animation-delay: 0.25s; }
-    .hero-stagger > *:nth-child(4) { animation-delay: 0.35s; }
-    .hero-stagger > *:nth-child(5) { animation-delay: 0.45s; }
-    .hero-stagger > *:nth-child(6) { animation-delay: 0.55s; }
+    .hero-stagger > *:nth-child(4) { animation-delay: 0.3s; }
+    .hero-stagger > *:nth-child(5) { animation-delay: 0.38s; }
+    .hero-stagger > *:nth-child(6) { animation-delay: 0.45s; }
+    .hero-stagger > *:nth-child(7) { animation-delay: 0.52s; }
+    .hero-stagger > *:nth-child(8) { animation-delay: 0.6s; }
 
     @media (prefers-reduced-motion: reduce) {
       .reveal { opacity: 1; transform: none; transition: none; }
       .hero-stagger > * { opacity: 1; animation: none; }
+      .hero-glow-secondary { animation: none !important; }
+      .oss-pulse { animation: none !important; }
+      .btn-primary, .btn-ghost, .nav-cta, .feature-card, .platform-item { transition: none !important; }
     }
 
     /* ── Utilities ────────────────────────────────── */
@@ -107,10 +125,11 @@
 
     .section-label {
       color: var(--accent);
-      font-size: 0.85rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
       margin-bottom: 12px;
+      text-transform: uppercase;
     }
 
     .section-title {
@@ -159,8 +178,24 @@
       font-weight: 500;
       color: var(--text-secondary);
       transition: color 0.2s;
+      position: relative;
+    }
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      right: 50%;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 1px;
+      transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1), right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .nav-links a:hover { color: var(--text-primary); }
+    .nav-links a:hover::after {
+      left: 0;
+      right: 0;
+    }
 
     .nav-cta {
       display: inline-flex;
@@ -175,12 +210,13 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s, box-shadow 0.2s;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       white-space: nowrap;
     }
     .nav-cta:hover {
       background: var(--accent-hover);
       box-shadow: 0 0 20px var(--accent-glow);
+      transform: scale(1.02);
     }
 
     @media (max-width: 768px) {
@@ -196,7 +232,7 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 120px 24px 80px;
+      padding: 120px 24px 128px;
       overflow: hidden;
     }
 
@@ -211,6 +247,18 @@
       background: radial-gradient(circle, rgba(0, 210, 180, 0.08) 0%, transparent 65%);
       pointer-events: none;
       z-index: 0;
+    }
+
+    .hero-glow-secondary {
+      position: absolute;
+      top: 10%;
+      right: 15%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(0, 180, 210, 0.05) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+      animation: heroGlowDrift 12s ease-in-out infinite;
     }
 
     .hero > * { position: relative; z-index: 1; }
@@ -230,13 +278,14 @@
     }
 
     .hero-title {
-      font-size: clamp(3rem, 8vw, 6rem);
-      font-weight: 900;
-      line-height: 1.05;
-      letter-spacing: -0.03em;
+      font-size: clamp(3.5rem, 10vw, 7.5rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
       margin-bottom: 16px;
       direction: ltr;
       unicode-bidi: embed;
+      text-shadow: 0 0 80px rgba(0, 210, 180, 0.15), 0 0 160px rgba(0, 210, 180, 0.05);
     }
 
     .hero-subtitle {
@@ -244,7 +293,15 @@
       font-weight: 400;
       color: var(--text-secondary);
       max-width: 600px;
-      margin-bottom: 40px;
+      margin-bottom: 32px;
+    }
+
+    .hero-divider {
+      width: 200px;
+      height: 1px;
+      margin: 0 auto 32px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.5;
     }
 
     .hero-buttons {
@@ -268,13 +325,13 @@
       border: none;
       border-radius: 10px;
       cursor: pointer;
-      transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       box-shadow: 0 0 30px var(--accent-glow), 0 4px 16px rgba(0,0,0,0.3);
     }
     .btn-primary:hover {
       background: var(--accent-hover);
       box-shadow: 0 0 50px rgba(0, 210, 180, 0.25), 0 4px 20px rgba(0,0,0,0.4);
-      transform: translateY(-1px);
+      transform: translateY(-1px) scale(1.02);
     }
 
     .btn-ghost {
@@ -290,11 +347,12 @@
       border: 1px solid var(--border-hover);
       border-radius: 10px;
       cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
+      transition: border-color 0.2s, background 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .btn-ghost:hover {
       border-color: rgba(255,255,255,0.25);
       background: rgba(255,255,255,0.03);
+      transform: scale(1.02);
     }
 
     .hero-platforms {
@@ -309,27 +367,41 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: var(--text-muted);
       direction: ltr;
       unicode-bidi: embed;
+      transition: color 0.2s;
+    }
+    .platform-item:hover {
+      color: var(--text-secondary);
     }
     .platform-item svg {
       width: 16px;
       height: 16px;
-      fill: var(--text-muted);
+      fill: currentColor;
+    }
+
+    .hero-image-wrap {
+      max-width: 960px;
+      width: 100%;
+      perspective: 1200px;
     }
 
     .hero-image {
-      max-width: 960px;
       width: 100%;
       border-radius: 16px;
       box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px var(--border);
+      transform: rotateX(2deg);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hero-image-wrap:hover .hero-image {
+      transform: rotateX(0deg);
     }
 
     /* ── Features ─────────────────────────────────── */
     .features {
-      padding: 120px 0;
+      padding: 80px 0;
     }
 
     .features-grid {
@@ -340,14 +412,19 @@
 
     .feature-card {
       padding: 32px;
-      background: var(--card);
+      background: linear-gradient(180deg, var(--card) 0%, rgba(26, 29, 38, 0.7) 100%);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      transition: border-color 0.3s, box-shadow 0.3s;
+      transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .feature-card:nth-child(3),
+    .feature-card:nth-child(4) {
+      border-radius: 16px;
     }
     .feature-card:hover {
       border-color: rgba(0, 210, 180, 0.25);
       box-shadow: 0 0 40px rgba(0, 210, 180, 0.06);
+      transform: translateY(-2px);
     }
 
     .feature-icon {
@@ -356,16 +433,42 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 10px;
       margin-bottom: 18px;
     }
     .feature-icon svg {
       width: 28px;
       height: 28px;
-      stroke: var(--accent);
       fill: none;
       stroke-width: 1.8;
       stroke-linecap: round;
       stroke-linejoin: round;
+    }
+
+    /* Per-card icon tinting */
+    .feature-card:nth-child(1) .feature-icon {
+      background: rgba(0, 210, 180, 0.12);
+    }
+    .feature-card:nth-child(1) .feature-icon svg {
+      stroke: #00d2b4;
+    }
+    .feature-card:nth-child(2) .feature-icon {
+      background: rgba(99, 102, 241, 0.12);
+    }
+    .feature-card:nth-child(2) .feature-icon svg {
+      stroke: #6366f1;
+    }
+    .feature-card:nth-child(3) .feature-icon {
+      background: rgba(251, 146, 60, 0.12);
+    }
+    .feature-card:nth-child(3) .feature-icon svg {
+      stroke: #fb923c;
+    }
+    .feature-card:nth-child(4) .feature-icon {
+      background: rgba(34, 197, 94, 0.12);
+    }
+    .feature-card:nth-child(4) .feature-icon svg {
+      stroke: #22c55e;
     }
 
     .feature-title {
@@ -386,7 +489,7 @@
 
     /* ── Screenshots ──────────────────────────────── */
     .screenshots {
-      padding: 120px 0;
+      padding: 112px 0;
     }
 
     .screenshots-grid {
@@ -395,11 +498,41 @@
       gap: 28px;
     }
 
+    .screenshot-wrap {
+      position: relative;
+    }
+    .screenshot-wrap:nth-child(1) {
+      transform: rotate(-1deg);
+      margin-top: -20px;
+    }
+    .screenshot-wrap:nth-child(2) {
+      transform: rotate(1deg);
+    }
+
     .screenshot-frame {
       border-radius: var(--radius);
       overflow: hidden;
       background: var(--elevated);
       border: 1px solid var(--border);
+      position: relative;
+    }
+
+    /* Reflection effect */
+    .screenshot-frame::after {
+      content: '';
+      position: absolute;
+      bottom: -40%;
+      left: 5%;
+      right: 5%;
+      height: 40%;
+      background: inherit;
+      transform: scaleY(-1);
+      opacity: 0.05;
+      filter: blur(8px);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.3), transparent);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.3), transparent);
+      pointer-events: none;
+      z-index: -1;
     }
 
     .screenshot-chrome {
@@ -433,11 +566,16 @@
 
     @media (max-width: 768px) {
       .screenshots-grid { grid-template-columns: 1fr; }
+      .screenshot-wrap:nth-child(1),
+      .screenshot-wrap:nth-child(2) {
+        transform: none;
+        margin-top: 0;
+      }
     }
 
     /* ── Install ──────────────────────────────────── */
     .install {
-      padding: 120px 0;
+      padding: 80px 0;
     }
 
     .tabs-bar {
@@ -460,14 +598,16 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s, color 0.2s;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
       direction: ltr;
       unicode-bidi: embed;
+      position: relative;
     }
     .tab-btn:hover { color: var(--text-primary); }
     .tab-btn.active {
       background: var(--card);
       color: var(--text-primary);
+      box-shadow: 0 1px 0 0 var(--accent);
     }
 
     .tab-panel { display: none; }
@@ -475,30 +615,47 @@
     /* noscript fallback */
     noscript .tab-panel { display: block; margin-bottom: 32px; }
 
+    .steps-list {
+      position: relative;
+    }
+    /* Connecting line between steps */
+    .steps-list::before {
+      content: '';
+      position: absolute;
+      top: 18px;
+      right: 14px;
+      bottom: 42px;
+      width: 1px;
+      border-right: 1px dashed var(--border);
+    }
+
     .step {
       display: flex;
       gap: 18px;
       align-items: flex-start;
       margin-bottom: 24px;
+      position: relative;
     }
 
     .step-num {
       flex-shrink: 0;
-      width: 36px;
-      height: 36px;
+      width: 28px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
       background: var(--accent-subtle);
       color: var(--accent);
-      font-weight: 700;
-      font-size: 0.9rem;
-      border-radius: 50%;
+      font-weight: 800;
+      font-size: 0.8rem;
+      border-radius: 8px;
+      position: relative;
+      z-index: 1;
     }
 
     .step-text {
       font-size: 0.95rem;
-      padding-top: 6px;
+      padding-top: 4px;
     }
 
     .step-code {
@@ -521,7 +678,7 @@
 
     /* ── Open Source ───────────────────────────────── */
     .opensource {
-      padding: 120px 0;
+      padding: 96px 0;
     }
 
     .oss-card {
@@ -535,6 +692,23 @@
       border: 1px solid var(--border);
       overflow: hidden;
     }
+    /* Terminal grid pattern */
+    .oss-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0, 210, 180, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 210, 180, 0.03) 1px, transparent 1px);
+      background-size: 20px 20px;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: var(--radius);
+    }
+    .oss-card > * {
+      position: relative;
+      z-index: 1;
+    }
     .oss-card::before {
       content: '';
       position: absolute;
@@ -547,6 +721,7 @@
       -webkit-mask-composite: xor;
       mask-composite: exclude;
       pointer-events: none;
+      z-index: 2;
     }
 
     .oss-icon {
@@ -564,6 +739,26 @@
       font-size: 1.5rem;
       font-weight: 800;
       margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .oss-pulse {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulseGlow 2s ease-in-out infinite;
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .oss-mit {
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+      color: var(--accent);
+      font-weight: 700;
     }
 
     .oss-desc {
@@ -600,7 +795,16 @@
     /* ── Footer ───────────────────────────────────── */
     .footer {
       padding: 40px 0;
-      border-top: 1px solid var(--border);
+      position: relative;
+    }
+    .footer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border) 20%, var(--border) 80%, transparent);
     }
 
     .footer .container {
@@ -614,6 +818,12 @@
       color: var(--text-muted);
       direction: ltr;
       unicode-bidi: embed;
+    }
+
+    .footer-tagline {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
     }
 
     .footer-right {
@@ -666,10 +876,12 @@
   <main>
     <!-- ────────── Hero ────────── -->
     <section class="hero" aria-label="ראשי">
+      <div class="hero-glow-secondary" aria-hidden="true"></div>
       <div class="hero-stagger">
         <div class="hero-badge">v1.7.0 — קוד פתוח &#x2726; חינמי</div>
         <h1 class="hero-title">Contractor</h1>
         <p class="hero-subtitle">הצעות מחיר, חוזים והזמנות עבודה — בעזרת AI</p>
+        <div class="hero-divider" aria-hidden="true"></div>
         <div class="hero-buttons">
           <a href="https://github.com/endlessblink/contractor/releases/latest" class="btn-primary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -694,7 +906,9 @@
             Linux
           </span>
         </div>
-        <img src="contractor-cover.png" alt="צילום מסך של Contractor" class="hero-image" width="960" height="540">
+        <div class="hero-image-wrap">
+          <img src="contractor-cover.png" alt="צילום מסך של Contractor" class="hero-image" width="960" height="540">
+        </div>
       </div>
     </section>
 
@@ -746,7 +960,7 @@
           <h2 class="section-title">ממשק שתוכנן לפרילנסרים ישראליים</h2>
         </div>
         <div class="screenshots-grid">
-          <div class="reveal">
+          <div class="screenshot-wrap reveal">
             <div class="screenshot-frame">
               <div class="screenshot-chrome">
                 <span class="chrome-dot chrome-dot--red"></span>
@@ -757,7 +971,7 @@
             </div>
             <p class="screenshot-caption">צ'אט AI שמנחה אותך ביצירת המסמך</p>
           </div>
-          <div class="reveal">
+          <div class="screenshot-wrap reveal">
             <div class="screenshot-frame">
               <div class="screenshot-chrome">
                 <span class="chrome-dot chrome-dot--red"></span>
@@ -791,52 +1005,58 @@
           </noscript>
 
           <div class="tab-panel active" id="panel-win" role="tabpanel" aria-labelledby="tab-win">
-            <div class="step">
-              <span class="step-num">1</span>
-              <p class="step-text">הורד את קובץ ה-EXE מעמוד ההורדות</p>
-            </div>
-            <div class="step">
-              <span class="step-num">2</span>
-              <p class="step-text">לחץ פעמיים על הקובץ להפעלה</p>
-            </div>
-            <div class="step">
-              <span class="step-num">3</span>
-              <p class="step-text">מוכן! האפליקציה נפתחת אוטומטית בדפדפן</p>
+            <div class="steps-list">
+              <div class="step">
+                <span class="step-num">1</span>
+                <p class="step-text">הורד את קובץ ה-EXE מעמוד ההורדות</p>
+              </div>
+              <div class="step">
+                <span class="step-num">2</span>
+                <p class="step-text">לחץ פעמיים על הקובץ להפעלה</p>
+              </div>
+              <div class="step">
+                <span class="step-num">3</span>
+                <p class="step-text">מוכן! האפליקציה נפתחת אוטומטית בדפדפן</p>
+              </div>
             </div>
           </div>
 
           <div class="tab-panel" id="panel-mac" role="tabpanel" aria-labelledby="tab-mac">
-            <div class="step">
-              <span class="step-num">1</span>
-              <p class="step-text">הורד את הקובץ מעמוד ההורדות</p>
-            </div>
-            <div class="step">
-              <span class="step-num">2</span>
-              <p class="step-text">קליק ימני על הקובץ ← Open ← Allow</p>
-            </div>
-            <div class="step">
-              <span class="step-num">3</span>
-              <p class="step-text">מוכן! האפליקציה נפתחת בדפדפן</p>
+            <div class="steps-list">
+              <div class="step">
+                <span class="step-num">1</span>
+                <p class="step-text">הורד את הקובץ מעמוד ההורדות</p>
+              </div>
+              <div class="step">
+                <span class="step-num">2</span>
+                <p class="step-text">קליק ימני על הקובץ ← Open ← Allow</p>
+              </div>
+              <div class="step">
+                <span class="step-num">3</span>
+                <p class="step-text">מוכן! האפליקציה נפתחת בדפדפן</p>
+              </div>
             </div>
           </div>
 
           <div class="tab-panel" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux">
-            <div class="step">
-              <span class="step-num">1</span>
-              <p class="step-text">הורד את הקובץ מעמוד ההורדות</p>
-            </div>
-            <div class="step">
-              <span class="step-num">2</span>
-              <div class="step-text">
-                הפעל הרשאות הרצה:
-                <code class="step-code">chmod +x contractor-linux-x64</code>
+            <div class="steps-list">
+              <div class="step">
+                <span class="step-num">1</span>
+                <p class="step-text">הורד את הקובץ מעמוד ההורדות</p>
               </div>
-            </div>
-            <div class="step">
-              <span class="step-num">3</span>
-              <div class="step-text">
-                הרץ את האפליקציה:
-                <code class="step-code">./contractor-linux-x64</code>
+              <div class="step">
+                <span class="step-num">2</span>
+                <div class="step-text">
+                  הפעל הרשאות הרצה:
+                  <code class="step-code">chmod +x contractor-linux-x64</code>
+                </div>
+              </div>
+              <div class="step">
+                <span class="step-num">3</span>
+                <div class="step-text">
+                  הרץ את האפליקציה:
+                  <code class="step-code">./contractor-linux-x64</code>
+                </div>
               </div>
             </div>
           </div>
@@ -859,8 +1079,8 @@
             <div class="oss-icon">
               <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
             </div>
-            <h2 class="oss-title">קוד פתוח ובחינם</h2>
-            <p class="oss-desc">Contractor מופץ תחת רישיון MIT. הקוד פתוח לחלוטין — ניתן להשתמש, לשנות ולהפיץ בחופשיות, לכל מטרה.</p>
+            <h2 class="oss-title"><span class="oss-pulse" aria-hidden="true"></span> קוד פתוח ובחינם</h2>
+            <p class="oss-desc">Contractor מופץ תחת רישיון <span class="oss-mit">MIT</span>. הקוד פתוח לחלוטין — ניתן להשתמש, לשנות ולהפיץ בחופשיות, לכל מטרה.</p>
             <div class="oss-badges">
               <img src="https://img.shields.io/github/stars/endlessblink/contractor?style=flat&labelColor=1a1d26&color=00d2b4&logo=github&logoColor=white" alt="GitHub Stars" loading="lazy">
               <img src="https://img.shields.io/github/license/endlessblink/contractor?style=flat&labelColor=1a1d26&color=00d2b4" alt="MIT License" loading="lazy">
@@ -879,7 +1099,10 @@
   <!-- ────────── Footer ────────── -->
   <footer class="footer">
     <div class="container">
-      <span class="footer-text">Contractor v1.7.0 &middot; MIT License</span>
+      <div>
+        <span class="footer-text">Contractor v1.7.0 &middot; MIT License</span>
+        <p class="footer-tagline">נבנה עבור פרילנסרים ישראליים</p>
+      </div>
       <div class="footer-right">
         <a href="https://github.com/endlessblink/contractor" target="_blank" rel="noopener" aria-label="GitHub">
           <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
