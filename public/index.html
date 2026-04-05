@@ -4288,7 +4288,7 @@
           <div class="dash-inner">
             <!-- Welcome -->
             <div class="dash-welcome">
-              <h1 class="dash-welcome-name" id="dashWelcomeName">היי נועם,</h1>
+              <h1 class="dash-welcome-name" id="dashWelcomeName">היי,</h1>
               <p class="dash-welcome-sub">הנה הסקירה שלך</p>
             </div>
             <!-- Stats -->
@@ -10550,8 +10550,8 @@
     function renderDashboard() {
       var welcomeEl = document.getElementById('dashWelcomeName');
       if (welcomeEl) {
-        var storedName = localStorage.getItem('ownerName') || 'נועם';
-        welcomeEl.textContent = 'היי ' + storedName + ',';
+        var storedName = localStorage.getItem('ownerName') || '';
+        welcomeEl.textContent = storedName ? 'היי ' + storedName + ',' : 'שלום,';
       }
       Promise.all([
         fetch('/api/clients').then(function(r) { return r.json(); }),
