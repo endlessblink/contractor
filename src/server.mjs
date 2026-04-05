@@ -691,7 +691,8 @@ const dynamicUpload = multer({
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
-app.use(express.json({ limit: '20mb' }));
+app.disable('x-powered-by');
+app.use(express.json({ limit: '5mb' }));
 // Log all POST requests for debugging
 app.use((req, _res, next) => {
   if (req.method === 'POST') console.log(`[REQ] ${req.method} ${req.url} (${req.headers['content-type'] || 'no content-type'})`);
@@ -3066,7 +3067,7 @@ if (process.argv.includes('--reset')) {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, async () => {
+app.listen(PORT, '127.0.0.1', async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Open http://localhost:${PORT} in your browser`);
   const aiConfig = getProviderConfig();
