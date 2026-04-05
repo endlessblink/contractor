@@ -615,7 +615,7 @@ function buildExtractionPrompt(existingClauseIds) {
   "updatedStandardTerms": {
     "quoteValidity": "30 יום",
     "vatNote": "...",
-    "hourlyRates": { "standard": 185, "development": 250, "senior": 600 },
+    "hourlyRates": { "standard": 0, "development": 0, "senior": 0 },
     "revisionRounds": 2,
     "feedbackWindow": "2 ימי עבודה",
     "warrantyPeriod": "5 ימי עבודה",

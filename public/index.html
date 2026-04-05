@@ -5028,7 +5028,7 @@
             <div class="tmpl-settings-grid">
               <div class="tmpl-setting-field">
                 <label>תעריף שעות נוספות (₪)</label>
-                <input type="number" id="tmplSettingHourlyRate" placeholder="185" min="0">
+                <input type="number" id="tmplSettingHourlyRate" placeholder="200" min="0">
                 <span class="setting-hint">לשעות מעבר לחבילה</span>
               </div>
               <div class="tmpl-setting-field">
@@ -5357,7 +5357,7 @@
         <!-- Tab 3: About -->
         <div class="settings-tab-panel" id="settingsTabAbout">
           <p class="settings-about-title">Contractor</p>
-          <p id="settingsVersion" class="settings-about-version">Noam Naumovsky Productions</p>
+          <p id="settingsVersion" class="settings-about-version">Contractor</p>
 
           <div id="settingsUpdateBanner" style="display:none;margin-bottom:14px;padding:10px 14px;border:1px solid var(--accent-border);border-radius:8px;font-size:0.78rem;">
             <span style="color:var(--accent-text);font-weight:600;" id="settingsUpdateText"></span>
@@ -5372,9 +5372,7 @@
           </div>
 
           <div class="settings-social-links">
-            <a href="https://github.com/endlessblink" target="_blank">GitHub</a>
-            <a href="https://www.linkedin.com/in/noamnaumovsky/" target="_blank">LinkedIn</a>
-            <a href="https://x.com/NNaumovsky" target="_blank">X / Twitter</a>
+            <a href="https://github.com/endlessblink/contractor" target="_blank">GitHub</a>
           </div>
 
           <div class="settings-about-actions">
@@ -5396,9 +5394,7 @@
     <div style="position:fixed;bottom:0;left:0;right:48px;display:flex;justify-content:space-between;align-items:center;padding:4px 16px;font-size:0.65rem;color:var(--text-muted);background:var(--app-bg);border-top:1px solid var(--border);z-index:10;direction:rtl;opacity:0.7;">
       <span>Contractor — אינו מהווה תחליף לייעוץ משפטי או חשבונאי</span>
       <span style="display:flex;gap:12px;direction:ltr;">
-        <a href="https://github.com/endlessblink" target="_blank" style="color:var(--text-muted);text-decoration:none;">GitHub</a>
-        <a href="https://www.linkedin.com/in/noamnaumovsky/" target="_blank" style="color:var(--text-muted);text-decoration:none;">LinkedIn</a>
-        <a href="https://x.com/NNaumovsky" target="_blank" style="color:var(--text-muted);text-decoration:none;">X</a>
+        <a href="https://github.com/endlessblink/contractor" target="_blank" style="color:var(--text-muted);text-decoration:none;">GitHub</a>
       </span>
     </div>
     </div><!-- /main-content -->
@@ -9811,7 +9807,7 @@
           const status = await statusRes.json();
           var verEl = document.getElementById('settingsVersion');
           var headerVerEl = document.getElementById('settingsHeaderVersion');
-          if (verEl && status.version) verEl.textContent = 'v' + status.version + ' — Noam Naumovsky Productions';
+          if (verEl && status.version) verEl.textContent = 'v' + status.version;
           if (headerVerEl && status.version) headerVerEl.textContent = 'v' + status.version;
           var bannerEl = document.getElementById('settingsUpdateBanner');
           var textEl = document.getElementById('settingsUpdateText');
