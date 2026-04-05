@@ -15,6 +15,7 @@ projects/
 knowledge/learned-context.json
 knowledge/project-context.md
 scripts/
+!scripts/update-mac.sh
 
 # Private data (not shared in open source)
 knowledge/clauses-db.json
