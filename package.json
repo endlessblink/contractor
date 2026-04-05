@@ -7,6 +7,7 @@
     "start": "node src/server.mjs",
     "generate": "node src/generate-quote.mjs",
     "test": "node --test tests/",
+    "test:smoke": "node e2e/smoke-test-binary.mjs",
     "build:doc-skills": "npx esbuild src/shared/doc-skills/index.mjs --bundle --format=iife --global-name=DocSkillsPipeline --outfile=public/js/doc-skills-pipeline.js",
     "build:preview": "npx esbuild src/render-preview.mjs --bundle --format=iife --global-name=DocPreview --outfile=public/js/render-preview.js",
     "build:skills": "npx esbuild src/shared/skills/index.mjs --bundle --format=iife --global-name=SkillsPipeline --outfile=public/js/skills-pipeline.js && npx esbuild src/shared/doc-skills/index.mjs --bundle --format=iife --global-name=DocSkillsPipeline --outfile=public/js/doc-skills-pipeline.js && npx esbuild src/render-preview.mjs --bundle --format=iife --global-name=DocPreview --outfile=public/js/render-preview.js",

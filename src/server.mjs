@@ -768,15 +768,14 @@ app.post('/api/check-update', async (_req, res) => {
   }
 });
 
-// Download and install update (replaces exe + restarts)
+// Download and install update (replaces exe, tells user to restart)
 app.post('/api/install-update', async (_req, res) => {
   try {
     const info = global._updateAvailable || await checkUpdateAvailable();
     if (!info) return res.json({ upToDate: true, version: CURRENT_VERSION });
     if (!info.asset) return res.status(400).json({ error: 'No binary available for this platform', url: info.url });
-    await downloadAndInstall(info.asset);
-    // If we get here, the process is about to exit — but respond just in case
-    res.json({ status: 'installed', latest: info.latest });
+    const result = await downloadAndInstall(info.asset);
+    res.json({ status: 'installed', latest: info.latest, message: result.message });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -9644,26 +9644,19 @@
       const installData = await installRes.json();
 
       if (!installRes.ok || installData.error) {
-        throw new Error(installData.error || 'Update install failed');
+        throw new Error(installData.error || 'Update failed');
       }
 
-      if (installData.upToDate) {
-        btn.textContent = '✓ הגרסה מעודכנת';
-        return;
+      // Update succeeded — tell user to restart
+      btn.textContent = 'עדכון הותקן — הפעל מחדש';
+      btn.style.color = 'var(--success-text)';
+      btn.style.borderColor = 'var(--success-border)';
+      if (banner && textEl) {
+        textEl.textContent = 'עדכון v' + installData.latest + ' הותקן בהצלחה. סגור והפעל מחדש את האפליקציה.';
+        banner.style.display = 'block';
+        banner.style.borderColor = 'var(--success-border)';
       }
-
-      if (installData.status === 'downloading' || installData.status === 'installed') {
-        btn.textContent = 'מתקין... האפליקציה תאתחל בקרוב';
-        if (textEl) textEl.textContent = 'מתקין עדכון, אנא המתן...';
-        // Server will restart — poll until it comes back
-        setTimeout(function pollRestart() {
-          fetch('/api/setup-status').then(() => {
-            location.reload();
-          }).catch(() => {
-            setTimeout(pollRestart, 2000);
-          });
-        }, 5000);
-      }
+      // Don't re-enable the button — user needs to restart
     } catch (err) {
       btn.textContent = 'שגיאה: ' + (err.message || 'עדכון נכשל');
       btn.style.color = '#f87171';

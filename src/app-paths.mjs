@@ -18,9 +18,10 @@ export const APP_DIR = IS_PKG
   : SNAPSHOT_DIR;
 
 // User data directory — always writable, persists across updates
-export const USER_DATA_DIR = IS_PKG
+// CONTRACTOR_DATA_DIR env var allows override for testing
+export const USER_DATA_DIR = process.env.CONTRACTOR_DATA_DIR || (IS_PKG
   ? join(homedir(), '.contractor')
-  : join(APP_DIR, 'data');
+  : join(APP_DIR, 'data'));
 
 export function initUserDataDir() {
   const dirs = ['knowledge', 'output', 'uploads', 'projects', 'references'];
@@ -28,7 +29,7 @@ export function initUserDataDir() {
 
   const seeds = [
     {
-      src: join(SNAPSHOT_DIR, 'knowledge', 'clauses-db.json'),
+      src: join(SNAPSHOT_DIR, 'knowledge', 'clauses-db.sample.json'),
       dest: join(USER_DATA_DIR, 'knowledge', 'clauses-db.json'),
     },
     {
