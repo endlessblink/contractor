@@ -81,8 +81,8 @@ function buildHeaders(config) {
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${config.apiKey}`,
-      'HTTP-Referer': 'https://github.com/user/office-work',
-      'X-Title': 'Office Work Document Generator',
+      'HTTP-Referer': 'https://github.com/user/contractor',
+      'X-Title': 'Contractor Document Generator',
     };
   }
 

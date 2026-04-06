@@ -2940,7 +2940,7 @@ app.delete('/api/document-types/:id', (req, res) => {
 app.get('/api/export', (_req, res) => {
   try {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const zipName = `office-work-backup-${timestamp}.tar.gz`;
+    const zipName = `contractor-backup-${timestamp}.tar.gz`;
     const zipPath = join(OUTPUT_DIR, zipName);
     execSync(`tar -czf "${zipPath}" -C "${PROJECT_DIR}" data/`, { timeout: 30000 });
     res.download(zipPath, zipName, () => {
@@ -3069,7 +3069,7 @@ app.listen(PORT, '127.0.0.1', async () => {
   console.log(`Open http://localhost:${PORT} in your browser`);
   const aiConfig = getProviderConfig();
   console.log(`AI Provider: ${aiConfig.provider} (${aiConfig.model}) — ${aiConfig.configured ? 'configured' : 'NOT configured'}`);
-  if (IS_PKG || process.env.OFFICE_WORK_OPEN === '1') {
+  if (IS_PKG || process.env.CONTRACTOR_OPEN === '1') {
     setTimeout(() => {
       const url = `http://localhost:${PORT}`;
       if (process.platform === 'win32') {
