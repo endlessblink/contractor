@@ -14,7 +14,8 @@
     "build": "npm run build:skills && node build.mjs",
     "build:win": "node build.mjs --target win",
     "build:mac": "node build.mjs --target mac",
-    "build:linux": "node build.mjs --target linux"
+    "build:linux": "node build.mjs --target linux",
+    "demo": "node e2e/record-demo.mjs"
   },
   "keywords": [],
   "author": "",
