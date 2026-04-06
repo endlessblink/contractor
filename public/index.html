@@ -9944,8 +9944,8 @@
           currentProfile = result.profile;
           if (currentProfile.name) localStorage.setItem('ownerName', currentProfile.name);
           updateHeaderFromProfile();
-          renderDashboard();
           closeSettings();
+          if (typeof renderDashboard === 'function') renderDashboard();
         }
       } catch (err) { console.error('Failed to save profile:', err); }
     });
