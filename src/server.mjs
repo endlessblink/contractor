@@ -50,9 +50,10 @@ const __dirname = dirname(__filename);
 
 const PROJECT_DIR = join(__dirname, '..');
 if (IS_PKG) initUserDataDir();
-const DATA_DIR = IS_PKG ? USER_DATA_DIR : join(PROJECT_DIR, 'data');
-const OUTPUT_DIR = IS_PKG ? resolveData('output') : join(PROJECT_DIR, 'output');
-const UPLOADS_DIR = IS_PKG ? resolveData('uploads') : join(PROJECT_DIR, 'uploads');
+// CONTRACTOR_DATA_DIR env var overrides the data directory (for testing in dev mode too)
+const DATA_DIR = process.env.CONTRACTOR_DATA_DIR || (IS_PKG ? USER_DATA_DIR : join(PROJECT_DIR, 'data'));
+const OUTPUT_DIR = IS_PKG ? resolveData('output') : (process.env.CONTRACTOR_DATA_DIR ? join(DATA_DIR, 'output') : join(PROJECT_DIR, 'output'));
+const UPLOADS_DIR = IS_PKG ? resolveData('uploads') : (process.env.CONTRACTOR_DATA_DIR ? join(DATA_DIR, 'uploads') : join(PROJECT_DIR, 'uploads'));
 
 // Ensure data directories exist before fallback resolution
 mkdirSync(join(DATA_DIR, 'knowledge', 'pending-extractions'), { recursive: true });
