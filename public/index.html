@@ -2800,6 +2800,32 @@
       background: var(--elevated-bg); border-radius: 10px; flex-shrink: 0;
     }
 
+    /* ── Context Menu ── */
+    .ctx-menu {
+      position: fixed; z-index: 10000; direction: rtl;
+      background: var(--bg-elevated, rgba(30,32,40,0.95));
+      border: 1px solid var(--border); border-radius: 10px;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2);
+      min-width: 180px; max-width: 220px; overflow: hidden;
+      padding: 4px 0;
+      animation: ctxMenuIn 120ms ease;
+    }
+    @keyframes ctxMenuIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .ctx-menu-item {
+      padding: 8px 16px; cursor: pointer; font-size: 0.85rem;
+      direction: rtl; display: flex; align-items: center; gap: 8px;
+      color: var(--text-primary); transition: background 100ms;
+      white-space: nowrap;
+    }
+    .ctx-menu-item:hover { background: var(--accent-subtle-hover, rgba(99,102,241,0.1)); }
+    .ctx-menu-item.danger { color: #f87171; }
+    .ctx-menu-item.danger:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+    .ctx-menu-separator { border-top: 1px solid var(--border); margin: 4px 0; }
+
     /* ── Nav Sidebar (document view) ── */
     .nav-sidebar {
       width: 220px; flex-shrink: 0; overflow-y: auto; overflow-x: hidden;
@@ -7936,6 +7962,55 @@
     }
 
     /* ══════════════════════════════════════
+       CONTEXT MENU
+    ══════════════════════════════════════ */
+    const ctxMenuEl = document.createElement('div');
+    ctxMenuEl.className = 'ctx-menu';
+    ctxMenuEl.style.display = 'none';
+    document.body.appendChild(ctxMenuEl);
+
+    function showContextMenu(e, items) {
+      e.preventDefault();
+      e.stopPropagation();
+      ctxMenuEl.innerHTML = items.map(function(item, idx) {
+        if (item.separator) return '<div class="ctx-menu-separator"></div>';
+        return '<div class="ctx-menu-item' + (item.danger ? ' danger' : '') + '" data-idx="' + idx + '">' +
+          (item.icon ? '<span>' + item.icon + '</span>' : '') +
+          '<span>' + item.label + '</span>' +
+        '</div>';
+      }).join('');
+      ctxMenuEl.style.display = 'block';
+      // Reset position so getBoundingClientRect reflects actual size
+      ctxMenuEl.style.top = '0px';
+      ctxMenuEl.style.left = '0px';
+      var rect = ctxMenuEl.getBoundingClientRect();
+      var x = e.clientX;
+      var y = e.clientY;
+      if (y + rect.height > window.innerHeight) y = window.innerHeight - rect.height - 8;
+      if (x + rect.width > window.innerWidth) x = window.innerWidth - rect.width - 8;
+      if (x < 4) x = 4;
+      if (y < 4) y = 4;
+      ctxMenuEl.style.top = y + 'px';
+      ctxMenuEl.style.left = x + 'px';
+      ctxMenuEl.querySelectorAll('.ctx-menu-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+          var idx = parseInt(el.dataset.idx);
+          hideContextMenu();
+          if (items[idx] && items[idx].action) items[idx].action();
+        });
+      });
+    }
+
+    function hideContextMenu() {
+      ctxMenuEl.style.display = 'none';
+      ctxMenuEl.innerHTML = '';
+    }
+
+    document.addEventListener('click', hideContextMenu);
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideContextMenu(); });
+    document.addEventListener('scroll', hideContextMenu, true);
+
+    /* ══════════════════════════════════════
        PROJECT PANEL
     ══════════════════════════════════════ */
     const projectTrigger = document.getElementById('projectTrigger');
@@ -8053,6 +8128,25 @@
           await switchProject(id);
           closeProjectPanel();
           updateProjectTrigger();
+        });
+        card.addEventListener('contextmenu', (e) => {
+          const p = projectsCache.find(pr => pr.id === card.dataset.id);
+          if (!p) return;
+          showContextMenu(e, [
+            { label: 'פתח פרויקט', icon: '📂', action: async () => { await switchProject(p.id); closeProjectPanel(); updateProjectTrigger(); } },
+            { label: 'שנה שם', icon: '✏️', action: async () => {
+              const newName = await showPrompt('שינוי שם', 'שם חדש לפרויקט:', p.name, 'שמור');
+              if (!newName || newName === p.name) return;
+              const res = await fetch('/api/projects/' + encodeURIComponent(p.id), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: newName}) });
+              if (res.ok) { await fetchProjects(); renderProjectCards(projectSearchInput.value); if (p.id === currentProjectId) updateProjectTrigger(); }
+            }},
+            { separator: true },
+            { label: 'מחק פרויקט', icon: '🗑️', danger: true, action: async () => {
+              if (!(await showConfirm('מחיקת פרויקט', 'למחוק את "' + p.name + '" וכל הקבצים שלו?', 'מחק', true))) return;
+              const res = await fetch('/api/projects/' + encodeURIComponent(p.id), { method: 'DELETE' });
+              if (res.ok) { if (p.id === currentProjectId) await switchProject(null); await fetchProjects(); renderProjectCards(projectSearchInput.value); updateProjectTrigger(); }
+            }}
+          ]);
         });
       });
 
@@ -9900,7 +9994,7 @@
     function updateHeaderFromProfile() {
       const subtitle = document.getElementById('headerSubtitle');
       if (subtitle && currentProfile.company) subtitle.textContent = currentProfile.company;
-      document.title = 'office-work' + (currentProfile.company ? ' — ' + currentProfile.company : '');
+      document.title = 'Contractor' + (currentProfile.company ? ' — ' + currentProfile.company : '');
     }
 
     // ── Onboarding Wizard Logic ──
@@ -10221,6 +10315,31 @@
           const sp = window._switchProject || switchProject;
           if (typeof sp === 'function') await sp(proj.id);
           renderProjects();
+        });
+
+        // Context menu on sidebar project item
+        item.addEventListener('contextmenu', (e) => {
+          e.stopPropagation();
+          const p = proj;
+          showContextMenu(e, [
+            { label: 'פתח פרויקט', icon: '📂', action: async () => {
+              const sp = window._switchProject || switchProject;
+              if (typeof sp === 'function') await sp(p.id);
+              renderProjects();
+            }},
+            { label: 'שנה שם', icon: '✏️', action: async () => {
+              const newName = await showPrompt('שינוי שם', 'שם חדש לפרויקט:', p.name, 'שמור');
+              if (!newName || newName === p.name) return;
+              const res = await fetch('/api/projects/' + encodeURIComponent(p.id), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: newName}) });
+              if (res.ok) renderProjects();
+            }},
+            { separator: true },
+            { label: 'מחק פרויקט', icon: '🗑️', danger: true, action: async () => {
+              if (!(await showConfirm('מחיקת פרויקט', 'למחוק את "' + p.name + '" וכל הקבצים שלו?', 'מחק', true))) return;
+              const res = await fetch('/api/projects/' + encodeURIComponent(p.id), { method: 'DELETE' });
+              if (res.ok) { if (p.id === currentProjectId) { const sp = window._switchProject || switchProject; if (typeof sp === 'function') await sp(null); } renderProjects(); }
+            }}
+          ]);
         });
 
         projectsEl.appendChild(item);
@@ -10647,6 +10766,29 @@
           var docType = proj ? (proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote') : 'quote';
           navigate('document', { clientId: card.dataset.client, projectId: card.dataset.project, docType: docType });
         });
+        card.addEventListener('contextmenu', function(e) {
+          var proj = projects.find(function(p) { return p.id === card.dataset.project; });
+          if (!proj) return;
+          var docType = proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote';
+          showContextMenu(e, [
+            { label: 'פתח פרויקט', icon: '📂', action: function() { navigate('document', { clientId: card.dataset.client, projectId: card.dataset.project, docType: docType }); } },
+            { label: 'שנה שם', icon: '✏️', action: function() {
+              showPrompt('שינוי שם', 'שם חדש לפרויקט:', proj.name, 'שמור').then(function(newName) {
+                if (!newName || newName === proj.name) return;
+                fetch('/api/projects/' + encodeURIComponent(proj.id), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: newName}) })
+                  .then(function(r) { if (r.ok) renderDashboard(); });
+              });
+            }},
+            { separator: true },
+            { label: 'מחק פרויקט', icon: '🗑️', danger: true, action: function() {
+              showConfirm('מחיקת פרויקט', 'למחוק את "' + proj.name + '" וכל הקבצים שלו?', 'מחק', true).then(function(ok) {
+                if (!ok) return;
+                fetch('/api/projects/' + encodeURIComponent(proj.id), { method: 'DELETE' })
+                  .then(function(r) { if (r.ok) renderDashboard(); });
+              });
+            }}
+          ]);
+        });
       });
     }
 
@@ -10679,6 +10821,30 @@
           document.getElementById('editClientEmail').value = client.email || '';
           document.getElementById('editClientPhone').value = client.phone || '';
           openModal('editClientModal');
+        });
+        card.addEventListener('contextmenu', function(e) {
+          var client = clients.find(function(c) { return c.id === card.dataset.client; });
+          if (!client) return;
+          var projCount = allProjects.filter(function(p) { return p.clientId === client.id; }).length;
+          showContextMenu(e, [
+            { label: 'ערוך לקוח', icon: '✏️', action: function() {
+              navState.clientId = client.id;
+              document.getElementById('editClientName').value = client.name || '';
+              document.getElementById('editClientCompany').value = client.company || '';
+              document.getElementById('editClientCompanyId').value = client.companyId || '';
+              document.getElementById('editClientEmail').value = client.email || '';
+              document.getElementById('editClientPhone').value = client.phone || '';
+              openModal('editClientModal');
+            }},
+            { separator: true },
+            { label: 'מחק לקוח' + (projCount > 0 ? ' (' + projCount + ' פרויקטים)' : ''), icon: '🗑️', danger: true, action: function() {
+              showConfirm('מחיקת לקוח', 'למחוק את "' + client.name + '"?' + (projCount > 0 ? '\nהפרויקטים שלו לא יימחקו.' : ''), 'מחק', true).then(function(ok) {
+                if (!ok) return;
+                fetch('/api/clients/' + encodeURIComponent(client.id), { method: 'DELETE' })
+                  .then(function(r) { if (r.ok) renderDashboard(); });
+              });
+            }}
+          ]);
         });
       });
     }
@@ -10754,6 +10920,35 @@
           if (!confirm('\u05D4\u05D0\u05DD \u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA "' + client.name + '"?')) return;
           fetch('/api/clients/' + encodeURIComponent(client.id), { method: 'DELETE' })
             .then(function(res) { if (res.ok) renderClientsView(); });
+        });
+      });
+
+      // Context menu on client mgmt cards
+      el.querySelectorAll('.client-mgmt-card').forEach(function(card) {
+        card.addEventListener('contextmenu', function(e) {
+          if (e.target.closest('.client-mgmt-btn')) return;
+          var client = (window._allClients || []).find(function(c) { return c.id === card.dataset.client; });
+          if (!client) return;
+          var projCount = (window._allProjects || []).filter(function(p) { return p.clientId === client.id; }).length;
+          showContextMenu(e, [
+            { label: 'ערוך לקוח', icon: '✏️', action: function() {
+              document.getElementById('editClientName').value = client.name || '';
+              document.getElementById('editClientCompany').value = client.company || '';
+              document.getElementById('editClientCompanyId').value = client.companyId || '';
+              document.getElementById('editClientEmail').value = client.email || '';
+              document.getElementById('editClientPhone').value = client.phone || '';
+              navState.clientId = client.id;
+              openModal('editClientModal');
+            }},
+            { separator: true },
+            { label: 'מחק לקוח' + (projCount > 0 ? ' (' + projCount + ' פרויקטים)' : ''), icon: '🗑️', danger: true, action: function() {
+              showConfirm('מחיקת לקוח', 'למחוק את "' + client.name + '"?' + (projCount > 0 ? '\nהפרויקטים שלו לא יימחקו.' : ''), 'מחק', true).then(function(ok) {
+                if (!ok) return;
+                fetch('/api/clients/' + encodeURIComponent(client.id), { method: 'DELETE' })
+                  .then(function(res) { if (res.ok) renderClientsView(); });
+              });
+            }}
+          ]);
         });
       });
     }
@@ -10880,6 +11075,34 @@
             .then(function(res) { if (res.ok) renderProjectsView(); });
         });
       });
+
+      // Context menu on project mgmt cards
+      el.querySelectorAll('.client-mgmt-card[data-project]').forEach(function(card) {
+        card.addEventListener('contextmenu', function(e) {
+          if (e.target.closest('.client-mgmt-btn')) return;
+          var proj = projects.find(function(p) { return p.id === card.dataset.project; });
+          if (!proj) return;
+          var docType = proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote';
+          showContextMenu(e, [
+            { label: 'פתח פרויקט', icon: '📂', action: function() {
+              navigate('document', { clientId: card.dataset.client, projectId: proj.id, docType: docType });
+            }},
+            { label: 'שנה שם', icon: '✏️', action: function() {
+              document.getElementById('renameProjectName').value = proj.name || '';
+              navState.projectId = proj.id;
+              openModal('renameProjectModal');
+            }},
+            { separator: true },
+            { label: 'מחק פרויקט', icon: '🗑️', danger: true, action: function() {
+              showConfirm('מחיקת פרויקט', 'למחוק את "' + proj.name + '" וכל הקבצים שלו?', 'מחק', true).then(function(ok) {
+                if (!ok) return;
+                fetch('/api/projects/' + encodeURIComponent(proj.id), { method: 'DELETE' })
+                  .then(function(res) { if (res.ok) renderProjectsView(); });
+              });
+            }}
+          ]);
+        });
+      });
     }
 
     // Projects search
@@ -10944,6 +11167,31 @@
       }).join('');
       body.querySelectorAll('.nav-client-header').forEach(function(header) {
         header.addEventListener('click', function() { header.parentElement.classList.toggle('expanded'); });
+        header.addEventListener('contextmenu', function(e) {
+          var clientId = header.parentElement.dataset.client;
+          var client = clients.find(function(c) { return c.id === clientId; });
+          if (!client) return;
+          var projCount = projects.filter(function(p) { return p.clientId === client.id; }).length;
+          showContextMenu(e, [
+            { label: 'ערוך לקוח', icon: '✏️', action: function() {
+              navState.clientId = client.id;
+              document.getElementById('editClientName').value = client.name || '';
+              document.getElementById('editClientCompany').value = client.company || '';
+              document.getElementById('editClientCompanyId').value = client.companyId || '';
+              document.getElementById('editClientEmail').value = client.email || '';
+              document.getElementById('editClientPhone').value = client.phone || '';
+              openModal('editClientModal');
+            }},
+            { separator: true },
+            { label: 'מחק לקוח' + (projCount > 0 ? ' (' + projCount + ' פרויקטים)' : ''), icon: '🗑️', danger: true, action: function() {
+              showConfirm('מחיקת לקוח', 'למחוק את "' + client.name + '"?' + (projCount > 0 ? '\nהפרויקטים שלו לא יימחקו.' : ''), 'מחק', true).then(function(ok) {
+                if (!ok) return;
+                fetch('/api/clients/' + encodeURIComponent(client.id), { method: 'DELETE' })
+                  .then(function(r) { if (r.ok) { fetch('/api/clients').then(function(r2) { return r2.json(); }).then(function(d) { window._allClients = d.clients || []; renderNavSidebar(); }); } });
+              });
+            }}
+          ]);
+        });
       });
       body.querySelectorAll('.nav-project-item').forEach(function(item) {
         item.addEventListener('click', function(e) {
@@ -10959,6 +11207,33 @@
             sp(projId);
             updateBreadcrumb();
           }
+        });
+        item.addEventListener('contextmenu', function(e) {
+          e.stopPropagation();
+          var projId = item.dataset.project;
+          var p = projects.find(function(pr) { return pr.id === projId; });
+          if (!p) return;
+          showContextMenu(e, [
+            { label: 'פתח פרויקט', icon: '📂', action: function() {
+              var sp = window._switchProject;
+              if (sp) { navState.projectId = p.id; navState.clientId = p.clientId; sp(p.id); updateBreadcrumb(); }
+            }},
+            { label: 'שנה שם', icon: '✏️', action: function() {
+              showPrompt('שינוי שם', 'שם חדש לפרויקט:', p.name, 'שמור').then(function(newName) {
+                if (!newName || newName === p.name) return;
+                fetch('/api/projects/' + encodeURIComponent(p.id), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: newName}) })
+                  .then(function(r) { if (r.ok) { fetch('/api/projects').then(function(r2) { return r2.json(); }).then(function(d) { window._allProjects = d.projects || []; renderNavSidebar(); }); } });
+              });
+            }},
+            { separator: true },
+            { label: 'מחק פרויקט', icon: '🗑️', danger: true, action: function() {
+              showConfirm('מחיקת פרויקט', 'למחוק את "' + p.name + '" וכל הקבצים שלו?', 'מחק', true).then(function(ok) {
+                if (!ok) return;
+                fetch('/api/projects/' + encodeURIComponent(p.id), { method: 'DELETE' })
+                  .then(function(r) { if (r.ok) { fetch('/api/projects').then(function(r2) { return r2.json(); }).then(function(d) { window._allProjects = d.projects || []; renderNavSidebar(); }); } });
+              });
+            }}
+          ]);
         });
       });
       // Doc-type buttons
