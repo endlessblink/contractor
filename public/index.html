@@ -8714,7 +8714,7 @@
         learnStatus.innerHTML = `<div class="learn-context-badge">&#10003; נלמדו ${count} מסמכים — ${added} סעיפים חדשים, ${updated} עודכנו (סה"כ ${total} במאגר)${profileMsg}. רענן את הדף כדי לעדכן את הצ'אט.</div>`;
         learnStatus.className = 'learn-status success';
         if (data.profileUpdated) {
-          try { const pRes = await fetch('/api/user-profile'); if (pRes.ok) currentProfile = await pRes.json(); updateHeaderFromProfile(); } catch {}
+          try { const pRes = await fetch('/api/user-profile'); if (pRes.ok && window._setCurrentProfile) window._setCurrentProfile(await pRes.json()); if (window._updateHeaderFromProfile) window._updateHeaderFromProfile(); } catch {}
         }
 
         // Refresh templates from the updated clauses DB
@@ -9914,6 +9914,8 @@
 
     // Expose openSettings globally so rail button can call it
     window.openSettings = openSettings;
+    window._updateHeaderFromProfile = updateHeaderFromProfile;
+    window._setCurrentProfile = function(profile) { currentProfile = profile; };
     if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
     settingsCloseBtn.addEventListener('click', closeSettings);
     profileCancelBtn.addEventListener('click', closeSettings);
@@ -9945,7 +9947,7 @@
           if (currentProfile.name) localStorage.setItem('ownerName', currentProfile.name);
           updateHeaderFromProfile();
           closeSettings();
-          if (typeof renderDashboard === 'function') renderDashboard();
+          if (window._renderDashboard) window._renderDashboard();
         }
       } catch (err) { console.error('Failed to save profile:', err); }
     });
@@ -10028,7 +10030,7 @@
     window.obPrev = function() { if (_obStep > 1) updateObStep(_obStep - 1); };
     window.obLoadDemo = async function() {
       try { await fetch('/api/load-demo', { method: 'POST' }); } catch (e) { console.warn('Demo load failed:', e); }
-      obFinish();
+      window.obFinish();
     };
     window.obFinish = async function() {
       try { await fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ setupComplete: true }) }); } catch (e) {}
@@ -11554,6 +11556,7 @@
     // Expose for external use
     window._navigate = navigate;
     window._navState = navState;
+    window._renderDashboard = renderDashboard;
   })();
   </script>
 </body>
