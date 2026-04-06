@@ -92,22 +92,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  installer:
-    needs: build
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm ci
-      - run: node build.mjs --target win
-      - name: Build Windows Installer
-        run: |
-          choco install innosetup -y --no-progress
-          iscc installer/docmaker.iss
-      - uses: softprops/action-gh-release@v1
-        with:
-          files: installer/Output/Contractor-Setup.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
