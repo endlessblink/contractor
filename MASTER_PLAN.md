@@ -38,3 +38,4 @@
 | **TASK-006** | **Extract hardcoded fixes into doc-skills** — parse-service-options, strip-bullet-prefix, extend split-sentences | **P3** | TODO |
 | **TASK-008** | **Onboarding flow** — doc scan primary, chat-driven fallback for new users | **P3** | TODO |
 | **TASK-010** | **Mobile responsive** — three-panel layout needs mobile stacking | **P3** | TODO |
+| ~~**TASK-023**~~ | ✅ **Landing page + demo GIF** — GitHub Pages landing page with RTL Hebrew, automated Playwright demo recording | **P1** | ✅ **DONE** (2026-04-06) |

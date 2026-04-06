@@ -168,3 +168,26 @@ node src/generate-quote.mjs   # Generate current quote (standalone)
 npm run build:skills          # Rebuild skills pipeline bundle
 npm run build                 # Build packaged executables (dist/executables/)
 ```
+
+## Landing Page & Docs
+
+- **Landing page:** `docs/index.html` — single HTML file served via GitHub Pages
+- **URL:** https://endlessblink.github.io/contractor/
+- **Design:** Dark "Ink & Frost" theme (teal #00d2b4 on #0c0e13), Heebo font, full RTL
+- **Demo GIF:** `docs/demo.gif` — auto-recorded via `npm run demo` (Playwright script at `e2e/record-demo.mjs`)
+- **Screenshots:** Taken from clean app instance with `CONTRACTOR_DATA_DIR` isolation — no personal data
+- **GitHub Pages config:** master branch, /docs folder
+
+### When modifying the landing page:
+- All CSS/JS is inline in `index.html` — no build step
+- Test RTL layout, mobile responsiveness (375px), and no-JS fallback
+- Verify no personal data in screenshots or demo GIF
+- The `.hero > *` selector must NOT override `.hero-glow-secondary { position: absolute }` — this caused a 500px dead space bug
+- Push and wait ~1 min for GitHub Pages CDN to update
+
+### Regenerating demo:
+```bash
+npm run demo   # records docs/demo.webm via Playwright
+# Convert to GIF (requires ffmpeg):
+ffmpeg -i docs/demo.webm -vf "fps=8,scale=720:-1:flags=lanczos,palettegen" /tmp/p.png && ffmpeg -i docs/demo.webm -i /tmp/p.png -lavfi "fps=8,scale=720:-1:flags=lanczos[x];[x][1:v]paletteuse" -loop 0 docs/demo.gif
+```
