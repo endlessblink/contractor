@@ -91,6 +91,7 @@
       --section-divider:     #e5e7eb;
       --toggle-bg:           #2d3139;
       --toggle-icon:         #f9fafb;
+      --sidebar-bg:          #f4f5f7;
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
       --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
       --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
@@ -947,6 +948,7 @@
       transition: opacity 0.3s;
     }
     .form-update-row:hover { background: rgba(255,255,255,0.05); }
+    html:not(.dark) .form-update-row:hover { background: rgba(0,0,0,0.04); }
     .form-update-row.applied {
       opacity: 0.4;
       text-decoration: line-through;
@@ -1022,6 +1024,8 @@
     }
     .bubble:hover .msg-copy-btn { opacity: 0.7; }
     .msg-copy-btn:hover { opacity: 1 !important; background: rgba(255,255,255,0.2); }
+    html:not(.dark) .msg-copy-btn { background: rgba(0,0,0,0.06); }
+    html:not(.dark) .msg-copy-btn:hover { background: rgba(0,0,0,0.12); }
 
     /* Regenerate button on assistant messages */
     .msg-regen-btn {
@@ -1040,6 +1044,12 @@
     }
     .bubble:hover .msg-regen-btn { opacity: 0.7; }
     .msg-regen-btn:hover { opacity: 1 !important; background: rgba(255,255,255,0.2); }
+    html:not(.dark) .msg-regen-btn { background: rgba(0,0,0,0.06); }
+    html:not(.dark) .msg-regen-btn:hover { background: rgba(0,0,0,0.12); }
+
+    /* Clear chat button */
+    .clear-chat-btn { color: var(--text-muted); background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 4px 8px; border-radius: 6px; line-height: 1; transition: color 150ms, background 150ms; }
+    .clear-chat-btn:hover { color: var(--text-primary); background: var(--elevated-bg); }
 
     /* Error toast */
     .error-toast {
@@ -1812,6 +1822,7 @@
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
+    html:not(.dark) .btn-spinner { border-color: rgba(0,0,0,0.2); border-top-color: var(--accent-text); }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -2559,6 +2570,8 @@
     .tab-panel.minimized .panel-minimized-label { display: block; }
     .resize-handle { width: 5px; cursor: col-resize; background: rgba(255,255,255,0.12); flex-shrink: 0; position: relative; z-index: 10; transition: background 150ms; }
     .resize-handle:hover, .resize-handle.dragging { background: var(--accent); width: 5px; }
+    html:not(.dark) .resize-handle { background: rgba(0,0,0,0.12); }
+    html:not(.dark) .resize-handle:hover { background: rgba(0,0,0,0.25); }
     .resize-handle::before { content: ''; position: absolute; top: 0; bottom: 0; width: 16px; left: -6px; cursor: col-resize; }
     .docs-modal-overlay { position: fixed; inset: 0; z-index: 600; display: none; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
     .docs-modal-overlay.visible { display: flex; }
@@ -2816,6 +2829,10 @@
       transform: translateY(100%); transition: transform 250ms ease;
     }
     .bulk-action-bar.visible { transform: translateY(0); }
+    html:not(.dark) .bulk-action-bar { background: rgba(255,255,255,0.95); border-top-color: var(--border); }
+    html:not(.dark) .bulk-count { color: var(--text-primary); }
+    html:not(.dark) .bulk-delete-btn { background: rgba(248,113,113,0.08); }
+    html:not(.dark) .bulk-cancel-btn { color: var(--text-secondary); }
     .bulk-count { font-size: 0.9rem; color: var(--text-primary); font-weight: 600; }
     .bulk-select-all { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; }
     .bulk-delete-btn {
@@ -2835,7 +2852,7 @@
     /* ── Context Menu ── */
     .ctx-menu {
       position: fixed; z-index: 10000; direction: rtl;
-      background: var(--bg-elevated, rgba(30,32,40,0.95));
+      background: var(--elevated-bg, rgba(30,32,40,0.95));
       border: 1px solid var(--border); border-radius: 10px;
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2);
@@ -3730,6 +3747,7 @@
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
+    html:not(.dark) .learn-spinner { border-color: rgba(0,0,0,0.2); border-top-color: var(--accent-text); }
 
     .learn-btn.loading .learn-spinner { display: block; }
     .learn-btn.loading .learn-btn-icon { display: none; }
@@ -4465,7 +4483,7 @@
         <div class="panel-header-actions"><button class="panel-minimize-btn" data-panel="chat" title="מזער"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></button></div>
       </div>
       <div class="chat-toolbar" style="display:flex;justify-content:flex-end;padding:4px 12px 0;min-height:28px;">
-        <button id="clearChatBtn" title="נקה צ'אט" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;line-height:1;" onmouseover="this.style.color='#e2e8f0';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='#94a3b8';this.style.background='none'">🗑</button>
+        <button id="clearChatBtn" class="clear-chat-btn" title="נקה צ'אט">🗑</button>
       </div>
       <div class="chat-body">
         <div class="messages" id="messages">
@@ -5951,7 +5969,7 @@
             else if (action.type === 'toggleSection') detailText = `${action.enabled ? 'הפעלת' : 'כיבוי'} סקציית ${({timeline:'לוח זמנים',notes:'הערות כלליות',pricing:'תמחור',payment:'תשלום'})[action.section] || action.section} בטופס`;
 
             const rowWrapper = document.createElement('div');
-            rowWrapper.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.05);';
+            rowWrapper.style.cssText = 'border-bottom: 1px solid var(--border);';
 
             row.innerHTML = `
               <span class="fu-icon">${iconMap[action.type] || '•'}</span>
