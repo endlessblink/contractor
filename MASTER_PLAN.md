@@ -39,3 +39,17 @@
 | **TASK-008** | **Onboarding flow** — doc scan primary, chat-driven fallback for new users | **P3** | TODO |
 | **TASK-010** | **Mobile responsive** — three-panel layout needs mobile stacking | **P3** | TODO |
 | ~~**TASK-023**~~ | ✅ **Landing page + demo GIF** — GitHub Pages landing page with RTL Hebrew, automated Playwright demo recording | **P1** | ✅ **DONE** (2026-04-06) |
+| ~~**TASK-024**~~ | ✅ **Multi-select bulk delete for projects** — Hover-reveal checkboxes, floating action bar, shift+click range select, select-all, bulk delete with confirmation | **P1** | ✅ **DONE** (2026-04-06) |
+| ~~**TASK-025**~~ | ✅ **Client → filtered projects navigation** — Clickable project count badge on client cards navigates to projects view pre-filtered by client | **P2** | ✅ **DONE** (2026-04-06) |
+
+## Document Templates (Post-Launch)
+
+| ID | Task | Priority | Status |
+|----|------|----------|--------|
+| **TASK-026** | **Template system architecture** — Data model for templates (section config, density, visual skin), storage in settings, template selector UI in Settings modal "טופס" tab | **P1** | TODO |
+| **TASK-027** | **Template: בהיר (Clear)** — Minimal one-page template. 6 sections, no full legal. Slate blue `#2563EB` accent, condensed spacing, borderless tables with alternating rows. Best for quick quotes. | **P2** | TODO |
+| **TASK-028** | **Template: מקצועי (Professional)** — Full enterprise template. All 8 sections, navy `#1E3A5F` + light blue `#D6E4F0` headers, full border grid tables, From/To block. Matches existing reference doc style. | **P2** | TODO |
+| **TASK-029** | **Template: יצירתי (Creative)** — Design-forward template. Off-white `#FAFAF8`, terracotta `#C0614B` accent, Heebo Light body, borderless pricing, narrative descriptions. For designers/photographers. | **P2** | TODO |
+| **TASK-030** | **Template: משפטי (Legal)** — Formal contract template. No color, numbered clauses (1.1, 1.2), Heebo 10.5pt, tight spacing, all legal sections, formal signature block. For high-value contracts. | **P2** | TODO |
+| **TASK-031** | **Template: סטנדרטי (Standard)** — Balanced default template. Teal `#0F6674` accent, side-border section headers, 7 of 8 sections, standard Israeli payment splits. The intelligent default. | **P2** | TODO |
+| **TASK-032** | **Full layout editor** — Drag-to-reorder sections, per-field show/hide, custom field names, per-doctype defaults. Extends template system with user customization. | **P3** | TODO |
