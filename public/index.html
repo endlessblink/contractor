@@ -2799,6 +2799,38 @@
       font-size: 0.75rem; color: var(--text-secondary); padding: 2px 10px;
       background: var(--elevated-bg); border-radius: 10px; flex-shrink: 0;
     }
+    .client-mgmt-card { position: relative; }
+    .proj-select-cb {
+      position: absolute; top: 10px; right: 10px;
+      width: 18px; height: 18px; cursor: pointer; z-index: 2;
+      opacity: 0; transition: opacity 150ms;
+      accent-color: var(--accent-text);
+    }
+    .client-mgmt-card:hover .proj-select-cb, .selection-mode .proj-select-cb { opacity: 1; }
+    .client-mgmt-card.selected { border-color: var(--accent-border); background: rgba(0,210,180,0.06); }
+    .bulk-action-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;
+      background: rgba(20,22,28,0.95); backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border); padding: 14px 24px;
+      display: flex; align-items: center; gap: 16px; direction: rtl;
+      transform: translateY(100%); transition: transform 250ms ease;
+    }
+    .bulk-action-bar.visible { transform: translateY(0); }
+    .bulk-count { font-size: 0.9rem; color: var(--text-primary); font-weight: 600; }
+    .bulk-select-all { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; }
+    .bulk-delete-btn {
+      margin-inline-start: auto;
+      padding: 8px 20px; border-radius: 8px; border: 1px solid rgba(248,113,113,0.3);
+      background: rgba(248,113,113,0.1); color: #f87171; cursor: pointer;
+      font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 150ms;
+    }
+    .bulk-delete-btn:hover { background: rgba(248,113,113,0.2); }
+    .bulk-cancel-btn {
+      padding: 8px 16px; background: transparent; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text-secondary); cursor: pointer;
+      font-family: inherit; font-size: 0.8rem; transition: all 150ms;
+    }
+    .bulk-cancel-btn:hover { border-color: var(--accent-border); color: var(--text-primary); }
 
     /* ── Context Menu ── */
     .ctx-menu {
@@ -4384,6 +4416,12 @@
             </div>
             <input type="text" class="clients-search" id="projectsSearch" placeholder="חיפוש פרויקט..." />
             <div id="projectsMgmtList"></div>
+            <div class="bulk-action-bar" id="bulkActionBar">
+              <span class="bulk-count" id="bulkCount">0 נבחרו</span>
+              <label class="bulk-select-all"><input type="checkbox" id="bulkSelectAll"> בחר הכל</label>
+              <button class="bulk-cancel-btn" id="bulkCancel">ביטול</button>
+              <button class="bulk-delete-btn" id="bulkDeleteBtn">מחק נבחרים</button>
+            </div>
           </div>
         </div>
       </div>
@@ -10889,7 +10927,7 @@
             '<div class="client-mgmt-name">' + escHtml(c.name) + '</div>' +
             (details.length ? '<div class="client-mgmt-details">' + details.map(function(d) { return '<span>' + escHtml(d) + '</span>'; }).join('') + '</div>' : '') +
           '</div>' +
-          '<span class="client-mgmt-projects">' + projCount + ' \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD</span>' +
+          '<span class="client-mgmt-projects" data-action="view-projects" data-client="' + escHtml(c.id) + '" style="cursor:pointer;" title="\u05D4\u05E6\u05D2 \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD">' + projCount + ' \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD</span>' +
           '<div class="client-mgmt-actions">' +
             '<button class="client-mgmt-btn" data-action="edit" data-client="' + escHtml(c.id) + '">\u05E2\u05E8\u05D9\u05DB\u05D4</button>' +
             '<button class="client-mgmt-btn danger" data-action="delete" data-client="' + escHtml(c.id) + '">\u05DE\u05D7\u05D9\u05E7\u05D4</button>' +
@@ -10922,6 +10960,17 @@
           if (!confirm('\u05D4\u05D0\u05DD \u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA "' + client.name + '"?')) return;
           fetch('/api/clients/' + encodeURIComponent(client.id), { method: 'DELETE' })
             .then(function(res) { if (res.ok) renderClientsView(); });
+        });
+      });
+
+      // View client projects
+      el.querySelectorAll('[data-action="view-projects"]').forEach(function(badge) {
+        badge.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var clientId = badge.dataset.client;
+          var client = (window._allClients || []).find(function(c) { return c.id === clientId; });
+          window._projectsClientFilter = client ? client.name : '';
+          navigate('projects');
         });
       });
 
@@ -10976,6 +11025,11 @@
     // PROJECTS MANAGEMENT VIEW
     // ══════════════════════════════════════
     function renderProjectsView() {
+      window._selectedProjectIds = new Set();
+      window._projectSelectionMode = false;
+      var bar = document.getElementById('bulkActionBar');
+      if (bar) bar.classList.remove('visible');
+
       Promise.all([
         fetch('/api/clients').then(function(r) { return r.json(); }),
         fetch('/api/projects').then(function(r) { return r.json(); }),
@@ -10986,13 +11040,30 @@
         });
         window._allClients = clients;
         window._allProjects = projects;
-        renderProjectsMgmtList(projects, clients, '');
+        // Apply client filter if navigated from clients view
+        if (window._projectsClientFilter) {
+          var searchEl = document.getElementById('projectsSearch');
+          if (searchEl) {
+            searchEl.value = window._projectsClientFilter;
+            renderProjectsMgmtList(projects, clients, window._projectsClientFilter);
+          }
+          window._projectsClientFilter = null;
+        } else {
+          renderProjectsMgmtList(projects, clients, '');
+        }
       });
     }
 
     function renderProjectsMgmtList(projects, clients, filter) {
       var el = document.getElementById('projectsMgmtList');
       if (!el) return;
+
+      // Selection state (reset on each render)
+      window._selectedProjectIds = window._selectedProjectIds || new Set();
+      window._projectSelectionMode = false;
+      var selectedIds = window._selectedProjectIds;
+      window._lastProjSelectIdx = -1;
+
       var filtered = filter ? projects.filter(function(p) {
         var q = filter.toLowerCase();
         var client = clients.find(function(c) { return c.id === p.clientId; });
@@ -11001,6 +11072,7 @@
 
       if (filtered.length === 0) {
         el.innerHTML = '<div class="hub-empty">' + (filter ? '\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05EA\u05D5\u05E6\u05D0\u05D5\u05EA' : '\u05D0\u05D9\u05DF \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD \u05E2\u05D3\u05D9\u05D9\u05DF') + '</div>';
+        updateBulkBar(filtered);
         return;
       }
 
@@ -11014,7 +11086,8 @@
           var st = formStates[k];
           if (st && st.pricingItems) st.pricingItems.forEach(function(i) { total += (i.qty || 1) * (i.price || 0); });
         });
-        return '<div class="client-mgmt-card" data-project="' + escHtml(p.id) + '" data-client="' + escHtml(p.clientId || '') + '" style="cursor:pointer;">' +
+        return '<div class="client-mgmt-card' + (selectedIds.has(p.id) ? ' selected' : '') + '" data-project="' + escHtml(p.id) + '" data-client="' + escHtml(p.clientId || '') + '" style="cursor:pointer;">' +
+          '<input type="checkbox" class="proj-select-cb" data-project="' + escHtml(p.id) + '" />' +
           '<div class="client-mgmt-avatar" style="border-radius:10px;">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
           '</div>' +
@@ -11045,12 +11118,31 @@
         });
       });
 
-      // Card click also opens
-      el.querySelectorAll('.client-mgmt-card').forEach(function(card) {
-        card.addEventListener('click', function() {
+      // Card click — selection mode or open
+      el.querySelectorAll('.client-mgmt-card').forEach(function(card, idx) {
+        card.addEventListener('click', function(e) {
+          // Don't interfere with button clicks
+          if (e.target.closest('.client-mgmt-btn') || e.target.closest('.proj-select-cb')) return;
+
+          if (window._projectSelectionMode) {
+            // In selection mode: toggle selection
+            toggleProjectSelection(card, idx, e.shiftKey, filtered);
+            return;
+          }
+          // Normal mode: open project
           var proj = projects.find(function(p) { return p.id === card.dataset.project; });
           var docType = proj ? (proj.docType || (proj.docTypes && proj.docTypes[0]) || 'quote') : 'quote';
           navigate('document', { clientId: card.dataset.client, projectId: card.dataset.project, docType: docType });
+        });
+      });
+
+      // Checkbox change handlers
+      el.querySelectorAll('.proj-select-cb').forEach(function(cb, idx) {
+        cb.checked = selectedIds.has(cb.dataset.project);
+        cb.addEventListener('change', function(e) {
+          e.stopPropagation();
+          var card = cb.closest('.client-mgmt-card');
+          toggleProjectSelection(card, idx, false, filtered);
         });
       });
 
@@ -11105,6 +11197,138 @@
           ]);
         });
       });
+
+      // Bulk action bar handlers
+      var bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+      var bulkCancel = document.getElementById('bulkCancel');
+      var bulkSelectAll = document.getElementById('bulkSelectAll');
+
+      if (bulkDeleteBtn) {
+        bulkDeleteBtn.onclick = function() {
+          var n = selectedIds.size;
+          if (n === 0) return;
+          showConfirm('\u05DE\u05D7\u05D9\u05E7\u05EA \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD', '\u05DC\u05DE\u05D7\u05D5\u05E7 ' + n + ' \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD?', '\u05DE\u05D7\u05E7', true).then(function(ok) {
+            if (!ok) return;
+            var ids = Array.from(selectedIds);
+            Promise.all(ids.map(function(id) {
+              return fetch('/api/projects/' + encodeURIComponent(id), { method: 'DELETE' });
+            })).then(function() {
+              window._selectedProjectIds = new Set();
+              window._projectSelectionMode = false;
+              renderProjectsView();
+            });
+          });
+        };
+      }
+
+      if (bulkCancel) {
+        bulkCancel.onclick = function() {
+          selectedIds.clear();
+          window._projectSelectionMode = false;
+          el.querySelectorAll('.client-mgmt-card.selected').forEach(function(c) { c.classList.remove('selected'); });
+          el.querySelectorAll('.proj-select-cb').forEach(function(cb) { cb.checked = false; });
+          updateBulkBar(filtered);
+        };
+      }
+
+      if (bulkSelectAll) {
+        bulkSelectAll.onchange = function() {
+          if (bulkSelectAll.checked) {
+            filtered.forEach(function(p) { selectedIds.add(p.id); });
+            el.querySelectorAll('.client-mgmt-card').forEach(function(c) { c.classList.add('selected'); });
+            el.querySelectorAll('.proj-select-cb').forEach(function(cb) { cb.checked = true; });
+          } else {
+            selectedIds.clear();
+            el.querySelectorAll('.client-mgmt-card').forEach(function(c) { c.classList.remove('selected'); });
+            el.querySelectorAll('.proj-select-cb').forEach(function(cb) { cb.checked = false; });
+          }
+          updateBulkBar(filtered);
+        };
+      }
+
+      // Escape to exit selection mode
+      window._projEscHandler = window._projEscHandler || function(e) {
+        if (e.key === 'Escape' && window._projectSelectionMode) {
+          var escEl = document.getElementById('projectsMgmtList');
+          if (!escEl) return;
+          window._selectedProjectIds.clear();
+          window._projectSelectionMode = false;
+          escEl.querySelectorAll('.client-mgmt-card.selected').forEach(function(c) { c.classList.remove('selected'); });
+          escEl.querySelectorAll('.proj-select-cb').forEach(function(cb) { cb.checked = false; });
+          updateBulkBar(null);
+        }
+      };
+      document.removeEventListener('keydown', window._projEscHandler);
+      document.addEventListener('keydown', window._projEscHandler);
+
+      // Sync bulk bar state on render
+      updateBulkBar(filtered);
+    }
+
+    function toggleProjectSelection(card, idx, isShift, filtered) {
+      var selectedIds = window._selectedProjectIds;
+      var projId = card.dataset.project;
+      var cb = card.querySelector('.proj-select-cb');
+
+      if (isShift && window._lastProjSelectIdx >= 0) {
+        // Range selection
+        var start = Math.min(window._lastProjSelectIdx, idx);
+        var end = Math.max(window._lastProjSelectIdx, idx);
+        var cards = card.parentElement.querySelectorAll('.client-mgmt-card');
+        for (var i = start; i <= end; i++) {
+          var c = cards[i];
+          if (c) {
+            selectedIds.add(c.dataset.project);
+            c.classList.add('selected');
+            var cCb = c.querySelector('.proj-select-cb');
+            if (cCb) cCb.checked = true;
+          }
+        }
+      } else {
+        // Single toggle
+        if (selectedIds.has(projId)) {
+          selectedIds.delete(projId);
+          card.classList.remove('selected');
+          if (cb) cb.checked = false;
+        } else {
+          selectedIds.add(projId);
+          card.classList.add('selected');
+          if (cb) cb.checked = true;
+        }
+      }
+
+      window._lastProjSelectIdx = idx;
+      updateBulkBar(filtered);
+    }
+
+    function updateBulkBar(filtered) {
+      var selectedIds = window._selectedProjectIds;
+      var bar = document.getElementById('bulkActionBar');
+      var count = document.getElementById('bulkCount');
+      var selectAll = document.getElementById('bulkSelectAll');
+      var el = document.getElementById('projectsMgmtList');
+      if (!bar || !count) return;
+
+      var n = selectedIds.size;
+      window._projectSelectionMode = n > 0;
+
+      if (n > 0) {
+        bar.classList.add('visible');
+        if (el) el.classList.add('selection-mode');
+        count.textContent = n + ' \u05E0\u05D1\u05D7\u05E8\u05D5';
+      } else {
+        bar.classList.remove('visible');
+        if (el) el.classList.remove('selection-mode');
+        window._lastProjSelectIdx = -1;
+      }
+
+      // Update select all checkbox state
+      if (selectAll && filtered) {
+        var allSelected = filtered.length > 0 && filtered.every(function(p) { return selectedIds.has(p.id); });
+        var someSelected = filtered.some(function(p) { return selectedIds.has(p.id); });
+        selectAll.checked = allSelected;
+        selectAll.indeterminate = someSelected && !allSelected;
+      }
     }
 
     // Projects search
