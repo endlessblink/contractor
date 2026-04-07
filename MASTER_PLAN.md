@@ -27,7 +27,7 @@
 |----|------|----------|--------|
 | ~~**TASK-012**~~ | ✅ **E2E tests for chat→form flow** — Playwright tests verifying FORM_DATA/FORM_UPDATE modify form correctly | **P1** | ✅ **DONE** (2026-04-04) |
 | **TASK-003** | **Preview panel** — togglePreview button exists, render-preview.mjs built, but not wired as modal | **P2** | TODO |
-| **TASK-009** | **Light mode polish** — clause text, form sections, chat bubbles need color fixes in light mode | **P2** | TODO |
+| ~~**TASK-009**~~ | ✅ **Light mode polish** — 10 fixes: resize handle, chat buttons, spinners, bulk bar, clear chat btn, form hover, ctx menu, sidebar-bg, JS separator | **P2** | ✅ **DONE** (2026-04-07) |
 | **TASK-019** | **Button design tokens** — replace !important overrides with proper CSS custom properties for buttons | **P2** | TODO |
 | **TASK-013** | **AI learns user preferences** — track patterns (no timelines, payment splits, clause removals). Store in user-preferences.json | **P2** | TODO |
 | **TASK-014** | **Font selector in profile** — font picker in settings, apply to DOCX generation | **P2** | TODO |
