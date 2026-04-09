@@ -1142,8 +1142,10 @@
           data.assets.forEach(function(a) {
             if (a.name.indexOf('-win-') !== -1) urls.win = a.browser_download_url;
             else if (a.name.indexOf('-macos-arm64-') !== -1) urls.mac = a.browser_download_url;
-            else if (a.name.indexOf('.AppImage') !== -1) urls.linux = a.browser_download_url;
-            else if (a.name.indexOf('-linux-') !== -1 && !urls.linux) urls.linux = a.browser_download_url;
+            else if (a.name.indexOf('-linux-') !== -1) {
+              if (a.name.indexOf('.AppImage') !== -1) urls.linux = a.browser_download_url;
+              else if (!urls.linux) urls.linux = a.browser_download_url;
+            }
           });
           window._downloadUrls = urls;
           // Set initial URLs based on detected or active OS
