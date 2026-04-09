@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { build } from 'esbuild';
 import { execSync } from 'child_process';
-import { mkdirSync, readFileSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 
 // Read version from updater.mjs
 const updaterSrc = readFileSync('src/updater.mjs', 'utf-8');
@@ -54,6 +54,67 @@ for (const t of targets) {
     `npx @yao-pkg/pkg dist/bundle.cjs --target ${t} --output dist/executables/${outName} --config package.json`,
     { stdio: 'inherit' }
   );
+}
+
+// Step 3: Build AppImage for Linux
+if (targetFlag === 'linux' || targetFlag === 'all') {
+  console.log('\n📦 Step 3: Building AppImage...');
+  const linuxBin = `dist/executables/contractor-linux-x64-v${VERSION}`;
+  const appDir = 'Contractor.AppDir';
+  const appImage = `dist/executables/contractor-linux-x64-v${VERSION}.AppImage`;
+
+  // Check appimagetool exists
+  try {
+    execSync('test -f appimagetool', { stdio: 'ignore' });
+  } catch {
+    console.log('  Downloading appimagetool...');
+    execSync('wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool && chmod +x appimagetool', { stdio: 'inherit' });
+  }
+
+  // Create AppDir
+  execSync(`rm -rf ${appDir}`, { stdio: 'ignore' });
+  mkdirSync(`${appDir}/usr/bin`, { recursive: true });
+  mkdirSync(`${appDir}/usr/share/icons/hicolor/256x256/apps`, { recursive: true });
+
+  // Copy binary
+  execSync(`cp ${linuxBin} ${appDir}/usr/bin/contractor && chmod +x ${appDir}/usr/bin/contractor`);
+
+  // Icon
+  try {
+    execSync(`convert assets/logo.png -resize 256x256 ${appDir}/contractor.png 2>/dev/null`);
+  } catch {
+    // Fallback: generate icon
+    execSync(`convert -size 256x256 xc:'#0c0e13' -fill '#00d2b4' -draw "roundrectangle 24,24 232,232 40,40" -fill '#0c0e13' -font 'Helvetica-Bold' -pointsize 140 -gravity center -draw "text 0,0 'C'" ${appDir}/contractor.png`);
+  }
+  execSync(`cp ${appDir}/contractor.png ${appDir}/usr/share/icons/hicolor/256x256/apps/contractor.png`);
+
+  // Desktop file
+  writeFileSync(`${appDir}/contractor.desktop`, `[Desktop Entry]
+Name=Contractor
+GenericName=Freelance Document Manager
+Comment=Generate Hebrew quotes and contracts
+Exec=contractor
+Icon=contractor
+Type=Application
+Terminal=false
+Categories=Office;Finance;
+StartupNotify=false
+`);
+
+  // AppRun
+  writeFileSync(`${appDir}/AppRun`, `#!/bin/sh
+SELF=$(readlink -f "$0")
+HERE=\${SELF%/*}
+export PATH="\${HERE}/usr/bin/:\${PATH:+:\$PATH}"
+unset XDG_DATA_DIRS
+exec "\${HERE}/usr/bin/contractor" "$@"
+`);
+  execSync(`chmod +x ${appDir}/AppRun`);
+
+  // Build
+  execSync(`ARCH=x86_64 ./appimagetool ${appDir} ${appImage}`, { stdio: 'inherit' });
+  execSync(`rm -rf ${appDir}`);
+  console.log(`✅ AppImage created: ${appImage}`);
 }
 
 console.log('\n✅ Done! Executables in dist/executables/');

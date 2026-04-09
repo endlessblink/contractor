@@ -1057,18 +1057,15 @@
             <div class="steps-list">
               <div class="step">
                 <span class="step-num">1</span>
-                <p class="step-text">לחץ על כפתור ההורדה למטה</p>
+                <p class="step-text">לחץ על כפתור ההורדה למטה (AppImage)</p>
               </div>
               <div class="step">
                 <span class="step-num">2</span>
-                <div class="step-text">
-                  הפעל הרשאות הרצה:
-                  <code class="step-code">chmod +x contractor-linux-x64</code>
-                </div>
+                <p class="step-text">לחץ פעמיים על הקובץ להפעלה</p>
               </div>
               <div class="step">
                 <span class="step-num">3</span>
-                <p class="step-text">לחץ פעמיים על הקובץ להפעלה</p>
+                <p class="step-text">מוכן! האפליקציה נפתחת בדפדפן</p>
               </div>
             </div>
           </div>
@@ -1145,7 +1142,8 @@
           data.assets.forEach(function(a) {
             if (a.name.indexOf('-win-') !== -1) urls.win = a.browser_download_url;
             else if (a.name.indexOf('-macos-arm64-') !== -1) urls.mac = a.browser_download_url;
-            else if (a.name.indexOf('-linux-') !== -1) urls.linux = a.browser_download_url;
+            else if (a.name.indexOf('.AppImage') !== -1) urls.linux = a.browser_download_url;
+            else if (a.name.indexOf('-linux-') !== -1 && !urls.linux) urls.linux = a.browser_download_url;
           });
           window._downloadUrls = urls;
           // Set initial URLs based on detected or active OS
