@@ -681,6 +681,11 @@
     }
     .copy-btn:hover { color: var(--accent); }
     .copy-btn svg { width: 16px; height: 16px; display: block; }
+    .step-tip {
+      margin-top: 16px; padding: 10px 16px; border-radius: 8px;
+      background: rgba(0, 210, 180, 0.06); border: 1px solid rgba(0, 210, 180, 0.15);
+      font-size: 0.82rem; color: var(--text-secondary); direction: rtl;
+    }
 
     .install-cta {
       text-align: center;
@@ -1046,6 +1051,7 @@
                 <p class="step-text">מוכן! האפליקציה נפתחת אוטומטית בדפדפן</p>
               </div>
             </div>
+            <p class="step-tip">בפעם הבאה: לחץ פעמיים על אותו קובץ כדי לפתוח שוב.</p>
           </div>
 
           <div class="tab-panel" id="panel-mac" role="tabpanel" aria-labelledby="tab-mac">
@@ -1077,6 +1083,7 @@
                 <p class="step-text">מוכן! האפליקציה נפתחת אוטומטית בדפדפן</p>
               </div>
             </div>
+            <p class="step-tip">בפעם הבאה: פתח Terminal והרץ שוב את אותה פקודה.</p>
           </div>
 
           <div class="tab-panel" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux">
@@ -1094,6 +1101,7 @@
                 <p class="step-text">מוכן! האפליקציה נפתחת בדפדפן</p>
               </div>
             </div>
+            <p class="step-tip">בפעם הבאה: לחץ פעמיים על אותו קובץ כדי לפתוח שוב.</p>
           </div>
 
           <div class="install-cta">
