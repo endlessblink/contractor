@@ -1071,10 +1071,10 @@
                 <div class="step-text">
                   הדבק את הפקודה הבאה ולחץ Enter:
                   <div class="code-wrap">
-                    <button class="copy-btn" onclick="navigator.clipboard.writeText('chmod +x ~/Downloads/contractor-macos-* && ~/Downloads/contractor-macos-*');this.innerHTML='&#10003;';setTimeout(function(){this.innerHTML='<svg viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot;><rect x=&quot;9&quot; y=&quot;9&quot; width=&quot;13&quot; height=&quot;13&quot; rx=&quot;2&quot;/><path d=&quot;M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1&quot;/></svg>'}.bind(this),1500)" title="העתק">
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('chmod +x ~/Downloads/contractor-macos-* && sudo cp ~/Downloads/contractor-macos-* /usr/local/bin/contractor && contractor');this.innerHTML='&#10003;';setTimeout(function(){this.innerHTML='<svg viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot;><rect x=&quot;9&quot; y=&quot;9&quot; width=&quot;13&quot; height=&quot;13&quot; rx=&quot;2&quot;/><path d=&quot;M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1&quot;/></svg>'}.bind(this),1500)" title="העתק">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                     </button>
-                    <code class="step-code">chmod +x ~/Downloads/contractor-macos-* &amp;&amp; ~/Downloads/contractor-macos-*</code>
+                    <code class="step-code">chmod +x ~/Downloads/contractor-macos-* &amp;&amp; sudo cp ~/Downloads/contractor-macos-* /usr/local/bin/contractor &amp;&amp; contractor</code>
                   </div>
                 </div>
               </div>
@@ -1083,7 +1083,7 @@
                 <p class="step-text">מוכן! האפליקציה נפתחת אוטומטית בדפדפן</p>
               </div>
             </div>
-            <p class="step-tip">בפעם הבאה: פתח Terminal והרץ שוב את אותה פקודה.</p>
+            <p class="step-tip">בפעם הבאה: פתח Terminal והקלד <code style="color:var(--accent);">contractor</code></p>
           </div>
 
           <div class="tab-panel" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux">
