@@ -672,6 +672,15 @@
       margin-top: 6px;
       color: var(--accent);
     }
+    .code-wrap { position: relative; display: inline-block; margin-top: 6px; }
+    .code-wrap .step-code { margin-top: 0; padding-left: 40px; }
+    .copy-btn {
+      position: absolute; top: 50%; left: 6px; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; padding: 4px;
+      color: var(--text-secondary); transition: color 0.2s;
+    }
+    .copy-btn:hover { color: var(--accent); }
+    .copy-btn svg { width: 16px; height: 16px; display: block; }
 
     .install-cta {
       text-align: center;
@@ -1023,11 +1032,14 @@
             <div class="steps-list">
               <div class="step">
                 <span class="step-num">1</span>
-                <p class="step-text">לחץ על כפתור ההורדה למטה</p>
+                <p class="step-text">לחץ על כפתור ההורדה למטה ושמור את הקובץ</p>
               </div>
               <div class="step">
                 <span class="step-num">2</span>
-                <p class="step-text">לחץ פעמיים על הקובץ להפעלה</p>
+                <div class="step-text">
+                  לחץ פעמיים על הקובץ שהורדת (contractor-win-x64...exe)
+                  <br><small style="color:var(--text-secondary);">אם מופיעה אזהרת Windows: לחץ "More info" ← "Run anyway"</small>
+                </div>
               </div>
               <div class="step">
                 <span class="step-num">3</span>
@@ -1045,13 +1057,20 @@
               <div class="step">
                 <span class="step-num">2</span>
                 <div class="step-text">
-                  פתח Terminal והרץ:
-                  <code class="step-code">chmod +x ~/Downloads/contractor-macos-* && ~/Downloads/contractor-macos-*</code>
+                  פתח Terminal (Spotlight: <strong>&#8984; + Space</strong> ← הקלד "Terminal" ← Enter)
                 </div>
               </div>
               <div class="step">
                 <span class="step-num">3</span>
-                <p class="step-text">מוכן! האפליקציה נפתחת בדפדפן</p>
+                <div class="step-text">
+                  הדבק את הפקודה הבאה ולחץ Enter:
+                  <div class="code-wrap">
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('chmod +x ~/Downloads/contractor-macos-* && ~/Downloads/contractor-macos-*');this.innerHTML='&#10003;';setTimeout(function(){this.innerHTML='<svg viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot;><rect x=&quot;9&quot; y=&quot;9&quot; width=&quot;13&quot; height=&quot;13&quot; rx=&quot;2&quot;/><path d=&quot;M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1&quot;/></svg>'}.bind(this),1500)" title="העתק">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    </button>
+                    <code class="step-code">chmod +x ~/Downloads/contractor-macos-* &amp;&amp; ~/Downloads/contractor-macos-*</code>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
