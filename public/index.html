@@ -10187,8 +10187,17 @@
       }).catch(function() {});
     };
     window.obUseClaudeCode = function() {
+      var card = document.getElementById('obClaudeCodeCard');
       fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aiProvider: 'anthropic', useClaudeOAuth: true, aiApiKey: '' }) })
-        .then(function() { obNext(); });
+        .then(function() {
+          // Show confirmation before advancing
+          if (card) {
+            card.style.borderColor = 'var(--accent-text)';
+            card.style.background = 'rgba(0,210,180,0.12)';
+            card.innerHTML = '<div style="font-size:1.1rem;color:var(--accent-text);font-weight:700;padding:8px 0;">✓ מחובר בהצלחה</div><div style="font-size:0.78rem;color:var(--text-muted);">משתמש במנוי Claude Code שלך</div>';
+          }
+          setTimeout(function() { obNext(); }, 1200);
+        });
     };
     window.obNext = function() {
       if (_obStep === 2) {
