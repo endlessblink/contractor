@@ -4252,6 +4252,35 @@
       .project-card-actions { opacity: 1; }
       .confirm-modal { max-width: calc(100vw - 32px); }
     }
+    /* ── Hint Arrow System ── */
+    .hint-overlay {
+      position: fixed; inset: 0; z-index: 1500;
+      background: transparent;
+    }
+    .hint-bubble {
+      position: absolute;
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 18px; border-radius: 10px;
+      background: rgba(0,210,180,0.12); border: 1px solid rgba(0,210,180,0.3);
+      color: var(--accent-text); font-size: 0.88rem; font-weight: 600;
+      direction: rtl; white-space: nowrap;
+      animation: hintPulse 2s ease-in-out infinite;
+      box-shadow: 0 4px 16px rgba(0,210,180,0.15);
+    }
+    .hint-bubble::after {
+      content: '→';
+      font-size: 1.2rem;
+      display: inline-block;
+      animation: hintArrow 1s ease-in-out infinite;
+    }
+    @keyframes hintPulse {
+      0%, 100% { opacity: 0.9; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.03); }
+    }
+    @keyframes hintArrow {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(5px); }
+    }
   </style>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -8844,6 +8873,7 @@
         const profileMsg = data.profileUpdated ? ' · הפרופיל עודכן אוטומטית!' : '';
         learnStatus.innerHTML = `<div class="learn-context-badge">&#10003; נלמדו ${count} מסמכים — ${added} סעיפים חדשים, ${updated} עודכנו (סה"כ ${total} במאגר)${profileMsg}. רענן את הדף כדי לעדכן את הצ'אט.</div>`;
         learnStatus.className = 'learn-status success';
+        if (typeof showBuilderHint === 'function') showBuilderHint();
         if (data.profileUpdated) {
           try { const pRes = await fetch('/api/user-profile'); if (pRes.ok && window._setCurrentProfile) window._setCurrentProfile(await pRes.json()); if (window._updateHeaderFromProfile) window._updateHeaderFromProfile(); } catch {}
         }
@@ -10188,7 +10218,62 @@
       try { await fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ setupComplete: true }) }); } catch (e) {}
       document.getElementById('onboardingOverlay').style.display = 'none';
       if (window._navigate) window._navigate('home');
+      startHintSequence();
     };
+
+    // ── Hint Arrow System ─────────────────────────────────────────────────────
+    function showHintAtElement(targetEl, text, onDismiss) {
+      if (!targetEl) { if (onDismiss) onDismiss(); return; }
+
+      var overlay = document.createElement('div');
+      overlay.className = 'hint-overlay';
+
+      var bubble = document.createElement('div');
+      bubble.className = 'hint-bubble';
+      bubble.textContent = text;
+
+      var rect = targetEl.getBoundingClientRect();
+      bubble.style.top = (rect.top + rect.height / 2 - 18) + 'px';
+      bubble.style.right = (window.innerWidth - rect.left + 16) + 'px';
+      bubble.style.position = 'fixed';
+
+      overlay.appendChild(bubble);
+      document.body.appendChild(overlay);
+
+      var dismissed = false;
+      function dismiss() {
+        if (dismissed) return;
+        dismissed = true;
+        if (overlay.parentNode) overlay.remove();
+        if (onDismiss) onDismiss();
+      }
+
+      overlay.addEventListener('click', dismiss);
+      targetEl.addEventListener('click', dismiss, { once: true });
+    }
+
+    function startHintSequence() {
+      if (localStorage.getItem('hint1Shown')) return;
+      localStorage.setItem('hint1Shown', '1');
+
+      setTimeout(function() {
+        var docsBtn = document.querySelector('button.rail-btn[data-view="docs"]');
+        if (!docsBtn) return;
+        showHintAtElement(docsBtn, 'התחל כאן', null);
+      }, 600);
+    }
+
+    // Hint 2: shown after document ingestion, dismissed on any click/navigation
+    function showBuilderHint() {
+      if (localStorage.getItem('hint2Shown')) return;
+      localStorage.setItem('hint2Shown', '1');
+
+      setTimeout(function() {
+        var builderBtn = document.querySelector('button.rail-btn[data-view="document"]');
+        if (!builderBtn) return;
+        showHintAtElement(builderBtn, 'בנה מסמך חדש', null);
+      }, 800);
+    }
 
     // ── Claude Code detection ─────────────────────────────────────────────────
     function checkClaudeCode() {
