@@ -150,15 +150,16 @@ All AI output (FORM_DATA / FORM_UPDATE) passes through a modular skills pipeline
 
 ## Delivery Workflow (MANDATORY)
 
-**The user tests from a packaged executable on a Windows VM.** Source-only changes are invisible to them. After EVERY code change, you MUST complete the full cycle:
+**The user tests from the live GitHub Pages site and released AppImage/executables.** Source-only changes are invisible to them. After EVERY code change, you MUST complete the full cycle:
 
-1. `npm run build` — rebuild the executable
-2. `git add` + `git commit` — commit all changes
-3. `git push` — push to GitHub
+1. `git add` + `git commit` — commit all changes
+2. `git push` — push to GitHub **IMMEDIATELY** (landing page updates via GitHub Pages CDN in ~1 min)
+3. `npm run build:linux` — rebuild the AppImage (if app code changed, not just docs/landing page)
+4. `gh release upload` — upload updated binaries to the current release
 
-If bumping the version, also create a GitHub release with the built executables so the in-app update button can find them.
+If bumping the version, also create a new GitHub release with all built executables.
 
-**Never stop at just editing files.** If you changed code, build and push it.
+**NEVER stop at just editing or committing.** Every change MUST be pushed. A change that isn't pushed doesn't exist to the user.
 
 ## Commands
 
