@@ -5358,7 +5358,14 @@
       </div>
       <div class="ob-step" data-step="2" style="display:none;padding:20px 40px 30px;">
         <h1 style="font-size:1.3rem;font-weight:700;color:var(--text-primary);margin:0 0 6px;">חיבור AI</h1>
-        <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 20px;">בחר ספק AI והזן מפתח API</p>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 16px;">בחר שיטת התחברות</p>
+        <!-- Claude Code option -->
+        <div id="obClaudeCodeCard" style="display:none;border:1px solid var(--accent-border);border-radius:10px;padding:14px;margin-bottom:14px;background:rgba(0,210,180,0.04);cursor:pointer;text-align:center;" onclick="obUseClaudeCode()">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent-text);margin-bottom:4px;">התחבר דרך Claude Code</div>
+          <div id="obClaudeCodeTier" style="font-size:0.75rem;color:var(--text-muted);"></div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">ללא מפתח API — משתמש במנוי הקיים שלך</div>
+        </div>
+        <div id="obApiDivider" style="display:none;text-align:center;color:var(--text-muted);font-size:0.78rem;margin:12px 0;position:relative;"><span style="background:var(--card-bg);padding:0 12px;position:relative;z-index:1;">או הזן מפתח API</span><div style="position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border);"></div></div>
         <div style="margin-bottom:14px;text-align:right;"><label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">ספק AI</label><select id="obAiProvider" style="width:100%;padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.88rem;font-family:inherit;direction:rtl;"><option value="anthropic">Anthropic (Claude) — מומלץ</option><option value="openai">OpenAI (GPT)</option><option value="openrouter">OpenRouter</option></select></div>
         <div style="margin-bottom:14px;text-align:right;"><label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">מפתח API</label><input type="password" id="obAiKey" dir="ltr" placeholder="sk-..." style="width:100%;padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.88rem;font-family:inherit;box-sizing:border-box;" /></div>
         <div style="padding:10px 0;display:flex;justify-content:center;gap:10px;"><button onclick="obPrev()" style="padding:9px 20px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);">חזור</button><button onclick="obNext()" style="padding:9px 20px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--accent-border);background:var(--accent-subtle);color:var(--accent-text);font-weight:600;">המשך</button><button onclick="obNext()" style="padding:9px 14px;border-radius:8px;font-size:0.75rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-muted);">דלג</button></div>
@@ -10133,6 +10140,26 @@
       var dots = document.getElementById('obDots');
       if (dots) { dots.innerHTML = [1,2,3,4].map(function(i) { return '<div style="width:8px;height:8px;border-radius:50%;background:' + (i === step ? 'var(--accent)' : i < step ? 'var(--accent-text)' : 'var(--border-strong)') + ';transition:all 150ms;"></div>'; }).join(''); }
     }
+    // Check Claude Code availability when onboarding step 2 loads
+    window.showOnboardingAiStep = function() {
+      fetch('/api/claude-code-status').then(function(r) { return r.json(); }).then(function(data) {
+        var card = document.getElementById('obClaudeCodeCard');
+        var divider = document.getElementById('obApiDivider');
+        var tierEl = document.getElementById('obClaudeCodeTier');
+        if (data.available) {
+          card.style.display = 'block';
+          divider.style.display = 'block';
+          if (data.tier) {
+            var t = data.tier.split('_')[0];
+            tierEl.textContent = 'מנוי ' + t.charAt(0).toUpperCase() + t.slice(1) + ' פעיל';
+          }
+        }
+      }).catch(function() {});
+    };
+    window.obUseClaudeCode = function() {
+      fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aiProvider: 'anthropic', useClaudeOAuth: true, aiApiKey: '' }) })
+        .then(function() { obNext(); });
+    };
     window.obNext = function() {
       if (_obStep === 2) {
         var provider = document.getElementById('obAiProvider').value;
@@ -10147,7 +10174,10 @@
         var p = document.getElementById('obPhone').value.trim(); if (p) body.phone = p;
         if (Object.keys(body).length) fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       }
-      if (_obStep < 4) updateObStep(_obStep + 1);
+      if (_obStep < 4) {
+        updateObStep(_obStep + 1);
+        if (_obStep === 2) showOnboardingAiStep();
+      }
     };
     window.obPrev = function() { if (_obStep > 1) updateObStep(_obStep - 1); };
     window.obLoadDemo = async function() {
