@@ -1200,7 +1200,7 @@
           else if (id.indexOf('mac') !== -1) os = 'mac';
           else if (id.indexOf('linux') !== -1) os = 'linux';
         }
-        var url = urls[os] || (os === 'mac' ? 'https://github.com/endlessblink/contractor#installation' : null);
+        var url = urls[os] || (os === 'mac' ? '#install' : null);
         if (url) {
           downloadLinks.forEach(function(link) { link.href = url; });
         }
