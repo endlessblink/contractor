@@ -406,6 +406,59 @@
       background: rgba(0, 210, 180, 0.14); border-color: var(--accent);
     }
 
+    /* Claude Code card */
+    .claude-code-card {
+      border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+      margin-bottom: 16px; transition: all 150ms;
+    }
+    .claude-code-card.active {
+      border-color: var(--accent-border); background: rgba(0,210,180,0.04);
+    }
+    .claude-code-card.unavailable {
+      opacity: 0.6;
+    }
+    .claude-code-card-header {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .claude-code-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: rgba(0,210,180,0.1); display: flex; align-items: center; justify-content: center;
+      color: var(--accent-text); flex-shrink: 0;
+    }
+    .claude-code-info { flex: 1; }
+    .claude-code-info strong { font-size: 0.9rem; color: var(--text-primary); }
+    .claude-code-tier {
+      display: inline-block; font-size: 0.7rem; padding: 1px 8px; border-radius: 10px;
+      background: rgba(0,210,180,0.12); color: var(--accent-text); margin-inline-start: 8px;
+      text-transform: capitalize;
+    }
+    .claude-code-status {
+      font-size: 0.8rem; flex-shrink: 0;
+    }
+    .claude-code-desc {
+      font-size: 0.78rem; color: var(--text-muted); margin: 8px 0 12px;
+      direction: rtl;
+    }
+    .claude-code-btn {
+      width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--accent-border);
+      background: rgba(0,210,180,0.08); color: var(--accent-text); cursor: pointer;
+      font-family: inherit; font-size: 0.82rem; font-weight: 600; transition: all 150ms;
+    }
+    .claude-code-btn:hover { background: rgba(0,210,180,0.15); }
+    .claude-code-btn.connected {
+      background: transparent; border-color: var(--border); color: var(--text-muted);
+    }
+    .claude-code-btn:disabled {
+      opacity: 0.4; cursor: not-allowed;
+    }
+    .settings-divider {
+      display: flex; align-items: center; gap: 12px; margin: 20px 0; direction: rtl;
+      color: var(--text-muted); font-size: 0.78rem;
+    }
+    .settings-divider::before, .settings-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
     /* About section */
     .settings-about-title {
       font-size: 1.05rem; font-weight: 700; color: var(--text-primary);
@@ -5387,47 +5440,62 @@
 
         <!-- Tab 2: AI -->
         <div class="settings-tab-panel" id="settingsTabAi">
-          <div class="settings-form-group">
-            <label for="settingsAiProvider">AI Provider</label>
-            <select id="settingsAiProvider">
-              <option value="anthropic">Anthropic (Claude)</option>
-              <option value="openai">OpenAI (GPT)</option>
-              <option value="openrouter">OpenRouter</option>
-            </select>
+          <!-- Claude Code Card -->
+          <div id="claudeCodeCard" class="claude-code-card">
+            <div class="claude-code-card-header">
+              <div class="claude-code-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+              </div>
+              <div class="claude-code-info">
+                <strong>Claude Code</strong>
+                <span id="claudeCodeTier" class="claude-code-tier"></span>
+              </div>
+              <div id="claudeCodeStatus" class="claude-code-status"></div>
+            </div>
+            <p id="claudeCodeDesc" class="claude-code-desc"></p>
+            <button id="claudeCodeToggle" type="button" class="claude-code-btn"></button>
           </div>
 
-          <div class="settings-form-group">
-            <label for="settingsAiModel">Model</label>
-            <select id="settingsAiModel">
-              <optgroup label="Anthropic" data-provider="anthropic">
-                <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (Recommended)</option>
-                <option value="claude-opus-4-6">Claude Opus 4.6</option>
-                <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Fast/Cheap)</option>
-              </optgroup>
-              <optgroup label="OpenAI" data-provider="openai">
-                <option value="gpt-4o">GPT-4o</option>
-                <option value="gpt-4o-mini">GPT-4o Mini (Fast/Cheap)</option>
-                <option value="gpt-4.1">GPT-4.1</option>
-              </optgroup>
-              <optgroup label="OpenRouter" data-provider="openrouter">
-                <option value="anthropic/claude-sonnet-4-6">Claude Sonnet 4.6</option>
-                <option value="anthropic/claude-opus-4-6">Claude Opus 4.6</option>
-                <option value="openai/gpt-4o">GPT-4o</option>
-              </optgroup>
-            </select>
+          <div class="settings-divider">
+            <span>או הזן מפתח API</span>
           </div>
 
-          <div class="settings-form-group">
-            <label for="settingsAiApiKey">API Key</label>
-            <input type="password" id="settingsAiApiKey" placeholder="sk-...">
-          </div>
+          <!-- Manual API Key Setup -->
+          <div id="manualAiSetup">
+            <div class="settings-form-group">
+              <label for="settingsAiProvider">AI Provider</label>
+              <select id="settingsAiProvider">
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="openai">OpenAI (GPT)</option>
+                <option value="openrouter">OpenRouter</option>
+              </select>
+            </div>
 
-          <div class="settings-form-group" id="claudeOAuthGroup">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;">
-              <input type="checkbox" id="settingsUseClaudeOAuth" style="accent-color:var(--accent);">
-              Use Claude Code OAuth (no API key needed)
-            </label>
-            <p style="color:var(--text-muted);font-size:0.72rem;margin-top:4px;">Requires Claude Code CLI to be logged in. Run: claude login</p>
+            <div class="settings-form-group">
+              <label for="settingsAiModel">Model</label>
+              <select id="settingsAiModel">
+                <optgroup label="Anthropic" data-provider="anthropic">
+                  <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (Recommended)</option>
+                  <option value="claude-opus-4-6">Claude Opus 4.6</option>
+                  <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Fast/Cheap)</option>
+                </optgroup>
+                <optgroup label="OpenAI" data-provider="openai">
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="gpt-4o-mini">GPT-4o Mini (Fast/Cheap)</option>
+                  <option value="gpt-4.1">GPT-4.1</option>
+                </optgroup>
+                <optgroup label="OpenRouter" data-provider="openrouter">
+                  <option value="anthropic/claude-sonnet-4-6">Claude Sonnet 4.6</option>
+                  <option value="anthropic/claude-opus-4-6">Claude Opus 4.6</option>
+                  <option value="openai/gpt-4o">GPT-4o</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div class="settings-form-group">
+              <label for="settingsAiApiKey">API Key</label>
+              <input type="password" id="settingsAiApiKey" placeholder="sk-...">
+            </div>
           </div>
 
           <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
@@ -9875,17 +9943,16 @@
       const aiProviderEl = document.getElementById('settingsAiProvider');
       const aiModelEl = document.getElementById('settingsAiModel');
       const aiApiKeyEl = document.getElementById('settingsAiApiKey');
-      const useClaudeOAuthEl = document.getElementById('settingsUseClaudeOAuth');
-      const claudeOAuthGroup = document.getElementById('claudeOAuthGroup');
 
       if (currentProfile.aiProvider) aiProviderEl.value = currentProfile.aiProvider;
       if (currentProfile.aiModel) aiModelEl.value = currentProfile.aiModel;
       if (currentProfile.aiApiKey) aiApiKeyEl.value = currentProfile.aiApiKey;
-      if (currentProfile.useClaudeOAuth) useClaudeOAuthEl.checked = currentProfile.useClaudeOAuth;
 
-      // Show/hide Claude OAuth option and filter model list based on provider
+      // Refresh Claude Code card state
+      checkClaudeCode();
+
+      // Filter model list based on provider
       function updateProviderUI() {
-        claudeOAuthGroup.style.display = aiProviderEl.value === 'anthropic' ? 'block' : 'none';
         // Show only optgroups matching the selected provider
         aiModelEl.querySelectorAll('optgroup').forEach(g => {
           g.style.display = g.dataset.provider === aiProviderEl.value ? '' : 'none';
@@ -9985,11 +10052,10 @@
       const aiProviderEl = document.getElementById('settingsAiProvider');
       const aiModelEl = document.getElementById('settingsAiModel');
       const aiApiKeyEl = document.getElementById('settingsAiApiKey');
-      const useClaudeOAuthEl = document.getElementById('settingsUseClaudeOAuth');
       data.aiProvider = aiProviderEl.value;
       data.aiModel = aiModelEl.value;
       data.aiApiKey = aiApiKeyEl.value;
-      data.useClaudeOAuth = useClaudeOAuthEl.checked;
+      data.useClaudeOAuth = currentProfile.useClaudeOAuth || false;
 
       try {
         const res = await fetch('/api/user-profile', {
@@ -10094,6 +10160,85 @@
       if (window._navigate) window._navigate('home');
     };
 
+    // ── Claude Code detection ─────────────────────────────────────────────────
+    function checkClaudeCode() {
+      fetch('/api/claude-code-status').then(function(r) { return r.json(); }).then(function(data) {
+        var card = document.getElementById('claudeCodeCard');
+        var desc = document.getElementById('claudeCodeDesc');
+        var btn = document.getElementById('claudeCodeToggle');
+        var tierEl = document.getElementById('claudeCodeTier');
+        var status = document.getElementById('claudeCodeStatus');
+        if (!card) return;
+
+        if (data.available) {
+          card.classList.remove('unavailable');
+          btn.disabled = false;
+
+          var isUsingOAuth = currentProfile.useClaudeOAuth || false;
+
+          if (isUsingOAuth) {
+            card.classList.add('active');
+            status.innerHTML = '<span style="color:var(--accent-text);">✓ מחובר</span>';
+            desc.textContent = 'משתמש במנוי Claude Code שלך. אין צורך במפתח API.';
+            btn.textContent = 'נתק מ-Claude Code';
+            btn.className = 'claude-code-btn connected';
+          } else {
+            card.classList.remove('active');
+            status.innerHTML = '';
+            desc.textContent = 'זוהה מנוי Claude Code פעיל. לחץ להתחברות ללא מפתח API.';
+            btn.textContent = 'התחבר דרך Claude Code';
+            btn.className = 'claude-code-btn';
+          }
+
+          if (data.tier) {
+            var tierName = data.tier.split('_')[0];
+            tierName = tierName.charAt(0).toUpperCase() + tierName.slice(1);
+            tierEl.textContent = tierName;
+            tierEl.style.display = '';
+          } else {
+            tierEl.style.display = 'none';
+          }
+        } else {
+          card.classList.add('unavailable');
+          card.classList.remove('active');
+          status.innerHTML = '';
+          tierEl.style.display = 'none';
+          desc.innerHTML = 'Claude Code לא זוהה. <a href="https://claude.ai/download" target="_blank" style="color:var(--accent-text);">התקן</a> והתחבר עם <code style="font-size:0.75rem;">claude login</code>';
+          btn.textContent = 'לא זמין';
+          btn.disabled = true;
+          btn.className = 'claude-code-btn';
+        }
+      }).catch(function() {});
+    }
+    window.checkClaudeCode = checkClaudeCode;
+
+    // Wire Claude Code toggle button
+    document.addEventListener('click', function(e) {
+      if (e.target && e.target.id === 'claudeCodeToggle') {
+        var isUsingOAuth = currentProfile.useClaudeOAuth || false;
+
+        if (isUsingOAuth) {
+          currentProfile.useClaudeOAuth = false;
+        } else {
+          currentProfile.useClaudeOAuth = true;
+          currentProfile.aiProvider = 'anthropic';
+        }
+
+        fetch('/api/user-profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentProfile),
+        }).then(function(r) { return r.json(); }).then(function(result) {
+          if (result.profile) currentProfile = result.profile;
+          checkClaudeCode();
+          var providerEl = document.getElementById('settingsAiProvider');
+          var apiKeyEl = document.getElementById('settingsAiApiKey');
+          if (providerEl) providerEl.value = currentProfile.aiProvider || 'anthropic';
+          if (apiKeyEl && currentProfile.useClaudeOAuth) apiKeyEl.value = '';
+        }).catch(function() {});
+      }
+    });
+
     // First-run setup check
     async function checkSetup() {
       try {
@@ -10108,6 +10253,23 @@
       } catch {}
       await loadProfile();
       updateHeaderFromProfile();
+      // Auto-configure Claude Code if no AI is set up yet
+      if (!currentProfile.aiApiKey && !currentProfile.useClaudeOAuth) {
+        fetch('/api/claude-code-status').then(function(r) { return r.json(); }).then(function(data) {
+          if (data.available) {
+            currentProfile.useClaudeOAuth = true;
+            currentProfile.aiProvider = 'anthropic';
+            fetch('/api/user-profile', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(currentProfile),
+            }).then(function(r) { return r.json(); }).then(function(result) {
+              if (result.profile) currentProfile = result.profile;
+              if (typeof showToast === 'function') showToast('מחובר דרך Claude Code ✓');
+            }).catch(function() {});
+          }
+        }).catch(function() {});
+      }
     }
 
     checkSetup();

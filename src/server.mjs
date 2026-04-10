@@ -2974,6 +2974,21 @@ app.post('/api/import', upload.single('backup'), (req, res) => {
 });
 
 // ─── AI provider status ──────────────────────────────────────────────────────
+app.get('/api/claude-code-status', (req, res) => {
+  try {
+    const credPath = join(homedir(), '.claude', '.credentials.json');
+    const raw = readFileSync(credPath, 'utf-8');
+    const data = JSON.parse(raw);
+    const oauth = data?.claudeAiOauth;
+    res.json({
+      available: !!oauth?.accessToken,
+      tier: oauth?.subscriptionType || null
+    });
+  } catch {
+    res.json({ available: false, tier: null });
+  }
+});
+
 app.get('/api/ai-status', async (req, res) => {
   try {
     const config = getProviderConfig();
