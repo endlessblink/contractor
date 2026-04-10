@@ -2940,9 +2940,12 @@ app.delete('/api/document-types/:id', (req, res) => {
 
 app.get('/api/export', (_req, res) => {
   try {
+    mkdirSync(OUTPUT_DIR, { recursive: true });
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const zipName = `contractor-backup-${timestamp}.tar.gz`;
     const zipPath = join(OUTPUT_DIR, zipName);
+    const dataDir = join(PROJECT_DIR, 'data');
+    mkdirSync(dataDir, { recursive: true });
     execSync(`tar -czf "${zipPath}" -C "${PROJECT_DIR}" data/`, { timeout: 30000 });
     res.download(zipPath, zipName, () => {
       // Clean up after download
