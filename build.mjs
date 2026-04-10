@@ -107,7 +107,12 @@ SELF=$(readlink -f "$0")
 HERE=\${SELF%/*}
 export PATH="\${HERE}/usr/bin/:\${PATH:+:\$PATH}"
 unset XDG_DATA_DIRS
-exec "\${HERE}/usr/bin/contractor" "$@"
+# Start server in background, wait for it, then open browser
+"\${HERE}/usr/bin/contractor" "$@" &
+SERVER_PID=$!
+sleep 2
+xdg-open "http://localhost:6831" 2>/dev/null || true
+wait $SERVER_PID
 `);
   execSync(`chmod +x ${appDir}/AppRun`);
 
