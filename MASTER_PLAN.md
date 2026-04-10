@@ -41,6 +41,11 @@
 | ~~**TASK-023**~~ | ✅ **Landing page + demo GIF** — GitHub Pages landing page with RTL Hebrew, automated Playwright demo recording | **P1** | ✅ **DONE** (2026-04-06) |
 | ~~**TASK-024**~~ | ✅ **Multi-select bulk delete for projects** — Hover-reveal checkboxes, floating action bar, shift+click range select, select-all, bulk delete with confirmation | **P1** | ✅ **DONE** (2026-04-06) |
 | ~~**TASK-025**~~ | ✅ **Client → filtered projects navigation** — Clickable project count badge on client cards navigates to projects view pre-filtered by client | **P2** | ✅ **DONE** (2026-04-06) |
+| ~~**TASK-033**~~ | ✅ **Claude Code sign-in** — Auto-detect Claude Code OAuth, one-click connect in Settings + onboarding wizard, no API key needed | **P1** | ✅ **DONE** (2026-04-10) |
+| ~~**TASK-034**~~ | ✅ **AppImage for Linux** — Double-click install, auto-opens browser, integrated into build.mjs | **P1** | ✅ **DONE** (2026-04-09) |
+| ~~**TASK-035**~~ | ✅ **Landing page: direct downloads + OS detection** — Auto-detect OS, direct binary download, macOS source install instructions | **P2** | ✅ **DONE** (2026-04-09) |
+| ~~**TASK-036**~~ | ✅ **Post-onboarding hint arrows** — Animated hints guiding new users to documents and builder views | **P2** | ✅ **DONE** (2026-04-10) |
+| **TASK-037** | **Apple Developer signing** — $99/year Apple Developer account for code-signed macOS binaries (eliminates Gatekeeper/XProtect) | **P2** | TODO |
 
 ## Document Templates (Post-Launch)
 
