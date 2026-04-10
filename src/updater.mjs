@@ -2,7 +2,7 @@ import { createWriteStream, existsSync, renameSync, chmodSync, unlinkSync, statS
 import path from 'path';
 
 const GITHUB_REPO = 'endlessblink/contractor';
-export const CURRENT_VERSION = '1.7.0';
+export const CURRENT_VERSION = '1.8.0';
 
 function getPlatformSuffix() {
   const { platform, arch } = process;
