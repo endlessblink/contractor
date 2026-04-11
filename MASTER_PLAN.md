@@ -45,7 +45,18 @@
 | ~~**TASK-034**~~ | ✅ **AppImage for Linux** — Double-click install, auto-opens browser, integrated into build.mjs | **P1** | ✅ **DONE** (2026-04-09) |
 | ~~**TASK-035**~~ | ✅ **Landing page: direct downloads + OS detection** — Auto-detect OS, direct binary download, macOS source install instructions | **P2** | ✅ **DONE** (2026-04-09) |
 | ~~**TASK-036**~~ | ✅ **Post-onboarding hint arrows** — Animated hints guiding new users to documents and builder views | **P2** | ✅ **DONE** (2026-04-10) |
-| **TASK-037** | **Apple Developer signing** — $99/year Apple Developer account for code-signed macOS binaries (eliminates Gatekeeper/XProtect) | **P2** | TODO |
+| **TASK-037** | **Apple Developer signing** — Enroll, sign + notarize macOS binaries, update build.mjs | **P1** | PLANNED |
+
+#### TASK-037 — Apple Developer Signing (Full Pipeline)
+
+**Steps:**
+1. Enroll in Apple Developer Program ($99/year) — user confirmed willingness to pay
+2. Create "Developer ID Application" certificate (via Xcode on Mac)
+3. Generate App-Specific Password for notarization (appleid.apple.com)
+4. Update `build.mjs` — add `codesign` + `xcrun notarytool` + `xcrun stapler` for mac targets
+5. Optional: package as `.dmg` for drag-to-Applications install experience
+6. Update landing page — replace source-install instructions with direct signed binary download
+7. Test: download signed binary on clean Mac, verify no Gatekeeper warning
 | **FEATURE-038** | **Recording to quote** — Record client conversation, transcribe (AssemblyAI/Whisper), AI extracts details to auto-fill quote form (~6h MVP) | **P2** | TODO |
 
 ## Document Templates (Post-Launch)
