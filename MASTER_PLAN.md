@@ -46,6 +46,7 @@
 | ~~**TASK-035**~~ | ✅ **Landing page: direct downloads + OS detection** — Auto-detect OS, direct binary download, macOS source install instructions | **P2** | ✅ **DONE** (2026-04-09) |
 | ~~**TASK-036**~~ | ✅ **Post-onboarding hint arrows** — Animated hints guiding new users to documents and builder views | **P2** | ✅ **DONE** (2026-04-10) |
 | **TASK-037** | **Apple Developer signing** — $99/year Apple Developer account for code-signed macOS binaries (eliminates Gatekeeper/XProtect) | **P2** | TODO |
+| **FEATURE-038** | **Recording to quote** — Record client conversation, transcribe (AssemblyAI/Whisper), AI extracts details to auto-fill quote form (~6h MVP) | **P2** | TODO |
 
 ## Document Templates (Post-Launch)
 
