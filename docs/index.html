@@ -1059,25 +1059,26 @@
               <div class="step">
                 <span class="step-num">1</span>
                 <div class="step-text">
-                  התקן <a href="https://nodejs.org/" target="_blank" style="color:var(--accent-text);">Node.js</a> (אם עדיין לא מותקן)
+                  התקן <a href="https://nodejs.org/" target="_blank" style="color:var(--accent-text);">Node.js</a> — לחץ על הכפתור הירוק באתר, הורד והתקן
                 </div>
               </div>
               <div class="step">
                 <span class="step-num">2</span>
                 <div class="step-text">
-                  פתח Terminal (Spotlight: <strong>&#8984; + Space</strong> ← הקלד "Terminal" ← Enter)
+                  פתח Terminal — לחץ <strong>&#8984; + Space</strong>, הקלד <strong>Terminal</strong>, לחץ Enter
                 </div>
               </div>
               <div class="step">
                 <span class="step-num">3</span>
                 <div class="step-text">
-                  הדבק את הפקודה הבאה ולחץ Enter:
+                  לחץ על כפתור ההעתקה ← הדבק ב-Terminal (&#8984;+V) ← לחץ Enter
                   <div class="code-wrap">
-                    <button class="copy-btn" onclick="navigator.clipboard.writeText('[ -d contractor ] || git clone https://github.com/endlessblink/contractor; cd contractor && npm install && npm start');this.innerHTML='&#10003;';setTimeout(function(){this.innerHTML='<svg viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot;><rect x=&quot;9&quot; y=&quot;9&quot; width=&quot;13&quot; height=&quot;13&quot; rx=&quot;2&quot;/><path d=&quot;M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1&quot;/></svg>'}.bind(this),1500)" title="העתק">
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('[ -d ~/contractor ] || git clone https://github.com/endlessblink/contractor ~/contractor; sudo chown -R $(whoami) ~/.npm 2>/dev/null; cd ~/contractor && npm install && npm start');this.innerHTML='&#10003;';setTimeout(function(){this.innerHTML='<svg viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot;><rect x=&quot;9&quot; y=&quot;9&quot; width=&quot;13&quot; height=&quot;13&quot; rx=&quot;2&quot;/><path d=&quot;M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1&quot;/></svg>'}.bind(this),1500)" title="העתק">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                     </button>
-                    <code class="step-code">[ -d contractor ] || git clone https://github.com/endlessblink/contractor; cd contractor &amp;&amp; npm install &amp;&amp; npm start</code>
+                    <code class="step-code">העתק פקודה ← הדבק ב-Terminal ← Enter</code>
                   </div>
+                  <small style="color:var(--text-muted);font-size:0.72rem;display:block;margin-top:6px;">אם מבקש סיסמה — הקלד את סיסמת המק (לא מופיע כלום על המסך, זה נורמלי) ולחץ Enter</small>
                 </div>
               </div>
               <div class="step">
@@ -1085,7 +1086,7 @@
                 <p class="step-text">מוכן! האפליקציה נפתחת אוטומטית בדפדפן</p>
               </div>
             </div>
-            <p class="step-tip">בפעם הבאה: פתח Terminal והרץ <code style="color:var(--accent);">cd contractor &amp;&amp; npm start</code></p>
+            <p class="step-tip">בפעם הבאה: פתח Terminal, הדבק שוב את אותה פקודה ← Enter</p>
           </div>
 
           <div class="tab-panel" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux">
