@@ -166,6 +166,17 @@ function stripBullet(text) {
   return text.replace(/^[\u2022\u2023\u2043\u25E6•·‣\-–—]\s*/, '').trim();
 }
 
+function ltrRun(text, opts = {}) {
+  return new TextRun({
+    text,
+    rightToLeft: false,
+    font: FONT_OBJ,
+    size: BODY_SIZE,
+    language: { value: 'en-US' },
+    ...opts,
+  });
+}
+
 /** Create a bullet-style paragraph using native DOCX numbering */
 function dashParagraph(text) {
   return new Paragraph({
@@ -178,6 +189,166 @@ function dashParagraph(text) {
   });
 }
 
+function normalizeArray(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string' && value.trim()) return value.split('\n').map(v => v.trim()).filter(Boolean);
+  return [];
+}
+
+function cvSectionHeader(text) {
+  return new Paragraph({
+    bidirectional: true,
+    spacing: { before: 260, after: 120 },
+    border: {
+      bottom: { style: BorderStyle.SINGLE, size: 6, color: '0F6674', space: 4 },
+    },
+    children: [rtlRun(text, {
+      bold: true,
+      boldComplexScript: true,
+      size: '13pt',
+      sizeComplexScript: '13pt',
+      color: '0F6674',
+    })],
+  });
+}
+
+function cvRoleParagraph(item) {
+  const parts = [item.title, item.organization].filter(Boolean).join(' — ');
+  const dates = item.dates || item.date || '';
+  const label = dates ? `${parts}   ${dates}` : parts;
+  return rtlParagraph([rtlRun(label, {
+    bold: true,
+    boldComplexScript: true,
+    size: '11.5pt',
+    sizeComplexScript: '11.5pt',
+  })], { spacing: { before: 120, after: 60 } });
+}
+
+async function generateCvDocument(data) {
+  const cv = data.cvData || {};
+  const fullName = cv.fullName || data.clientName || data.userProfile?.name || '';
+  const headline = cv.headline || data.projectDescription || data.userProfile?.title || '';
+  const location = cv.location || '';
+  const profile = cv.profile || data.serviceDetails || '';
+  const phone = cv.phone || data.userProfile?.phone || '';
+  const email = cv.email || data.userProfile?.email || '';
+  const links = Array.isArray(cv.links) ? cv.links : [];
+
+  const children = [];
+
+  children.push(rtlParagraph([rtlRun(fullName, {
+    bold: true,
+    boldComplexScript: true,
+    size: '26pt',
+    sizeComplexScript: '26pt',
+    color: '111827',
+  })], { alignment: AlignmentType.CENTER, spacing: { after: 40 } }));
+
+  if (headline || location) {
+    children.push(rtlParagraph([rtlRun([headline, location].filter(Boolean).join(' · '), {
+      size: '12.5pt',
+      sizeComplexScript: '12.5pt',
+      color: '374151',
+    })], { alignment: AlignmentType.CENTER, spacing: { after: 80 } }));
+  }
+
+  const contactParts = [phone, email, ...links.map(link => link.url ? `${link.label || ''}: ${link.url}`.trim() : link.label).filter(Boolean)];
+  if (contactParts.length > 0) {
+    const contactRuns = [];
+    contactParts.forEach((part, index) => {
+      if (index > 0) contactRuns.push(rtlRun('  ·  ', { color: '6B7280' }));
+      contactRuns.push(ltrRun(part, { size: '9.5pt', sizeComplexScript: '9.5pt', color: '374151' }));
+    });
+    children.push(rtlParagraph(contactRuns, { alignment: AlignmentType.CENTER, spacing: { after: 260 } }));
+  }
+
+  if (profile) {
+    children.push(cvSectionHeader('פרופיל'));
+    children.push(rtlParagraph([rtlRun(profile)], { spacing: { after: 120 }, alignment: AlignmentType.BOTH }));
+  }
+
+  for (const section of normalizeArray(cv.sections)) {
+    if (!section || !section.title) continue;
+    children.push(cvSectionHeader(section.title));
+    for (const item of normalizeArray(section.items)) {
+      if (typeof item === 'string') {
+        children.push(dashParagraph(item));
+        continue;
+      }
+      children.push(cvRoleParagraph(item));
+      for (const bullet of normalizeArray(item.bullets || item.details || item.description)) {
+        children.push(dashParagraph(bullet));
+      }
+    }
+  }
+
+  const skills = normalizeArray(cv.skills);
+  if (skills.length > 0) {
+    children.push(cvSectionHeader('כישורים וכלים'));
+    for (const skillGroup of skills) {
+      if (typeof skillGroup === 'string') {
+        children.push(dashParagraph(skillGroup));
+        continue;
+      }
+      const items = normalizeArray(skillGroup.items).join(', ');
+      const line = [skillGroup.category, items].filter(Boolean).join(' — ');
+      if (line) children.push(dashParagraph(line));
+    }
+  }
+
+  const languages = normalizeArray(cv.languages);
+  if (languages.length > 0) {
+    children.push(cvSectionHeader('שפות'));
+    languages.forEach(language => children.push(dashParagraph(language)));
+  }
+
+  const doc = new Document({
+    numbering: {
+      config: [{
+        reference: 'bullet-list',
+        levels: [{
+          level: 0,
+          format: LevelFormat.BULLET,
+          text: '\u2022',
+          alignment: AlignmentType.RIGHT,
+          style: {
+            paragraph: { indent: { left: convertInchesToTwip(0.25), hanging: convertInchesToTwip(0.18) } },
+            run: { font: FONT_OBJ },
+          },
+        }],
+      }],
+    },
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: FONT_OBJ,
+            size: BODY_SIZE,
+            rightToLeft: true,
+            language: { value: 'he-IL', bidirectional: 'he-IL' },
+          },
+          paragraph: { bidirectional: true },
+        },
+      },
+    },
+    sections: [{
+      properties: {
+        page: {
+          margin: {
+            top: convertInchesToTwip(0.55),
+            bottom: convertInchesToTwip(0.6),
+            left: convertInchesToTwip(0.7),
+            right: convertInchesToTwip(0.7),
+          },
+        },
+      },
+      children,
+    }],
+  });
+
+  return Packer.toBuffer(doc);
+}
+
 // ─── Document Builder ─────────────────────────────────────────────────────────
 
 /**
@@ -188,6 +359,10 @@ function dashParagraph(text) {
 export async function generateDocument(data) {
   // Run doc-skills pipeline to clean/transform data before rendering
   processDocData(data);
+
+  if (data.documentType === 'cv') {
+    return generateCvDocument(data);
+  }
 
   const {
     clientName = "",
@@ -226,7 +401,7 @@ export async function generateDocument(data) {
 
   function getClauseTexts(categoryKey) {
     if (!clausesDb || !clausesDb.clauses || !clausesDb.clauses[categoryKey]) return [];
-    const docTypeKey = documentType === 'quote' ? 'quote' : documentType === 'contract' ? 'contract' : 'workOrder';
+    const docTypeKey = documentType === 'quote' ? 'quote' : documentType === 'contract' ? 'contract' : documentType === 'cv' ? 'cv' : 'workOrder';
     return clausesDb.clauses[categoryKey].clauses
       .filter(c => {
         // Must apply to this document type
@@ -265,6 +440,7 @@ export async function generateDocument(data) {
     quote: "הצעת מחיר",
     contract: "חוזה עבודה",
     workOrder: "הזמנת עבודה",
+    cv: "קורות חיים",
   };
   const docTitle = titleMap[documentType] || "הצעת מחיר";
 

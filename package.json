@@ -45,6 +45,7 @@
     "assets": [
       "public/**/*",
       "assets/**/*",
+      "skills/**/*",
       "knowledge/clauses-db.sample.json",
       "data/user-profile.example.json"
     ],

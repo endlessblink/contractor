@@ -24,7 +24,7 @@ export const USER_DATA_DIR = process.env.CONTRACTOR_DATA_DIR || (IS_PKG
   : join(APP_DIR, 'data'));
 
 export function initUserDataDir() {
-  const dirs = ['knowledge', 'output', 'uploads', 'projects', 'references'];
+  const dirs = ['knowledge', 'output', 'uploads', 'projects', 'references', 'skills'];
   for (const d of dirs) mkdirSync(join(USER_DATA_DIR, d), { recursive: true });
 
   const seeds = [
@@ -35,6 +35,14 @@ export function initUserDataDir() {
     {
       src: join(SNAPSHOT_DIR, 'data', 'user-profile.example.json'),
       dest: join(USER_DATA_DIR, 'user-profile.json'),
+    },
+    {
+      src: join(SNAPSHOT_DIR, 'skills', 'hebrew-document-generator.md'),
+      dest: join(USER_DATA_DIR, 'skills', 'hebrew-document-generator.md'),
+    },
+    {
+      src: join(SNAPSHOT_DIR, 'skills', 'israeli-cv-builder.md'),
+      dest: join(USER_DATA_DIR, 'skills', 'israeli-cv-builder.md'),
     },
   ];
 

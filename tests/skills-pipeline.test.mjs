@@ -46,6 +46,24 @@ describe('AI Skills Pipeline', () => {
       assert.ok(Array.isArray(result.json.pricingItems));
     });
 
+    it('preserves CV FORM_DATA with cvData payload', async () => {
+      const result = await processAIOutput(JSON.stringify({
+        docType: 'cv',
+        clientName: 'נועם נאומובסקי',
+        projectDescription: 'יוצר תוכן AI ומפתח כלים',
+        pricingItems: [],
+        cvData: {
+          fullName: 'נועם נאומובסקי',
+          headline: 'יוצר תוכן AI ומפתח כלים',
+          sections: [{ title: 'ניסיון מקצועי', items: [] }],
+        },
+      }), 'FORM_DATA');
+
+      assert.strictEqual(result.failed, false);
+      assert.strictEqual(result.json.docType, 'cv');
+      assert.strictEqual(result.json.cvData.fullName, 'נועם נאומובסקי');
+    });
+
     it('coerces string prices to numbers', async () => {
       const result = await processAIOutput(JSON.stringify({
         pricingItems: [{ desc: 'item', qty: '2', price: '500' }],

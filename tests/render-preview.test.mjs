@@ -60,6 +60,32 @@ describe('renderPreviewHTML', () => {
     assert.ok(html.includes('הזמנת עבודה'));
   });
 
+  it('renders the CV preview shell for a CV', () => {
+    const html = renderPreviewHTML({ ...sampleData, documentType: 'cv' });
+    assert.ok(html.includes('class="cv-header"'));
+    assert.ok(html.includes('לקוח לדוגמה'));
+  });
+
+  it('renders CV preview using cvData instead of quote sections', () => {
+    const html = renderPreviewHTML({
+      documentType: 'cv',
+      clientName: 'נועם נאומובסקי',
+      projectDescription: 'יוצר תוכן AI',
+      cvData: {
+        fullName: 'נועם נאומובסקי',
+        headline: 'יוצר תוכן AI',
+        profile: 'תקציר מקצועי קצר',
+        sections: [{ title: 'ניסיון מקצועי', items: [{ title: 'מפתח', organization: 'עצמאי', dates: '2023 – היום', bullets: ['פיתוח כלי AI'] }] }],
+        skills: [{ category: 'AI Development', items: ['Claude', 'MCP'] }],
+        languages: ['עברית — שפת אם'],
+      },
+    });
+    assert.ok(html.includes('class="cv-header"'));
+    assert.ok(html.includes('ניסיון מקצועי'));
+    assert.ok(html.includes('כישורים וכלים'));
+    assert.ok(!html.includes('class="doc-from-to"'));
+  });
+
   it('includes from/to table with client and provider names', () => {
     const html = renderPreviewHTML({ ...sampleData });
     assert.ok(html.includes('לקוח לדוגמה'));

@@ -70,3 +70,14 @@
 | **TASK-030** | **Template: משפטי (Legal)** — Formal contract template. No color, numbered clauses (1.1, 1.2), Heebo 10.5pt, tight spacing, all legal sections, formal signature block. For high-value contracts. | **P2** | TODO |
 | **TASK-031** | **Template: סטנדרטי (Standard)** — Balanced default template. Teal `#0F6674` accent, side-border section headers, 7 of 8 sections, standard Israeli payment splits. The intelligent default. | **P2** | TODO |
 | **TASK-032** | **Full layout editor** — Drag-to-reorder sections, per-field show/hide, custom field names, per-doctype defaults. Extends template system with user customization. | **P3** | TODO |
+
+## CV Documents Lane
+
+| ID | Task | Priority | Status |
+|----|------|----------|--------|
+| **TASK-038** | **Runtime document skills** — bundle editable Markdown skills for Israeli CVs and Hebrew document generation | **P0** | DONE |
+| **TASK-039** | **CV document type** — add `cv` across frontend, backend mapping, project state, labels, filenames, and doc chips | **P0** | DONE |
+| **TASK-040** | **CV data model + AI prompt** — support `cvData` FORM_DATA and load CV/document skills into prompt | **P0** | DONE |
+| **TASK-041** | **RTL CV DOCX renderer** — dedicated Hebrew CV layout with proper mixed LTR contact/link handling | **P0** | DONE |
+| **TASK-042** | **CV preview renderer** — add CV-specific HTML preview matching the DOCX structure | **P1** | DONE |
+| **TASK-043** | **CV verification** — generate from Noam sample, extract text, verify sections and RTL markers | **P0** | DONE |

@@ -24,11 +24,17 @@ function esc(str) {
     .replace(/"/g, '&quot;');
 }
 
+function normalizeArray(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string' && value.trim()) return value.split('\n').map(v => v.trim()).filter(Boolean);
+  return [];
+}
+
 /** Build a clause-text getter, mirroring getClauseTexts from generate-quote.mjs */
 function makeClauseGetter({ clausesDb, documentType, selectedClauses, clauseEdits, relevantClauseIds, language }) {
   return function getClauseTexts(categoryKey) {
     if (!clausesDb || !clausesDb.clauses || !clausesDb.clauses[categoryKey]) return [];
-    const docTypeKey = documentType === 'quote' ? 'quote' : documentType === 'contract' ? 'contract' : 'workOrder';
+    const docTypeKey = documentType === 'quote' ? 'quote' : documentType === 'contract' ? 'contract' : documentType === 'cv' ? 'cv' : 'workOrder';
     return clausesDb.clauses[categoryKey].clauses
       .filter(c => {
         if (!c.appliesTo.includes(docTypeKey)) return false;
@@ -196,8 +202,122 @@ const PREVIEW_CSS = `
 .doc-footer-info .footer-name {
   font-weight: 700;
 }
+.cv-header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+.cv-name {
+  font-size: 26pt;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+  color: #111827;
+}
+.cv-headline {
+  margin: 0 0 6px 0;
+  color: #374151;
+  font-size: 12.5pt;
+}
+.cv-contact {
+  direction: ltr;
+  unicode-bidi: plaintext;
+  color: #374151;
+  font-size: 9.5pt;
+  margin: 0;
+}
+.cv-section-title {
+  border-bottom: 2px solid #0F6674;
+  color: #0F6674;
+  font-size: 13pt;
+  font-weight: 700;
+  margin: 16px 0 8px 0;
+  padding-bottom: 3px;
+}
+.cv-role {
+  font-weight: 700;
+  margin: 8px 0 3px 0;
+}
+.cv-list {
+  margin: 0 20px 0 0;
+  padding: 0 20px 0 0;
+}
+.cv-list li {
+  margin-bottom: 3px;
+}
 </style>
 `;
+
+function renderCvPreviewHTML(data) {
+  const cv = data.cvData || {};
+  const fullName = cv.fullName || data.clientName || data.userProfile?.name || '';
+  const headline = cv.headline || data.projectDescription || data.userProfile?.title || '';
+  const location = cv.location || '';
+  const profile = cv.profile || data.serviceDetails || '';
+  const phone = cv.phone || data.userProfile?.phone || '';
+  const email = cv.email || data.userProfile?.email || '';
+  const links = Array.isArray(cv.links) ? cv.links : [];
+  const contactParts = [phone, email, ...links.map(link => link.url ? `${link.label || ''}: ${link.url}`.trim() : link.label).filter(Boolean)];
+  const parts = [PREVIEW_CSS, '<div class="doc-preview" dir="rtl">'];
+
+  parts.push('<header class="cv-header">');
+  parts.push(`<h1 class="cv-name">${esc(fullName)}</h1>`);
+  if (headline || location) parts.push(`<p class="cv-headline">${esc([headline, location].filter(Boolean).join(' · '))}</p>`);
+  if (contactParts.length > 0) parts.push(`<p class="cv-contact">${contactParts.map(esc).join(' · ')}</p>`);
+  parts.push('</header>');
+
+  if (profile) {
+    parts.push('<section>');
+    parts.push('<h2 class="cv-section-title">פרופיל</h2>');
+    parts.push(`<p class="doc-paragraph">${esc(profile)}</p>`);
+    parts.push('</section>');
+  }
+
+  for (const section of normalizeArray(cv.sections)) {
+    if (!section || !section.title) continue;
+    parts.push('<section>');
+    parts.push(`<h2 class="cv-section-title">${esc(section.title)}</h2>`);
+    for (const item of normalizeArray(section.items)) {
+      if (typeof item === 'string') {
+        parts.push(`<ul class="cv-list"><li>${esc(item)}</li></ul>`);
+        continue;
+      }
+      const role = [item.title, item.organization].filter(Boolean).join(' — ');
+      const roleLine = item.dates || item.date ? `${role}   ${item.dates || item.date}` : role;
+      if (roleLine) parts.push(`<p class="cv-role">${esc(roleLine)}</p>`);
+      const bullets = normalizeArray(item.bullets || item.details || item.description);
+      if (bullets.length > 0) {
+        parts.push('<ul class="cv-list">');
+        bullets.forEach(bullet => parts.push(`<li>${esc(bullet)}</li>`));
+        parts.push('</ul>');
+      }
+    }
+    parts.push('</section>');
+  }
+
+  const skills = normalizeArray(cv.skills);
+  if (skills.length > 0) {
+    parts.push('<section><h2 class="cv-section-title">כישורים וכלים</h2><ul class="cv-list">');
+    for (const skillGroup of skills) {
+      if (typeof skillGroup === 'string') {
+        parts.push(`<li>${esc(skillGroup)}</li>`);
+      } else {
+        const items = normalizeArray(skillGroup.items).join(', ');
+        const line = [skillGroup.category, items].filter(Boolean).join(' — ');
+        if (line) parts.push(`<li>${esc(line)}</li>`);
+      }
+    }
+    parts.push('</ul></section>');
+  }
+
+  const languages = normalizeArray(cv.languages);
+  if (languages.length > 0) {
+    parts.push('<section><h2 class="cv-section-title">שפות</h2><ul class="cv-list">');
+    languages.forEach(language => parts.push(`<li>${esc(language)}</li>`));
+    parts.push('</ul></section>');
+  }
+
+  parts.push('</div>');
+  return parts.join('\n');
+}
 
 // ─── Main Renderer ───────────────────────────────────────────────────────────
 
@@ -232,6 +352,10 @@ export function renderPreviewHTML(data, options = {}) {
 
   const language = userProfile.language || 'he';
 
+  if (documentType === 'cv') {
+    return renderCvPreviewHTML(data);
+  }
+
   // Resolve clauses DB (must be passed by caller — keeps module isomorphic)
   const clausesDb = options.clausesDb || null;
 
@@ -250,7 +374,7 @@ export function renderPreviewHTML(data, options = {}) {
   const today = date || new Date().toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit' });
 
   // ── Title ──
-  const titleMap = { quote: 'הצעת מחיר', contract: 'חוזה עבודה', workOrder: 'הזמנת עבודה' };
+  const titleMap = { quote: 'הצעת מחיר', contract: 'חוזה עבודה', workOrder: 'הזמנת עבודה', cv: 'קורות חיים' };
   const docTitle = titleMap[documentType] || 'הצעת מחיר';
 
   // ── Price helpers ──
@@ -572,4 +696,3 @@ function buildPricingTableHTML(items) {
 <tfoot><tr><td></td><td></td><td>סה"כ לפני מע"מ</td><td>${formatPrice(subtotal)}</td></tr></tfoot>
 </table>`;
 }
-

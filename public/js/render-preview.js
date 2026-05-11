@@ -304,10 +304,15 @@ var DocPreview = (() => {
     if (!str) return "";
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
+  function normalizeArray(value) {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (typeof value === "string" && value.trim()) return value.split("\n").map((v) => v.trim()).filter(Boolean);
+    return [];
+  }
   function makeClauseGetter({ clausesDb, documentType, selectedClauses, clauseEdits, relevantClauseIds, language }) {
     return function getClauseTexts(categoryKey) {
       if (!clausesDb || !clausesDb.clauses || !clausesDb.clauses[categoryKey]) return [];
-      const docTypeKey = documentType === "quote" ? "quote" : documentType === "contract" ? "contract" : "workOrder";
+      const docTypeKey = documentType === "quote" ? "quote" : documentType === "contract" ? "contract" : documentType === "cv" ? "cv" : "workOrder";
       return clausesDb.clauses[categoryKey].clauses.filter((c) => {
         if (!c.appliesTo.includes(docTypeKey)) return false;
         if (selectedClauses && Array.isArray(selectedClauses) && selectedClauses.length > 0) {
@@ -470,8 +475,115 @@ var DocPreview = (() => {
 .doc-footer-info .footer-name {
   font-weight: 700;
 }
+.cv-header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+.cv-name {
+  font-size: 26pt;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+  color: #111827;
+}
+.cv-headline {
+  margin: 0 0 6px 0;
+  color: #374151;
+  font-size: 12.5pt;
+}
+.cv-contact {
+  direction: ltr;
+  unicode-bidi: plaintext;
+  color: #374151;
+  font-size: 9.5pt;
+  margin: 0;
+}
+.cv-section-title {
+  border-bottom: 2px solid #0F6674;
+  color: #0F6674;
+  font-size: 13pt;
+  font-weight: 700;
+  margin: 16px 0 8px 0;
+  padding-bottom: 3px;
+}
+.cv-role {
+  font-weight: 700;
+  margin: 8px 0 3px 0;
+}
+.cv-list {
+  margin: 0 20px 0 0;
+  padding: 0 20px 0 0;
+}
+.cv-list li {
+  margin-bottom: 3px;
+}
 </style>
 `;
+  function renderCvPreviewHTML(data) {
+    const cv = data.cvData || {};
+    const fullName = cv.fullName || data.clientName || data.userProfile?.name || "";
+    const headline = cv.headline || data.projectDescription || data.userProfile?.title || "";
+    const location = cv.location || "";
+    const profile = cv.profile || data.serviceDetails || "";
+    const phone = cv.phone || data.userProfile?.phone || "";
+    const email = cv.email || data.userProfile?.email || "";
+    const links = Array.isArray(cv.links) ? cv.links : [];
+    const contactParts = [phone, email, ...links.map((link) => link.url ? `${link.label || ""}: ${link.url}`.trim() : link.label).filter(Boolean)];
+    const parts = [PREVIEW_CSS, '<div class="doc-preview" dir="rtl">'];
+    parts.push('<header class="cv-header">');
+    parts.push(`<h1 class="cv-name">${esc(fullName)}</h1>`);
+    if (headline || location) parts.push(`<p class="cv-headline">${esc([headline, location].filter(Boolean).join(" \xB7 "))}</p>`);
+    if (contactParts.length > 0) parts.push(`<p class="cv-contact">${contactParts.map(esc).join(" \xB7 ")}</p>`);
+    parts.push("</header>");
+    if (profile) {
+      parts.push("<section>");
+      parts.push('<h2 class="cv-section-title">\u05E4\u05E8\u05D5\u05E4\u05D9\u05DC</h2>');
+      parts.push(`<p class="doc-paragraph">${esc(profile)}</p>`);
+      parts.push("</section>");
+    }
+    for (const section of normalizeArray(cv.sections)) {
+      if (!section || !section.title) continue;
+      parts.push("<section>");
+      parts.push(`<h2 class="cv-section-title">${esc(section.title)}</h2>`);
+      for (const item of normalizeArray(section.items)) {
+        if (typeof item === "string") {
+          parts.push(`<ul class="cv-list"><li>${esc(item)}</li></ul>`);
+          continue;
+        }
+        const role = [item.title, item.organization].filter(Boolean).join(" \u2014 ");
+        const roleLine = item.dates || item.date ? `${role}   ${item.dates || item.date}` : role;
+        if (roleLine) parts.push(`<p class="cv-role">${esc(roleLine)}</p>`);
+        const bullets = normalizeArray(item.bullets || item.details || item.description);
+        if (bullets.length > 0) {
+          parts.push('<ul class="cv-list">');
+          bullets.forEach((bullet) => parts.push(`<li>${esc(bullet)}</li>`));
+          parts.push("</ul>");
+        }
+      }
+      parts.push("</section>");
+    }
+    const skills2 = normalizeArray(cv.skills);
+    if (skills2.length > 0) {
+      parts.push('<section><h2 class="cv-section-title">\u05DB\u05D9\u05E9\u05D5\u05E8\u05D9\u05DD \u05D5\u05DB\u05DC\u05D9\u05DD</h2><ul class="cv-list">');
+      for (const skillGroup of skills2) {
+        if (typeof skillGroup === "string") {
+          parts.push(`<li>${esc(skillGroup)}</li>`);
+        } else {
+          const items = normalizeArray(skillGroup.items).join(", ");
+          const line = [skillGroup.category, items].filter(Boolean).join(" \u2014 ");
+          if (line) parts.push(`<li>${esc(line)}</li>`);
+        }
+      }
+      parts.push("</ul></section>");
+    }
+    const languages = normalizeArray(cv.languages);
+    if (languages.length > 0) {
+      parts.push('<section><h2 class="cv-section-title">\u05E9\u05E4\u05D5\u05EA</h2><ul class="cv-list">');
+      languages.forEach((language) => parts.push(`<li>${esc(language)}</li>`));
+      parts.push("</ul></section>");
+    }
+    parts.push("</div>");
+    return parts.join("\n");
+  }
   function renderPreviewHTML(data, options = {}) {
     processDocData(data);
     const {
@@ -491,6 +603,9 @@ var DocPreview = (() => {
       userProfile = {}
     } = data;
     const language = userProfile.language || "he";
+    if (documentType === "cv") {
+      return renderCvPreviewHTML(data);
+    }
     const clausesDb = options.clausesDb || null;
     let relevantClauseIds = null;
     if (serviceType && clausesDb && clausesDb.serviceTemplates) {
@@ -501,7 +616,7 @@ var DocPreview = (() => {
     }
     const getClauseTexts = makeClauseGetter({ clausesDb, documentType, selectedClauses, clauseEdits, relevantClauseIds, language });
     const today = date || (/* @__PURE__ */ new Date()).toLocaleDateString("he-IL", { day: "numeric", month: "numeric", year: "2-digit" });
-    const titleMap = { quote: "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8", contract: "\u05D7\u05D5\u05D6\u05D4 \u05E2\u05D1\u05D5\u05D3\u05D4", workOrder: "\u05D4\u05D6\u05DE\u05E0\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4" };
+    const titleMap = { quote: "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8", contract: "\u05D7\u05D5\u05D6\u05D4 \u05E2\u05D1\u05D5\u05D3\u05D4", workOrder: "\u05D4\u05D6\u05DE\u05E0\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4", cv: "\u05E7\u05D5\u05E8\u05D5\u05EA \u05D7\u05D9\u05D9\u05DD" };
     const docTitle = titleMap[documentType] || "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8";
     const hasOptions = pricingItems.some((item) => item.option != null && String(item.option).trim() !== "");
     let sharedItems = [];
