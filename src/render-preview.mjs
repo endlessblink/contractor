@@ -30,6 +30,17 @@ function normalizeArray(value) {
   return [];
 }
 
+function buildCvFallbackSections(data) {
+  const sections = [];
+  const timeline = normalizeArray(data.timeline);
+  const notes = normalizeArray(data.notes);
+
+  if (timeline.length > 0) sections.push({ title: 'ניסיון / ציר זמן', items: timeline });
+  if (notes.length > 0) sections.push({ title: 'מידע נוסף', items: notes });
+
+  return sections;
+}
+
 /** Build a clause-text getter, mirroring getClauseTexts from generate-quote.mjs */
 function makeClauseGetter({ clausesDb, documentType, selectedClauses, clauseEdits, relevantClauseIds, language }) {
   return function getClauseTexts(categoryKey) {
@@ -248,14 +259,17 @@ const PREVIEW_CSS = `
 
 function renderCvPreviewHTML(data) {
   const cv = data.cvData || {};
-  const fullName = cv.fullName || data.clientName || data.userProfile?.name || '';
+  const fullName = cv.fullName || data.clientName || data.userProfile?.nameEn || data.userProfile?.name || 'קורות חיים';
   const headline = cv.headline || data.projectDescription || data.userProfile?.title || '';
   const location = cv.location || '';
   const profile = cv.profile || data.serviceDetails || '';
   const phone = cv.phone || data.userProfile?.phone || '';
   const email = cv.email || data.userProfile?.email || '';
+  const website = cv.website || data.userProfile?.website || '';
   const links = Array.isArray(cv.links) ? cv.links : [];
-  const contactParts = [phone, email, ...links.map(link => link.url ? `${link.label || ''}: ${link.url}`.trim() : link.label).filter(Boolean)];
+  const sections = normalizeArray(cv.sections);
+  const fallbackSections = sections.length > 0 ? [] : buildCvFallbackSections(data);
+  const contactParts = [phone, email, website, ...links.map(link => link.url ? `${link.label || ''}: ${link.url}`.trim() : link.label).filter(Boolean)];
   const parts = [PREVIEW_CSS, '<div class="doc-preview" dir="rtl">'];
 
   parts.push('<header class="cv-header">');
@@ -271,7 +285,7 @@ function renderCvPreviewHTML(data) {
     parts.push('</section>');
   }
 
-  for (const section of normalizeArray(cv.sections)) {
+  for (const section of [...sections, ...fallbackSections]) {
     if (!section || !section.title) continue;
     parts.push('<section>');
     parts.push(`<h2 class="cv-section-title">${esc(section.title)}</h2>`);

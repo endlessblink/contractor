@@ -309,6 +309,14 @@ var DocPreview = (() => {
     if (typeof value === "string" && value.trim()) return value.split("\n").map((v) => v.trim()).filter(Boolean);
     return [];
   }
+  function buildCvFallbackSections(data) {
+    const sections = [];
+    const timeline = normalizeArray(data.timeline);
+    const notes = normalizeArray(data.notes);
+    if (timeline.length > 0) sections.push({ title: "\u05E0\u05D9\u05E1\u05D9\u05D5\u05DF / \u05E6\u05D9\u05E8 \u05D6\u05DE\u05DF", items: timeline });
+    if (notes.length > 0) sections.push({ title: "\u05DE\u05D9\u05D3\u05E2 \u05E0\u05D5\u05E1\u05E3", items: notes });
+    return sections;
+  }
   function makeClauseGetter({ clausesDb, documentType, selectedClauses, clauseEdits, relevantClauseIds, language }) {
     return function getClauseTexts(categoryKey) {
       if (!clausesDb || !clausesDb.clauses || !clausesDb.clauses[categoryKey]) return [];
@@ -520,14 +528,17 @@ var DocPreview = (() => {
 `;
   function renderCvPreviewHTML(data) {
     const cv = data.cvData || {};
-    const fullName = cv.fullName || data.clientName || data.userProfile?.name || "";
+    const fullName = cv.fullName || data.clientName || data.userProfile?.nameEn || data.userProfile?.name || "\u05E7\u05D5\u05E8\u05D5\u05EA \u05D7\u05D9\u05D9\u05DD";
     const headline = cv.headline || data.projectDescription || data.userProfile?.title || "";
     const location = cv.location || "";
     const profile = cv.profile || data.serviceDetails || "";
     const phone = cv.phone || data.userProfile?.phone || "";
     const email = cv.email || data.userProfile?.email || "";
+    const website = cv.website || data.userProfile?.website || "";
     const links = Array.isArray(cv.links) ? cv.links : [];
-    const contactParts = [phone, email, ...links.map((link) => link.url ? `${link.label || ""}: ${link.url}`.trim() : link.label).filter(Boolean)];
+    const sections = normalizeArray(cv.sections);
+    const fallbackSections = sections.length > 0 ? [] : buildCvFallbackSections(data);
+    const contactParts = [phone, email, website, ...links.map((link) => link.url ? `${link.label || ""}: ${link.url}`.trim() : link.label).filter(Boolean)];
     const parts = [PREVIEW_CSS, '<div class="doc-preview" dir="rtl">'];
     parts.push('<header class="cv-header">');
     parts.push(`<h1 class="cv-name">${esc(fullName)}</h1>`);
@@ -540,7 +551,7 @@ var DocPreview = (() => {
       parts.push(`<p class="doc-paragraph">${esc(profile)}</p>`);
       parts.push("</section>");
     }
-    for (const section of normalizeArray(cv.sections)) {
+    for (const section of [...sections, ...fallbackSections]) {
       if (!section || !section.title) continue;
       parts.push("<section>");
       parts.push(`<h2 class="cv-section-title">${esc(section.title)}</h2>`);

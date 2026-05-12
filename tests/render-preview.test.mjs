@@ -86,6 +86,27 @@ describe('renderPreviewHTML', () => {
     assert.ok(!html.includes('class="doc-from-to"'));
   });
 
+  it('renders CV preview from form fields and profile contact when cvData is missing', () => {
+    const html = renderPreviewHTML({
+      documentType: 'cv',
+      projectDescription: 'יוצר תוכן AI ומפתח כלים',
+      serviceDetails: 'תקציר מקצועי מתוך שדה פירוט השירות.',
+      timeline: '2023 - היום: פיתוח כלי AI',
+      userProfile: {
+        nameEn: 'Noam Naumovsky',
+        email: 'noam@example.com',
+        phone: '050-1234567',
+        website: 'noamn.com',
+      },
+    });
+
+    assert.ok(html.includes('Noam Naumovsky'));
+    assert.ok(html.includes('noam@example.com'));
+    assert.ok(html.includes('050-1234567'));
+    assert.ok(html.includes('noamn.com'));
+    assert.ok(html.includes('ניסיון / ציר זמן'));
+  });
+
   it('includes from/to table with client and provider names', () => {
     const html = renderPreviewHTML({ ...sampleData });
     assert.ok(html.includes('לקוח לדוגמה'));

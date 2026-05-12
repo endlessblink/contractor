@@ -154,6 +154,135 @@ function extractJSON(rawText) {
   return null;
 }
 
+// ─── Lightweight CV extractor ────────────────────────────────────────────────
+function cleanCvLine(line) {
+  return String(line || '')
+    .replace(/[\u200e\u200f\u202a-\u202e]/g, '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/^\s*[•\-–—]\s*/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function linesUntilNextHeading(lines, startIndex, headingSet) {
+  const out = [];
+  for (let i = startIndex + 1; i < lines.length; i++) {
+    if (headingSet.has(lines[i])) break;
+    if (lines[i]) out.push(lines[i]);
+  }
+  return out;
+}
+
+function parseRoleLine(line) {
+  const dateMatch = line.match(/(.+?)\s+((?:לפני\s+)?\d{4}.*|לפני 2023)$/);
+  const roleText = dateMatch ? dateMatch[1].trim() : line.trim();
+  const dates = dateMatch ? dateMatch[2].trim() : '';
+  const parts = roleText.split(/\s+—\s+/).map(p => p.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    return { title: parts.slice(0, -1).join(' — '), organization: parts[parts.length - 1], dates, bullets: [] };
+  }
+  return { title: roleText, organization: '', dates, bullets: [] };
+}
+
+function parseCvRoleItems(lines) {
+  const items = [];
+  let current = null;
+  for (const line of lines) {
+    const isRole = /\s{2,}/.test(line) || /\s+—\s+/.test(line);
+    if (isRole && !line.includes('GitHub:')) {
+      if (current) items.push(current);
+      current = parseRoleLine(line);
+    } else if (current) {
+      current.bullets.push(line);
+    } else {
+      items.push(line);
+    }
+  }
+  if (current) items.push(current);
+  return items;
+}
+
+function parseCvSkills(lines) {
+  return lines.map(line => {
+    const parts = line.split(/\s+—\s+/).map(p => p.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      return { category: parts[0], items: parts.slice(1).join(' — ').split(',').map(v => v.trim()).filter(Boolean) };
+    }
+    return line;
+  });
+}
+
+function looksLikeCvText(text) {
+  return /פרופיל/.test(text) && (/כישורים|שפות|ניסיון מקצועי|הוראה והדרכה/.test(text));
+}
+
+function parseCvTextToAnalysis(text) {
+  const lines = text.split(/\r?\n/).map(cleanCvLine).filter(Boolean);
+  if (lines.length < 3 || !looksLikeCvText(text)) return null;
+
+  const sectionTitles = [
+    'פרופיל',
+    'הוראה והדרכה',
+    'ניסיון מקצועי',
+    'כלי קוד פתוח ומוצרים',
+    'פרויקטים ותערוכות נבחרים',
+    'פעילות בקהילה',
+    'כישורים וכלים',
+    'שפות',
+  ];
+  const headingSet = new Set(sectionTitles);
+  const firstHeadingIndex = lines.findIndex(line => headingSet.has(line));
+  const headerLines = firstHeadingIndex > -1 ? lines.slice(0, firstHeadingIndex) : lines.slice(0, 6);
+  const fullName = headerLines[0] || '';
+  const headlineParts = (headerLines[1] || '').split('·').map(p => p.trim()).filter(Boolean);
+  const headline = headlineParts[0] || '';
+  const location = headlineParts.slice(1).join(' · ');
+  const headerText = headerLines.slice(2).join(' ');
+  const phone = (headerText.match(/0\d{1,2}-?\d{6,7}/) || [''])[0];
+  const email = (headerText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) || [''])[0];
+  const links = [];
+  const linkRegex = /(LinkedIn|GitHub|תיק עבודות)?\s*:?[\s]*((?:https?:\/\/)?(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}[^\s·]*)/g;
+  let match;
+  while ((match = linkRegex.exec(headerText))) {
+    const url = match[2];
+    if (url === email || email.endsWith(`@${url}`)) continue;
+    links.push({ label: (match[1] || '').trim(), url });
+  }
+
+  const sections = [];
+  for (const title of sectionTitles) {
+    if (title === 'פרופיל' || title === 'כישורים וכלים' || title === 'שפות') continue;
+    const idx = lines.findIndex(line => line === title);
+    if (idx === -1) continue;
+    const body = linesUntilNextHeading(lines, idx, headingSet);
+    if (body.length === 0) continue;
+    const items = ['הוראה והדרכה', 'ניסיון מקצועי'].includes(title) ? parseCvRoleItems(body) : body;
+    sections.push({ title, items });
+  }
+
+  const profileIdx = lines.findIndex(line => line === 'פרופיל');
+  const profile = profileIdx > -1 ? linesUntilNextHeading(lines, profileIdx, headingSet).join('\n') : '';
+  const skillsIdx = lines.findIndex(line => line === 'כישורים וכלים');
+  const skills = skillsIdx > -1 ? parseCvSkills(linesUntilNextHeading(lines, skillsIdx, headingSet)) : [];
+  const languagesIdx = lines.findIndex(line => line === 'שפות');
+  const languages = languagesIdx > -1 ? linesUntilNextHeading(lines, languagesIdx, headingSet) : [];
+
+  const cvData = { fullName, headline, location, phone, email, links, profile, sections, skills, languages };
+  return {
+    clientName: fullName,
+    clientCompany: '',
+    documentType: 'cv',
+    projectDescription: headline,
+    serviceDetails: profile,
+    pricingItems: [],
+    paymentStructure: 'two',
+    timeline: '',
+    generalNotes: '',
+    styleNotes: 'קורות חיים שחולצו ממסמך קיים',
+    cvData,
+  };
+}
+
 // ─── Load user profile ──────────────────────────────────────────────────────
 function loadUserProfile() {
   const defaults = {
@@ -2068,10 +2197,13 @@ app.post('/api/generate-document', async (req, res) => {
     // Save to output directory
     writeFileSync(outputPath, buffer);
 
-    // Auto-open in default application (LibreOffice etc.)
-    exec(`xdg-open "${outputPath}"`, (err) => {
-      if (err) console.error('Failed to open document:', err.message);
-    });
+    // Auto-open in default application for interactive use; keep tests/headless
+    // sessions from launching a desktop app for temporary files.
+    if (process.env.CONTRACTOR_OPEN !== '0') {
+      exec(`xdg-open "${outputPath}"`, (err) => {
+        if (err) console.error('Failed to open document:', err.message);
+      });
+    }
 
     // Update project doc count in index
     if (raw.projectId) {
@@ -2187,22 +2319,36 @@ app.post('/api/analyze-document', async (req, res) => {
       }
       filePath = join(REFERENCES_DIR, subfolder, fname);
     } else if (projectId) {
-      // Project-specific uploads folder
-      const projUploads = getProjectPath(projectId, 'uploads');
-      if (!projUploads) {
+      // Project-specific generated/uploaded folder
+      const folder = source === 'output' ? 'output' : 'uploads';
+      const projFolder = getProjectPath(projectId, folder);
+      if (!projFolder) {
         return res.status(400).json({ error: 'Invalid project ID' });
       }
-      filePath = join(projUploads, filename);
+      filePath = join(projFolder, filename);
+    } else if (source === 'output') {
+      filePath = join(OUTPUT_DIR, filename);
     } else {
       // Default: uploads directory
       filePath = join(UPLOADS_DIR, filename);
     }
 
-    // Check file exists
+    // Check file exists. Uploaded files shown while a project is active may still
+    // live in the global uploads folder, so fall back before returning 404.
     try {
       statSync(filePath);
     } catch {
-      return res.status(404).json({ error: 'File not found' });
+      if (projectId && (source === 'uploads' || source === 'output')) {
+        const fallbackPath = join(source === 'output' ? OUTPUT_DIR : UPLOADS_DIR, filename);
+        try {
+          statSync(fallbackPath);
+          filePath = fallbackPath;
+        } catch {
+          return res.status(404).json({ error: 'File not found' });
+        }
+      } else {
+        return res.status(404).json({ error: 'File not found' });
+      }
     }
 
     const ext = filename.split('.').pop().toLowerCase();
@@ -2223,6 +2369,12 @@ app.post('/api/analyze-document', async (req, res) => {
       return res.status(422).json({ error: 'Could not extract text from this file. It may be image-based or corrupted.' });
     }
 
+    const cvAnalysis = parseCvTextToAnalysis(extractedText);
+    if (cvAnalysis) {
+      console.log('[analyze-document] Parsed CV locally without AI');
+      return res.json({ success: true, data: cvAnalysis, filename });
+    }
+
     const systemPrompt = `אתה מנתח מסמכים עסקיים בעברית. קיבלת תוכן של מסמך עסקי (הצעת מחיר, חוזה, הזמנת עבודה, או קורות חיים).
 נתח את המסמך והחזר JSON עם המידע הבא:
 
@@ -2236,11 +2388,24 @@ app.post('/api/analyze-document', async (req, res) => {
   "paymentStructure": "two" | "three" | "custom",
   "timeline": "פרטי לוחות זמנים",
   "generalNotes": "הערות כלליות",
-  "styleNotes": "הערות לגבי סגנון המסמך, עיצוב, מבנה"
+  "styleNotes": "הערות לגבי סגנון המסמך, עיצוב, מבנה",
+  "cvData": {
+    "fullName": "שם מלא",
+    "headline": "כותרת מקצועית",
+    "location": "מיקום",
+    "phone": "טלפון",
+    "email": "אימייל",
+    "links": [{"label":"LinkedIn","url":"..."}],
+    "profile": "תקציר פרופיל",
+    "sections": [{"title":"ניסיון מקצועי","items":[{"title":"תפקיד","organization":"ארגון","dates":"שנים","bullets":["הישג"]}]}],
+    "skills": [{"category":"כלים","items":["כלי"]}],
+    "languages": ["עברית — שפת אם"]
+  }
 }
 
 החזר רק JSON תקין, ללא טקסט נוסף. אם שדה לא נמצא במסמך, השאר אותו כמחרוזת ריקה או מערך ריק.
-מחירים צריכים להיות מספרים בלבד (ללא סימן ₪ או פסיקים).`;
+מחירים צריכים להיות מספרים בלבד (ללא סימן ₪ או פסיקים).
+אם המסמך הוא קורות חיים, documentType חייב להיות "cv", pricingItems חייב להיות מערך ריק, ו-cvData חייב להכיל את כל קורות החיים במבנה הנ"ל.`;
 
     let apiData;
     try {
@@ -2951,20 +3116,26 @@ app.delete('/api/service-templates/:type', (req, res) => {
 
 // ─── Document Types API ──────────────────────────────────────────────────────
 const DOC_TYPES_PATH = join(DATA_DIR, 'knowledge', 'document-types.json');
+const DEFAULT_DOCUMENT_TYPES = [
+  { id: 'quote', name: { he: 'הצעת מחיר', en: 'Quote' } },
+  { id: 'workOrder', name: { he: 'הזמנת עבודה', en: 'Work Order' } },
+  { id: 'contract', name: { he: 'חוזה', en: 'Contract' } },
+  { id: 'cv', name: { he: 'קורות חיים', en: 'CV' } },
+];
+
+function normalizeDocumentTypes(data) {
+  const normalized = data && Array.isArray(data.types) ? data : { version: 1, types: [] };
+  for (const type of DEFAULT_DOCUMENT_TYPES) {
+    if (!normalized.types.some(t => t.id === type.id)) normalized.types.push(type);
+  }
+  return normalized;
+}
 
 function loadDocumentTypes() {
   try {
-    return JSON.parse(readFileSync(DOC_TYPES_PATH, 'utf-8'));
+    return normalizeDocumentTypes(JSON.parse(readFileSync(DOC_TYPES_PATH, 'utf-8')));
   } catch {
-    return {
-      version: 1,
-      types: [
-        { id: 'quote', name: { he: 'הצעת מחיר', en: 'Quote' } },
-        { id: 'workOrder', name: { he: 'הזמנת עבודה', en: 'Work Order' } },
-        { id: 'contract', name: { he: 'חוזה', en: 'Contract' } },
-        { id: 'cv', name: { he: 'קורות חיים', en: 'CV' } },
-      ],
-    };
+    return normalizeDocumentTypes({ version: 1, types: [] });
   }
 }
 

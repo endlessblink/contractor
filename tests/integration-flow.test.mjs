@@ -400,7 +400,82 @@ describe('Project CRUD integrity', () => {
   });
 });
 
-// ─── Test 8: FORM_DATA scenarios - AI output processing ──────────────────────
+// ─── Test 8: Document analysis regressions ───────────────────────────────────
+
+describe('Document analysis regressions', () => {
+  let projectId;
+
+  before(async () => {
+    const project = await createProject('Integration Test CV Output Analysis');
+    projectId = project.id;
+  });
+
+  after(async () => {
+    if (projectId) await deleteProject(projectId);
+  });
+
+  it('analyzes generated project output documents as CVs', async () => {
+    const uniqueHeadline = `יוצר תוכן AI רגרסיה ${Date.now()}`;
+    const fullName = 'נועם נאומובסקי בדיקת רגרסיה';
+
+    const generateRes = await fetch(`${BASE_URL}/api/generate-document`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectId,
+        docType: 'cv',
+        clientName: fullName,
+        projectDescription: uniqueHeadline,
+        serviceDetails: 'תקציר מקצועי לבדיקת ניתוח קובץ שנוצר.',
+        cvData: {
+          fullName,
+          headline: uniqueHeadline,
+          location: 'רמת גן',
+          phone: '052-6784960',
+          email: 'noamnau@gmail.com',
+          profile: 'תקציר מקצועי לבדיקת ניתוח קובץ שנוצר.',
+          sections: [{
+            title: 'ניסיון מקצועי',
+            items: [{
+              title: 'מייסד ויוצר ראשי',
+              organization: 'Noam Naumovsky Productions',
+              dates: '2023 - היום',
+              bullets: ['הפקת וידאו AI', 'פיתוח workflows'],
+            }],
+          }],
+          skills: [{ category: 'AI Video', items: ['Veo', 'Kling'] }],
+          languages: ['עברית - שפת אם'],
+        },
+      }),
+    });
+    assert.ok(generateRes.ok, `Expected document generation to succeed, got ${generateRes.status}`);
+    await generateRes.arrayBuffer();
+
+    const docsRes = await fetch(`${BASE_URL}/api/documents?projectId=${encodeURIComponent(projectId)}`);
+    assert.ok(docsRes.ok, `Expected documents list to succeed, got ${docsRes.status}`);
+    const docs = await docsRes.json();
+    const generated = (docs.generated || []).find(file => file.name.includes(fullName));
+    assert.ok(generated, 'Generated CV should appear in project output list');
+
+    const analyzeRes = await fetch(`${BASE_URL}/api/analyze-document`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: generated.name,
+        source: 'output',
+        projectId,
+      }),
+    });
+    assert.ok(analyzeRes.ok, `Expected output analysis to succeed, got ${analyzeRes.status}`);
+    const body = await analyzeRes.json();
+    assert.strictEqual(body.data.documentType, 'cv');
+    assert.strictEqual(body.data.cvData.fullName, fullName);
+    assert.strictEqual(body.data.cvData.email, 'noamnau@gmail.com');
+    assert.ok(body.data.cvData.sections.some(section => section.title === 'ניסיון מקצועי'));
+  });
+});
+
+// ─── Test 9: FORM_DATA scenarios - AI output processing ──────────────────────
 
 describe('FORM_DATA scenarios - AI output processing', () => {
   async function processFormData(data) {

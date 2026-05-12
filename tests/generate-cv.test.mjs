@@ -113,4 +113,33 @@ describe('generateDocument CV', () => {
     assert.ok(documentXml.includes('linkedin.com/in/noamnaumovsky'));
     assert.ok(documentXml.includes('github.com/endlessblink'));
   });
+
+  it('generates a non-empty CV from visible form fields when cvData is missing', async () => {
+    const buffer = await generateDocument({
+      documentType: 'cv',
+      clientName: '',
+      projectDescription: 'יוצר תוכן AI ומפתח כלים',
+      serviceDetails: 'תקציר מקצועי מתוך שדה פירוט השירות.',
+      timeline: '2023 - היום: פיתוח כלי AI\n2020 - 2023: עריכת וידאו',
+      notes: 'זמין לפרויקטים עצמאיים',
+      userProfile: {
+        nameEn: 'Noam Naumovsky',
+        name: 'נועם נאומובסקי',
+        title: 'יוצר תוכן דיגיטלי',
+        email: 'noam@example.com',
+        phone: '050-1234567',
+        website: 'noamn.com',
+        language: 'he',
+      },
+    });
+
+    const extracted = await mammoth.extractRawText({ buffer });
+    assert.ok(extracted.value.includes('Noam Naumovsky'));
+    assert.ok(extracted.value.includes('noam@example.com'));
+    assert.ok(extracted.value.includes('050-1234567'));
+    assert.ok(extracted.value.includes('noamn.com'));
+    assert.ok(extracted.value.includes('תקציר מקצועי מתוך שדה פירוט השירות'));
+    assert.ok(extracted.value.includes('ניסיון / ציר זמן'));
+    assert.ok(extracted.value.includes('פיתוח כלי AI'));
+  });
 });

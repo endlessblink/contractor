@@ -224,15 +224,33 @@ function cvRoleParagraph(item) {
   })], { spacing: { before: 120, after: 60 } });
 }
 
+function buildCvFallbackSections(data) {
+  const sections = [];
+  const timeline = normalizeArray(data.timeline);
+  const notes = normalizeArray(data.notes);
+
+  if (timeline.length > 0) {
+    sections.push({ title: 'ניסיון / ציר זמן', items: timeline });
+  }
+  if (notes.length > 0) {
+    sections.push({ title: 'מידע נוסף', items: notes });
+  }
+
+  return sections;
+}
+
 async function generateCvDocument(data) {
   const cv = data.cvData || {};
-  const fullName = cv.fullName || data.clientName || data.userProfile?.name || '';
+  const fullName = cv.fullName || data.clientName || data.userProfile?.nameEn || data.userProfile?.name || 'קורות חיים';
   const headline = cv.headline || data.projectDescription || data.userProfile?.title || '';
   const location = cv.location || '';
   const profile = cv.profile || data.serviceDetails || '';
   const phone = cv.phone || data.userProfile?.phone || '';
   const email = cv.email || data.userProfile?.email || '';
+  const website = cv.website || data.userProfile?.website || '';
   const links = Array.isArray(cv.links) ? cv.links : [];
+  const sections = normalizeArray(cv.sections);
+  const fallbackSections = sections.length > 0 ? [] : buildCvFallbackSections(data);
 
   const children = [];
 
@@ -252,7 +270,7 @@ async function generateCvDocument(data) {
     })], { alignment: AlignmentType.CENTER, spacing: { after: 80 } }));
   }
 
-  const contactParts = [phone, email, ...links.map(link => link.url ? `${link.label || ''}: ${link.url}`.trim() : link.label).filter(Boolean)];
+  const contactParts = [phone, email, website, ...links.map(link => link.url ? `${link.label || ''}: ${link.url}`.trim() : link.label).filter(Boolean)];
   if (contactParts.length > 0) {
     const contactRuns = [];
     contactParts.forEach((part, index) => {
@@ -267,7 +285,7 @@ async function generateCvDocument(data) {
     children.push(rtlParagraph([rtlRun(profile)], { spacing: { after: 120 }, alignment: AlignmentType.BOTH }));
   }
 
-  for (const section of normalizeArray(cv.sections)) {
+  for (const section of [...sections, ...fallbackSections]) {
     if (!section || !section.title) continue;
     children.push(cvSectionHeader(section.title));
     for (const item of normalizeArray(section.items)) {
