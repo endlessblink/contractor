@@ -1,5 +1,7 @@
 # Contractor
 
+![Contractor](docs/contractor-cover.svg)
+
 AI-powered document generator for freelancers. Create professional quotes, contracts, and work orders in minutes — with Hebrew RTL support built in.
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
