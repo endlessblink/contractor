@@ -4515,7 +4515,7 @@
 
     /* ═══════════════════════════════════════
        APP-WIDE REDESIGN LAYER
-       Dark chrome, neutral document workspace
+       Light neutral document workspace
     ═══════════════════════════════════════ */
     :root {
       --workspace-bg-top: #eef0ed;
@@ -4709,7 +4709,8 @@
       background: linear-gradient(180deg, var(--workspace-bg-top) 0%, var(--workspace-bg-bottom) 100%);
     }
     .nav-sidebar {
-      background: rgba(247, 248, 245, 0.86);
+      width: 260px;
+      background: rgba(247, 248, 245, 0.92);
       border-inline-end: 1px solid var(--workspace-border);
       box-shadow: 10px 0 34px rgba(38, 48, 58, 0.08);
     }
@@ -4724,6 +4725,59 @@
       background: rgba(255,255,253,0.70);
       border-color: var(--workspace-border);
     }
+    .nav-sidebar-title,
+    .nav-client-name,
+    .nav-project-item span {
+      color: var(--workspace-ink);
+    }
+    .nav-sidebar-body {
+      padding: 10px;
+    }
+    .nav-client-group {
+      margin-bottom: 10px;
+    }
+    .nav-client-header {
+      min-height: 42px;
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      border-radius: 14px;
+    }
+    .nav-client-header:hover {
+      background: rgba(255,255,253,0.62);
+      border-color: var(--workspace-border);
+    }
+    .nav-project-list {
+      padding: 6px 8px 4px 0;
+      border-right: 1px solid rgba(18, 63, 55, 0.10);
+      margin-right: 16px;
+    }
+    .nav-project-item {
+      min-height: 38px;
+      margin-bottom: 4px;
+      padding: 9px 10px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+    }
+    .nav-project-item:hover,
+    .nav-project-item.active {
+      background: rgba(255,255,253,0.78);
+      border-color: var(--workspace-border);
+    }
+    .nav-doc-types {
+      gap: 6px;
+      padding: 7px 14px 8px 0;
+    }
+    .nav-doc-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 34px;
+      padding: 7px 10px;
+      border-radius: 11px;
+      font-size: 0.76rem;
+      line-height: 1.2;
+    }
     .nav-sidebar-add:hover,
     .nav-doc-btn:hover,
     .sidebar-doc-chip:hover,
@@ -4732,7 +4786,28 @@
       background: #eef7f4;
       border-color: rgba(18, 63, 55, 0.24);
     }
+    .nav-doc-btn.active {
+      color: #123f37;
+      background: #d7ece7;
+      border-color: rgba(18, 63, 55, 0.34);
+      box-shadow: inset 3px 0 0 rgba(18, 63, 55, 0.40);
+    }
+    .nav-doc-btn::after {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(56, 69, 84, 0.22);
+    }
+    .nav-doc-btn.active::after {
+      background: var(--workspace-accent);
+    }
 
+    #docForm.cv-mode .client-details-section,
+    #docForm.cv-mode .project-copy-field,
+    #docForm.cv-mode .cv-hidden-section {
+      display: none;
+    }
     .panels-row {
       gap: 14px;
       padding: 16px;
@@ -4932,6 +5007,156 @@
     }
     .knowledge-stat strong { color: var(--workspace-accent); }
 
+    /* Knowledge modal: isolate it from the app's dark-theme document variables. */
+    .docs-modal-box {
+      width: min(1180px, calc(100vw - 48px));
+      height: min(860px, calc(100vh - 48px));
+      border-radius: 8px;
+    }
+    .docs-modal-header {
+      min-height: 58px;
+      padding: 0 24px;
+      background: rgba(255,255,253,0.88);
+      font-size: 1rem;
+      font-weight: 800;
+    }
+    .docs-modal-close {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #687381;
+      border-radius: 8px;
+    }
+    .docs-modal-body {
+      padding: 0;
+      background: #edf0ec;
+    }
+    .docs-modal-body .docs-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      padding: 24px;
+      direction: rtl;
+      background: transparent;
+      color: #1c2531;
+    }
+    .docs-modal-body .learn-section,
+    .docs-modal-body .upload-zone,
+    .docs-modal-body .knowledge-section,
+    .docs-modal-body .file-section {
+      margin: 0;
+      color: #1c2531;
+      background: rgba(255,255,253,0.94);
+      border: 1px solid rgba(51,61,70,0.14);
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(38,48,58,0.06);
+    }
+    .docs-modal-body .learn-section,
+    .docs-modal-body .upload-zone {
+      min-height: 210px;
+      padding: 22px;
+    }
+    .docs-modal-body .learn-section-header h3,
+    .docs-modal-body .upload-zone h3,
+    .docs-modal-body .knowledge-header h3,
+    .docs-modal-body .file-section-title {
+      color: #1c2531;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .docs-modal-body .learn-section p,
+    .docs-modal-body .upload-zone p,
+    .docs-modal-body .kb-upload-zone-text,
+    .docs-modal-body .empty-state,
+    .docs-modal-body .ref-item-meta {
+      color: #657181;
+    }
+    .docs-modal-body .upload-zone {
+      display: flex;
+      flex-wrap: wrap;
+      align-content: center;
+      justify-content: center;
+      gap: 8px;
+      border-style: dashed;
+      border-color: rgba(18,63,55,0.24);
+    }
+    .docs-modal-body .upload-zone .upload-icon,
+    .docs-modal-body .upload-zone h3,
+    .docs-modal-body .upload-zone p,
+    .docs-modal-body .upload-status {
+      flex-basis: 100%;
+    }
+    .docs-modal-body .upload-zone p { margin-bottom: 8px; }
+    .docs-modal-body .upload-btn-trigger {
+      margin-top: 0 !important;
+      padding: 8px 14px;
+      opacity: 1 !important;
+      color: #334250;
+      background: #f8faf7;
+      border-color: rgba(51,61,70,0.18);
+      border-radius: 8px;
+    }
+    .docs-modal-body .refresh-btn {
+      grid-column: 1 / -1;
+      justify-self: end;
+      margin: 0;
+    }
+    .docs-modal-body .knowledge-section {
+      grid-column: 1 / -1;
+      padding: 22px;
+      border-top: 1px solid rgba(51,61,70,0.14);
+    }
+    .docs-modal-body .knowledge-header {
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .docs-modal-body .knowledge-stats {
+      margin: 0;
+      gap: 8px;
+    }
+    .docs-modal-body .knowledge-stat {
+      padding: 6px 11px;
+      color: #405049;
+      background: #eef7f4;
+      border-radius: 999px;
+    }
+    .docs-modal-body .kb-upload-zone {
+      padding: 20px;
+      color: #1c2531;
+      background: #f7f9f6;
+      border: 1px dashed rgba(18,63,55,0.26);
+      border-radius: 8px;
+    }
+    .docs-modal-body .ref-item {
+      color: #1c2531;
+      background: #f8faf7;
+      border-color: rgba(51,61,70,0.13);
+      border-radius: 8px;
+      box-shadow: none;
+    }
+    .docs-modal-body .ref-item-name { color: #1c2531; }
+    .docs-modal-body .analyze-bar { margin-bottom: 0; }
+    .docs-modal-body .file-section {
+      grid-column: 1 / -1;
+      padding: 18px 20px;
+    }
+    .docs-modal-body .file-section-title::after {
+      background: rgba(51,61,70,0.12);
+    }
+    .docs-modal-body .file-card {
+      color: #1c2531;
+      background: #f8faf7;
+      border-color: rgba(51,61,70,0.13);
+      border-radius: 8px;
+      box-shadow: none;
+    }
+    .docs-modal-body .file-card .file-name { color: #1c2531; }
+    .docs-modal-body .file-card .file-meta { color: #657181; }
+    .docs-modal-body .empty-state { padding: 20px; }
+
     @media (max-width: 900px) {
       .sidebar { width: 48px; }
       .panels-row { padding: 10px; gap: 10px; }
@@ -4941,6 +5166,23 @@
       .clients-header { min-height: auto; grid-template-columns: 1fr; }
       .hub-header h2,
       .clients-header h2 { font-size: clamp(1.7rem, 8vw, 2.5rem); }
+      .docs-modal-box {
+        width: calc(100vw - 20px);
+        height: calc(100vh - 20px);
+      }
+      .docs-modal-body .docs-panel {
+        grid-template-columns: 1fr;
+        padding: 14px;
+      }
+      .docs-modal-body .refresh-btn,
+      .docs-modal-body .knowledge-section,
+      .docs-modal-body .file-section {
+        grid-column: 1;
+      }
+      .docs-modal-body .knowledge-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
     }
   </style>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -5303,8 +5545,8 @@
       </div>
       <div class="doc-form-panel">
         <div class="form-intro">
-          <h2>יצירת מסמך חדש</h2>
-          <p>מלא את הפרטים ולחץ על "צור מסמך" להורדת קובץ DOCX</p>
+          <h2 id="formIntroTitle">יצירת מסמך חדש</h2>
+          <p id="formIntroText">מלא את הפרטים ולחץ על "צור מסמך" להורדת קובץ DOCX</p>
         </div>
 
         <!-- Template selector -->
@@ -5323,7 +5565,7 @@
         <form id="docForm" novalidate>
 
           <!-- פרטי לקוח -->
-          <div class="form-section">
+          <div class="form-section client-details-section">
             <div class="form-section-header">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -5346,7 +5588,7 @@
           </div>
 
           <!-- פרטי פרויקט -->
-          <div class="form-section">
+          <div class="form-section project-details-section">
             <div class="form-section-header">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -5372,12 +5614,12 @@
                   <label>תאריך מסמך</label>
                   <input type="date" name="documentDate" id="documentDate">
                 </div>
-                <div class="field-group">
+                <div class="field-group project-copy-field">
                   <!-- empty spacer for alignment -->
                 </div>
               </div>
               <div class="field-row cols-1">
-                <div class="field-group">
+                <div class="field-group project-copy-field">
                   <label>תיאור הפרויקט <span class="required">*</span></label>
                   <textarea name="projectDescription" placeholder="תיאור קצר של הפרויקט..." rows="3"></textarea>
                 </div>
@@ -5592,7 +5834,7 @@
           </div>
 
           <!-- לוחות זמנים -->
-          <div class="form-section">
+          <div class="form-section cv-hidden-section">
             <div class="form-section-header">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -5617,7 +5859,7 @@
           </div>
 
           <!-- הערות -->
-          <div class="form-section">
+          <div class="form-section cv-hidden-section">
             <div class="form-section-header">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -7445,8 +7687,20 @@
 
     function updateDocTypeUi() {
       const isCv = docTypeSelect.value === 'cv';
+      docForm.classList.toggle('cv-mode', isCv);
       if (cvEditorSection) cvEditorSection.style.display = isCv ? '' : 'none';
       document.querySelectorAll('.business-doc-section').forEach(section => { section.style.display = isCv ? 'none' : ''; });
+      const introTitle = document.getElementById('formIntroTitle');
+      const introText = document.getElementById('formIntroText');
+      const createTitle = document.querySelector('#panel-create .panel-title');
+      if (introTitle) introTitle.textContent = isCv ? 'עריכת קורות חיים' : 'יצירת מסמך חדש';
+      if (introText) introText.textContent = isCv
+        ? 'מלא את פרטי קורות החיים. שדות הצעת מחיר ולקוח מוסתרים כדי לא לערבב בין סוגי מסמכים.'
+        : 'מלא את הפרטים ולחץ על "צור מסמך" להורדת קובץ DOCX';
+      if (createTitle) {
+        const icon = createTitle.querySelector('svg')?.outerHTML || '';
+        createTitle.innerHTML = icon + (isCv ? ' קורות חיים' : ' יצירת מסמך');
+      }
       if (isCv) syncCvEditorToGenericFields();
     }
 
@@ -7514,8 +7768,10 @@
         const targetState = window._projectFormStates[newDocType];
         if (targetState) {
           restoreFormState({ ...targetState, docType: newDocType });
+        } else {
+          resetForm();
+          docTypeSelect.value = newDocType;
         }
-        // If no saved state for target, keep form as-is but with new docType
       }
 
       window._activeDocType = newDocType;
@@ -12679,7 +12935,7 @@
         });
       });
       body.querySelectorAll('.nav-project-item').forEach(function(item) {
-        item.addEventListener('click', function(e) {
+        item.addEventListener('click', async function(e) {
           e.stopPropagation();
           var projId = item.dataset.project;
           body.querySelectorAll('.nav-project-item').forEach(function(pi) { pi.classList.remove('active'); });
@@ -12689,8 +12945,12 @@
             navState.projectId = projId;
             var proj = projects.find(function(p) { return p.id === projId; });
             if (proj) navState.clientId = proj.clientId;
-            sp(projId);
+            navState.docType = (proj && (proj.activeDocType || proj.docType || (proj.docTypes && proj.docTypes[0]))) || 'quote';
+            await sp(projId);
+            var docTypeSelect = document.querySelector('[name="docType"]');
+            navState.docType = docTypeSelect ? docTypeSelect.value : navState.docType;
             updateBreadcrumb();
+            renderNavSidebar();
           }
         });
         item.addEventListener('contextmenu', function(e) {
@@ -12735,6 +12995,9 @@
           body.querySelectorAll('.nav-doc-btn').forEach(function(b) { b.classList.remove('active'); });
           btn.classList.add('active');
           updateBreadcrumb();
+          var url = new URL(window.location);
+          url.searchParams.set('doc', docType);
+          history.replaceState({ view: navState.view, clientId: navState.clientId, projectId: navState.projectId, docType: navState.docType }, '', url);
         });
       });
     }
@@ -12751,6 +13014,11 @@
               docTypeSelect.dispatchEvent(new Event('change'));
             }
           }
+          navState.projectId = params.projectId;
+          if (params.clientId) navState.clientId = params.clientId;
+          navState.docType = params.docType || (document.querySelector('[name="docType"]')?.value) || navState.docType;
+          updateBreadcrumb();
+          renderNavSidebar();
         });
       } else if (params.docType) {
         var docTypeSelect = document.querySelector('[name="docType"]');

@@ -81,3 +81,47 @@
 | **TASK-041** | **RTL CV DOCX renderer** — dedicated Hebrew CV layout with proper mixed LTR contact/link handling | **P0** | DONE |
 | **TASK-042** | **CV preview renderer** — add CV-specific HTML preview matching the DOCX structure | **P1** | DONE |
 | **TASK-043** | **CV verification** — generate from Noam sample, extract text, verify sections and RTL markers | **P0** | DONE |
+
+## Redesign Lane
+
+Goal: make the app feel like a calm, readable, Hebrew-first workspace for non-technical freelancers and service providers. Keep the UI light, neutral, cohesive, and CV-aware.
+
+| ID | Task | Priority | Status |
+|----|------|----------|--------|
+| **TASK-044** | **Unified light workspace system** — replace mixed dark/light surfaces across header, rail, sidebars, panels, cards, modals, and forms | **P0** | IN PROGRESS |
+| **TASK-045** | **Document sidebar redesign** — make document navigation readable, scannable, and visually consistent in `?view=document` | **P0** | TODO |
+| **TASK-046** | **Fix document switching isolation** — clicking a document item must not mix content from another document type or stale form state | **P0** | TODO |
+| **TASK-047** | **CV-aware document UI** — remove quote/client-specific labels from CV flows, including irrelevant sections like customer details | **P1** | TODO |
+| **TASK-048** | **Home workspace polish** — finish the guided document-start screen, icon wells, stats capsules, and responsive side graphics | **P1** | TODO |
+| **TASK-049** | **Cross-view visual QA** — verify home, clients, projects, document, and knowledge views share one readable visual system | **P1** | TODO |
+| **TASK-050** | **Redesign delivery verification** — run skills tests, verify local app views, then commit/push and release binaries if app code changed | **P0** | TODO |
+
+#### TASK-044 — Unified Light Workspace System
+
+**Current context:**
+- Started in `public/index.html` with a late CSS redesign layer and new `--workspace-*` tokens.
+- User rejected the previous mixed dark navigation/light content direction.
+- Continue toward one cohesive light neutral system, not a dark AI dashboard aesthetic.
+
+**Acceptance checks:**
+1. Top bar, rail, project sidebar, document panels, cards, forms, and modals use one light neutral surface language.
+2. Text contrast is readable in Hebrew on desktop and mobile.
+3. No remaining accidental black SVG fills in document-type icons.
+
+#### TASK-046 — Fix Document Switching Isolation
+
+**Problem to reproduce:** clicking document items in the sidebar can mix document contents or show stale state from another document.
+
+**Acceptance checks:**
+1. Selecting CV, quote, contract, or other document chips loads only that document's state.
+2. Preview/editor/form areas do not retain stale text from the previously selected document.
+3. The active document chip and visible document content always match.
+
+#### TASK-047 — CV-Aware Document UI
+
+**Problem to fix:** CV flows currently expose irrelevant quote/client concepts such as customer details.
+
+**Acceptance checks:**
+1. CV document creation/editing uses CV-specific labels and guidance.
+2. Quote/contract-specific labels remain available only where relevant.
+3. Empty states and prompts explain CV work in plain Hebrew for non-technical users.
