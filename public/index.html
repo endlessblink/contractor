@@ -206,14 +206,14 @@
 
     /* ── BUTTON TOKEN: Dark mode — universal outline reset ── */
     /* Catches ALL buttons except utility/nav buttons via :not() exclusions */
-    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):not(.add-row-btn) {
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):not(.add-row-btn):not(.generate-btn):not(.save-form-btn):not(.review-form-btn) {
       background: var(--btn-accent-bg) !important;
       color: var(--btn-accent-color) !important;
       border: var(--btn-accent-border) !important;
       box-shadow: none !important;
       background-image: none !important;
     }
-    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):not(.add-row-btn):hover:not(:disabled) {
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):not(.add-row-btn):not(.generate-btn):not(.save-form-btn):not(.review-form-btn):hover:not(:disabled) {
       background: var(--btn-accent-hover-bg) !important;
       box-shadow: none !important;
     }
@@ -4732,6 +4732,19 @@
     /* Document builder */
     #view-document {
       background: linear-gradient(180deg, var(--workspace-bg-top) 0%, var(--workspace-bg-bottom) 100%);
+      /* Remap bright-teal accent to forest green so no teal leaks into the
+         light workspace (checkboxes, focus rings, accents) — anchor rule. */
+      --accent: #1f7a5c;
+      --accent-hover: #18684e;
+      --accent-text: #15573f;
+      --accent-subtle: rgba(31,122,92,0.08);
+      --accent-subtle-hover: rgba(31,122,92,0.14);
+      --accent-border: rgba(31,122,92,0.30);
+      --input-focus-border: #1f7a5c;
+      --chip-label: #15573f;
+      --chip-amount: #15573f;
+      --chip-pct: #2f7a5e;
+      --success-text: #15573f;
     }
     .nav-sidebar {
       width: 260px;
@@ -5023,16 +5036,20 @@
     }
 
     .generate-btn,
+    .save-form-btn,
+    .review-form-btn,
     .learn-btn,
     .hub-modal-submit,
     .confirm-ok-btn:not(.danger) {
       color: #f8fbf8 !important;
-      background: #123f37 !important;
-      border: 1px solid rgba(18, 63, 55, 0.18) !important;
-      border-radius: 16px !important;
-      box-shadow: 0 16px 34px rgba(18, 63, 55, 0.20) !important;
+      background: #12352f !important;
+      border: 1px solid rgba(18, 53, 47, 0.20) !important;
+      border-radius: 14px !important;
+      box-shadow: 0 14px 30px rgba(18, 53, 47, 0.22) !important;
     }
     .generate-btn:hover,
+    .save-form-btn:hover,
+    .review-form-btn:hover,
     .learn-btn:hover,
     .hub-modal-submit:hover,
     .confirm-ok-btn:not(.danger):hover {
