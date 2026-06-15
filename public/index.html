@@ -4970,6 +4970,7 @@
        Targeted by ID: the global dark-mode button reset sets background
        !important at high specificity, so only an ID selector reliably wins. */
     #uploadTrigger,
+    #learnBtn,
     #analyzeKbBtn:not(:disabled) {
       color: #f8fbf8 !important;
       background: #123f37 !important;
@@ -4980,6 +4981,7 @@
       transition: background 0.18s, transform 0.15s, box-shadow 0.18s !important;
     }
     #uploadTrigger:hover,
+    #learnBtn:hover:not(:disabled),
     #analyzeKbBtn:not(:disabled):hover {
       background: #0d493e !important;
       transform: translateY(-2px);
@@ -5005,7 +5007,12 @@
     #analyzeKbBtn:disabled { cursor: not-allowed; }
     /* Learned/success status reads forest green, not bright teal */
     .docs-modal-body .learn-status.success,
-    .docs-modal-body .upload-status.success { color: #1c6b54 !important; }
+    .docs-modal-body .upload-status.success { color: #15573f !important; }
+    .docs-modal-body .learn-context-badge {
+      background: #eaf4ef !important;
+      border: 1px solid rgba(18,63,55,0.20) !important;
+      color: #15573f !important;
+    }
 
     /* Documents, knowledge, settings, modals */
     .docs-modal-overlay,
