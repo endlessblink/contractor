@@ -51,7 +51,7 @@ for (const t of targets) {
   const outName = `contractor-${t.replace('node20-', '')}-v${VERSION}`;
   console.log(`  → ${outName}`);
   execSync(
-    `npx @yao-pkg/pkg dist/bundle.cjs --target ${t} --output dist/executables/${outName} --config package.json`,
+    `npx @yao-pkg/pkg dist/bundle.cjs --target ${t} --output dist/executables/${outName} --config package.json --no-bytecode --public-packages "*"`,
     { stdio: 'inherit' }
   );
 }
@@ -107,6 +107,9 @@ SELF=$(readlink -f "$0")
 HERE=\${SELF%/*}
 export PATH="\${HERE}/usr/bin/:\${PATH:+:\$PATH}"
 unset XDG_DATA_DIRS
+if [ "\$1" = "--mcp" ]; then
+  exec "\${HERE}/usr/bin/contractor" "\$@"
+fi
 # Start server in background, wait for it, then open browser
 "\${HERE}/usr/bin/contractor" "$@" &
 SERVER_PID=$!

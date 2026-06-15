@@ -1484,7 +1484,8 @@
     }
 
     .custom-installment-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: 86px 80px 18px minmax(180px, 1fr) auto;
       align-items: center;
       gap: 10px;
     }
@@ -1510,6 +1511,11 @@
       color: var(--text-primary);
     }
 
+    .custom-installment-row input.installment-description {
+      width: 100%;
+      min-width: 0;
+    }
+
     .custom-installment-row input:focus { border-color: var(--input-focus-border); }
 
     .custom-installment-row .pct-suffix {
@@ -1522,6 +1528,16 @@
       font-weight: 600;
       color: var(--accent-text);
       margin-inline-start: 4px;
+    }
+
+    @media (max-width: 720px) {
+      .custom-installment-row {
+        grid-template-columns: 76px 68px 16px minmax(0, 1fr);
+      }
+
+      .custom-installment-row .amount-preview {
+        grid-column: 2 / -1;
+      }
     }
 
     /* Clauses section */
@@ -5815,19 +5831,28 @@
                   <label>תשלום 1</label>
                   <input type="number" id="custom1" name="custom1" value="50" min="0" max="100">
                   <span class="pct-suffix">%</span>
+                  <input class="installment-description" type="text" id="customDescription1" name="customDescription1" value="מקדמה בתחילת עבודה" aria-label="תיאור תשלום 1">
                   <span class="amount-preview" id="customAmt1"></span>
                 </div>
                 <div class="custom-installment-row">
                   <label>תשלום 2</label>
                   <input type="number" id="custom2" name="custom2" value="50" min="0" max="100">
                   <span class="pct-suffix">%</span>
+                  <input class="installment-description" type="text" id="customDescription2" name="customDescription2" value="יתרה במסירת התוצר" aria-label="תיאור תשלום 2">
                   <span class="amount-preview" id="customAmt2"></span>
                 </div>
                 <div class="custom-installment-row">
                   <label>תשלום 3 (אופציונלי)</label>
                   <input type="number" id="custom3" name="custom3" value="0" min="0" max="100">
                   <span class="pct-suffix">%</span>
+                  <input class="installment-description" type="text" id="customDescription3" name="customDescription3" value="" placeholder="תיאור התשלום" aria-label="תיאור תשלום 3">
                   <span class="amount-preview" id="customAmt3"></span>
+                </div>
+              </div>
+              <div class="field-row cols-1" style="margin-top:12px;">
+                <div class="field-group">
+                  <label for="paymentNotes">תנאי תשלום נוספים</label>
+                  <textarea id="paymentNotes" name="paymentNotes" rows="2" placeholder="לדוגמה: שוטף + 30 מקבלת חשבונית"></textarea>
                 </div>
               </div>
             </div>
@@ -6044,8 +6069,8 @@
           <!-- Upload Zone -->
           <div class="kb-upload-zone" id="refUploadZone">
             <div class="kb-upload-zone-icon">&#128196;</div>
-            <div class="kb-upload-zone-text">גרור קבצי עזר לכאן או לחץ להעלאה<br><small>DOCX, PDF</small></div>
-            <input type="file" id="refUploadInput" multiple accept=".docx,.pdf" style="display:none">
+            <div class="kb-upload-zone-text">גרור מסמך לכאן או לחץ להעלאה<br><small>Markdown ליצירת טיוטה, DOCX/PDF ללמידה</small></div>
+            <input type="file" id="refUploadInput" multiple accept=".docx,.pdf,.md" style="display:none">
           </div>
 
           <!-- Reference Documents List -->
@@ -7556,8 +7581,16 @@
           if (data.customInstallments[1] != null) document.getElementById('custom2').value = data.customInstallments[1];
           if (data.customInstallments[2] != null) document.getElementById('custom3').value = data.customInstallments[2];
         }
+        if (data.paymentStructure === 'custom' && Array.isArray(data.paymentInstallments)) {
+          data.paymentInstallments.slice(0, 3).forEach((installment, index) => {
+            const number = index + 1;
+            if (installment.percentage != null) document.getElementById(`custom${number}`).value = installment.percentage;
+            document.getElementById(`customDescription${number}`).value = installment.description || '';
+          });
+        }
         updateInstallmentsPreview();
       }
+      if (data.paymentNotes != null) document.getElementById('paymentNotes').value = data.paymentNotes;
 
       // Timeline & notes
       if (data.timeline) docForm.querySelector('[name="timeline"]').value = data.timeline;
@@ -8646,6 +8679,13 @@
       });
     }
 
+    function getCustomPaymentInstallments(formData) {
+      return [1, 2, 3].map(number => ({
+        percentage: parseFloat(formData.get(`custom${number}`)) || 0,
+        description: (formData.get(`customDescription${number}`) || '').trim() || `תשלום ${number}`,
+      })).filter(item => item.percentage > 0);
+    }
+
     paymentSelect.addEventListener('change', updateInstallmentsPreview);
 
     ['custom1', 'custom2', 'custom3'].forEach(id => {
@@ -8712,13 +8752,10 @@
       } else if (paymentMode === 'three') {
         paymentTerms = { type: 'three', installments: [40, 30, 30] };
       } else {
+        const customPaymentInstallments = getCustomPaymentInstallments(formData);
         paymentTerms = {
           type: 'custom',
-          installments: [
-            parseFloat(formData.get('custom1')) || 0,
-            parseFloat(formData.get('custom2')) || 0,
-            parseFloat(formData.get('custom3')) || 0,
-          ].filter(p => p > 0),
+          installments: customPaymentInstallments,
         };
       }
 
@@ -8732,6 +8769,7 @@
         pricing:            docType === 'cv' ? [] : pricingRows.map(r => ({ desc: r.desc, qty: r.qty, price: r.price, option: r.option || '' })),
         grandTotal:         getGrandTotal(),
         paymentTerms,
+        paymentNotes:       (formData.get('paymentNotes') || '').trim(),
         timeline:           (formData.get('timeline') || '').trim(),
         notes:              (formData.get('notes') || '').trim(),
         documentDate:       formData.get('documentDate') || '',
@@ -9760,6 +9798,8 @@
           parseFloat(formData.get('custom2')) || 0,
           parseFloat(formData.get('custom3')) || 0,
         ],
+        paymentInstallments: getCustomPaymentInstallments(formData),
+        paymentNotes: formData.get('paymentNotes') || '',
         timeline: formData.get('timeline') || '',
         notes: formData.get('notes') || '',
         documentDate: formData.get('documentDate') || '',
@@ -9802,6 +9842,8 @@
         pricingItems,
         paymentStructure: state.paymentStructure,
         customInstallments: state.customInstallments,
+        paymentInstallments: state.paymentInstallments,
+        paymentNotes: state.paymentNotes,
         timeline: state.timeline,
         notes: state.notes,
       });
@@ -10803,8 +10845,36 @@
 
     async function uploadRefFiles(fileList) {
       console.log('[KB-UPLOAD-DEBUG] uploadRefFiles called with', fileList.length, 'files');
+      const files = Array.from(fileList);
+      const markdownFiles = files.filter(file => file.name.toLowerCase().endsWith('.md'));
+      const referenceFiles = files.filter(file => !file.name.toLowerCase().endsWith('.md'));
+
+      for (const file of markdownFiles) {
+        try {
+          analyzeKbStatus.textContent = `מייבא את ${file.name}...`;
+          const importForm = new FormData();
+          importForm.append('file', file);
+          if (currentProjectId) importForm.append('projectId', currentProjectId);
+          const response = await fetch('/api/import-markdown', { method: 'POST', body: importForm });
+          const imported = await response.json();
+          if (!response.ok) throw new Error(imported.error || 'הייבוא נכשל');
+          await loadProjects();
+          await switchProject(imported.projectId);
+          analyzeKbStatus.textContent = imported.warnings?.length
+            ? `הטיוטה נוצרה עם ${imported.warnings.length} הערות לבדיקה`
+            : 'הטיוטה נוצרה ונפתחה לעריכה';
+          document.getElementById('docsModalOverlay')?.classList.remove('visible');
+          if (window._navigate) {
+            window._navigate('document', { projectId: imported.projectId, docType: imported.documentType });
+          }
+        } catch (err) {
+          analyzeKbStatus.textContent = 'שגיאה בייבוא Markdown: ' + (err.message || 'נסה שוב');
+        }
+      }
+
+      if (referenceFiles.length === 0) return;
       const formData = new FormData();
-      for (const file of fileList) { formData.append('files', file); console.log('[KB-UPLOAD-DEBUG] File:', file.name); }
+      for (const file of referenceFiles) { formData.append('files', file); console.log('[KB-UPLOAD-DEBUG] File:', file.name); }
       try {
         analyzeKbStatus.textContent = 'מעלה...';
         console.log('[KB-UPLOAD-DEBUG] Sending to: /api/references/upload');

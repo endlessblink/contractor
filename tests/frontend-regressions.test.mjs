@@ -41,3 +41,15 @@ describe('frontend CV import regressions', () => {
     assert.ok(!indexHtml.includes("const analyzeSource = options.isReference ? 'references' : 'uploads';"), 'generated output files must not be analyzed as uploads');
   });
 });
+
+describe('frontend Markdown import regressions', () => {
+  it('accepts Markdown in the Knowledge upload surface', () => {
+    assert.ok(indexHtml.includes('accept=".docx,.pdf,.md"'), 'Knowledge upload should accept Markdown files');
+    assert.ok(indexHtml.includes('/api/import-markdown'), 'Markdown files should use the import endpoint');
+  });
+
+  it('restores descriptive imported payment installments', () => {
+    assert.ok(indexHtml.includes('paymentInstallments'), 'form state should preserve descriptive installments');
+    assert.ok(indexHtml.includes('paymentNotes'), 'form state should preserve additional payment terms');
+  });
+});

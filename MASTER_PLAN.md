@@ -125,3 +125,31 @@ Goal: make the app feel like a calm, readable, Hebrew-first workspace for non-te
 1. CV document creation/editing uses CV-specific labels and guidance.
 2. Quote/contract-specific labels remain available only where relevant.
 3. Empty states and prompts explain CV work in plain Hebrew for non-technical users.
+
+## Markdown Import Lane
+
+Goal: turn a structured Hebrew Markdown brief into an editable Contractor project and generate the correct RTL document without copying terms by hand.
+
+| ID | Task | Priority | Status |
+|----|------|----------|--------|
+| **TASK-051** | **Deterministic Markdown parser** — extract document type, parties, deliverables, prices, dates, revisions, payment terms, VAT, validity, and unknown source sections | **P0** | DONE |
+| **TASK-052** | **Shared draft service** — create/update projects, preserve the source file and hash, and store editable document state safely | **P0** | DONE |
+| **TASK-053** | **Knowledge upload workflow** — accept `.md`, import it as a draft, switch to the resulting project, and open the document editor | **P0** | DONE |
+| **TASK-054** | **Descriptive payment schedule support** — preserve installment descriptions and payment notes through editing and DOCX generation | **P1** | DONE |
+| **TASK-055** | **Markdown import regressions** — parser, storage, API, frontend wiring, and real-source DOCX content verification | **P0** | DONE |
+
+**Proof:** the supplied `הצעת_מחיר_סרטוני_AI.md` generated a DOCX containing the 7,000/14,000 pricing, both delivery dates, 50% installments, Net 30, 900 extra-revision price, and 14-day validity without leaking source placeholders.
+
+## Agent MCP Lane
+
+Goal: let Codex App, Claude Desktop, and Antigravity 2 inspect Contractor data, import Markdown, edit drafts, and explicitly generate documents through one packaged stdio server.
+
+| ID | Task | Priority | Status |
+|----|------|----------|--------|
+| **TASK-056** | **Packaged stdio MCP mode** — run the Contractor executable with `--mcp` and keep stdout JSON-RPC-only | **P0** | DONE |
+| **TASK-057** | **Agent-native tool surface** — expose clients, projects, project detail, Markdown import, draft upsert, and explicit generation tools | **P0** | DONE |
+| **TASK-058** | **Concurrent storage safety** — use atomic writes and a cross-process lock for browser and MCP mutations | **P0** | DONE |
+| **TASK-059** | **Desktop client setup helper** — merge Codex, Claude Desktop, and Antigravity MCP configuration without replacing existing servers or secrets | **P1** | DONE |
+| **TASK-060** | **MCP regressions and packaged smoke proof** — validate schemas, tool routing, stable errors, configuration merging, and executable JSON-RPC behavior | **P0** | DONE |
+
+**Directive:** keep `contractor_generate_document` explicit. Importing or updating a draft must never generate a final document as a side effect.

@@ -20,6 +20,35 @@ Contractor is a self-hosted application for generating professional business doc
 - Client and project management dashboard
 - Dark/light theme
 
+## MCP integration
+
+Contractor can run as a standalone stdio MCP server without starting the web
+application:
+
+```bash
+./contractor-linux-x64-v1.8.0.AppImage --mcp
+```
+
+Register the same executable for Codex App, Claude Desktop, and Antigravity 2:
+
+```bash
+node scripts/install-mcp-config.mjs \
+  --executable=/absolute/path/to/contractor-linux-x64-v1.8.0.AppImage \
+  --dry-run
+
+node scripts/install-mcp-config.mjs \
+  --executable=/absolute/path/to/contractor-linux-x64-v1.8.0.AppImage
+```
+
+The installer preserves other MCP servers, creates timestamped backups, and
+updates Codex through `codex mcp add`. It detects existing Claude Desktop Linux
+configurations. Antigravity 2 uses
+`~/.gemini/antigravity/mcp_config.json`.
+
+The MCP tools list clients and projects, read project drafts, import Markdown,
+update drafts, and explicitly generate DOCX files. Draft writes never generate
+documents automatically.
+
 ## Features
 
 - **Dashboard** — View project stats, manage clients and documents at a glance

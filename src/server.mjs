@@ -11,6 +11,13 @@ try {
   }
 } catch { /* no .env file */ }
 
+const MCP_MODE = process.argv.includes('--mcp');
+if (MCP_MODE) {
+  for (const method of ['log', 'info', 'debug']) {
+    console[method] = (...args) => console.error(...args);
+  }
+}
+
 // Keep process alive — catch unhandled errors instead of crashing
 process.on('uncaughtException', (err) => { console.error('Uncaught error:', err.message); });
 process.on('unhandledRejection', (err) => { console.error('Unhandled rejection:', err); });
@@ -30,6 +37,8 @@ import { chatCompletion, chatCompletionStream, parseSSEStream, getProviderConfig
 import { IS_PKG, USER_DATA_DIR, APP_DIR, SNAPSHOT_DIR, initUserDataDir, resolveData, resolveAsset } from './app-paths.mjs';
 import { CURRENT_VERSION, checkForUpdate, checkUpdateAvailable, downloadAndInstall } from './updater.mjs';
 import { buildRuntimeSkillsPromptSection, initRuntimeSkills, loadRuntimeSkill, loadRuntimeSkills, saveRuntimeSkill, USER_SKILLS_DIR } from './runtime-skills.mjs';
+import { createContractorServices } from './contractor-services.mjs';
+import { runContractorMcpServer } from './mcp-server.mjs';
 
 const require = createRequire(import.meta.url);
 let pdfParser = null;
@@ -67,7 +76,7 @@ const REFERENCES_DIR = IS_PKG
   ? join(DATA_DIR, 'references')
   : (readdirSync(join(DATA_DIR, 'references')).length > 0
     ? join(DATA_DIR, 'references') : join(PROJECT_DIR, 'document refrences - quotes'));
-const PROJECTS_DIR = IS_PKG
+const PROJECTS_DIR = IS_PKG || process.env.CONTRACTOR_DATA_DIR
   ? join(DATA_DIR, 'projects')
   : (readdirSync(join(DATA_DIR, 'projects')).length > 0
     ? join(DATA_DIR, 'projects') : join(PROJECT_DIR, 'projects'));
@@ -313,6 +322,38 @@ function loadUserProfile() {
 let userProfile = loadUserProfile();
 console.log('Profile loaded from: ' + USER_PROFILE_PATH);
 console.log('Profile loaded: setupComplete=' + userProfile.setupComplete + ', name=' + (userProfile.name || '(empty)') + ', apiKey=' + (userProfile.aiApiKey ? '***set***' : '(empty)'));
+
+const contractorServices = createContractorServices({
+  dataDir: DATA_DIR,
+  userProfile: () => userProfile,
+  openGeneratedDocument: process.env.CONTRACTOR_OPEN !== '0',
+  aiImportFallback: async ({ markdown, parsed }) => {
+    const config = getProviderConfig();
+    if (!config.configured) {
+      return { formState: {}, warnings: [{ code: 'ai_fallback_unavailable', message: 'AI fallback is not configured.' }] };
+    }
+    const response = await chatCompletion({
+      system: `You extract missing fields from Hebrew Markdown quotes, contracts, and work orders.
+Return JSON only. Include only fields that are missing from the deterministic extraction.
+Allowed fields: clientName, clientCompany, projectDescription, serviceDetails, pricingItems, paymentStructure, customInstallments, paymentInstallments, paymentNotes, timeline, notes, documentDate.
+Never replace or reinterpret deterministic values.`,
+      messages: [{
+        role: 'user',
+        content: JSON.stringify({
+          unresolvedFields: parsed.unresolvedFields || [],
+          deterministicFormState: parsed.formState || {},
+          markdown,
+        }),
+      }],
+      maxTokens: 1800,
+    });
+    const formState = extractJSON(response.text);
+    if (!formState || typeof formState !== 'object' || Array.isArray(formState)) {
+      return { formState: {}, warnings: [{ code: 'ai_fallback_invalid', message: 'AI fallback returned invalid data.' }] };
+    }
+    return { formState, warnings: [] };
+  },
+});
 
 // ─── Project helper functions ─────────────────────────────────────────────────
 
@@ -819,6 +860,10 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+const markdownUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024, files: 1 },
+});
 
 // Dynamic multer for project-aware uploads
 const dynamicUpload = multer({
@@ -1011,6 +1056,24 @@ app.post('/api/references/upload', (req, res, next) => { console.log('[upload-re
     res.json({ success: true, uploaded: results.length, files: results });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/import-markdown', markdownUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Markdown file is required' });
+    if (!req.file.originalname.toLowerCase().endsWith('.md')) {
+      return res.status(400).json({ error: 'Only .md files can be imported as drafts' });
+    }
+    const result = await contractorServices.importMarkdown({
+      markdown: req.file.buffer.toString('utf8'),
+      filename: req.file.originalname,
+      projectId: req.body?.projectId || undefined,
+    });
+    res.status(201).json(result);
+  } catch (err) {
+    console.error('Markdown import error:', err);
+    res.status(400).json({ error: err.message || 'Failed to import Markdown' });
   }
 });
 
@@ -2099,10 +2162,12 @@ app.post('/api/generate-document', async (req, res) => {
     let installments = [];
     if (raw.paymentTerms) {
       if (raw.paymentTerms.type === 'custom') {
-        installments = (raw.paymentTerms.installments || []).map((pct, i) => ({
-          percentage: pct,
-          description: `תשלום ${i + 1}`,
-        }));
+        installments = (raw.paymentTerms.installments || []).map((installment, i) => ({
+          percentage: Number(typeof installment === 'object' ? installment.percentage : installment),
+          description: typeof installment === 'object'
+            ? (installment.description || `תשלום ${i + 1}`)
+            : `תשלום ${i + 1}`,
+        })).filter(installment => installment.percentage > 0);
       } else {
         installments = paymentLabels[raw.paymentTerms.type] || [];
       }
@@ -2126,7 +2191,7 @@ app.post('/api/generate-document', async (req, res) => {
         installments,
       },
       timeline: raw.timeline || '',
-      generalNotes: raw.notes || raw.generalNotes || '',
+      generalNotes: [raw.notes || raw.generalNotes || '', raw.paymentNotes || ''].filter(Boolean).join('\n'),
       serviceType: raw.serviceType || '',
       selectedClauses: raw.selectedClauses || null,
       clauseEdits: raw.clauseEdits || {},
@@ -3337,6 +3402,12 @@ if (process.argv.includes('--reset')) {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
+if (MCP_MODE) {
+  runContractorMcpServer({ services: contractorServices }).catch(error => {
+    console.error('Contractor MCP server failed:', error.message);
+    process.exitCode = 1;
+  });
+} else {
 app.listen(PORT, '127.0.0.1', async () => {
   const localUrl = `http://localhost:${PORT}`;
   console.log(`Server running on port ${PORT}`);
@@ -3374,3 +3445,4 @@ app.listen(PORT, '127.0.0.1', async () => {
     } catch {}
   }, 3000);
 });
+}
