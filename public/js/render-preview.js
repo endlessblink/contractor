@@ -321,28 +321,10 @@ var DocPreview = (() => {
   function tokens(s) {
     return normalizeText(s).split(" ").filter((w) => w.length >= 2);
   }
-  var SIGNATURE_FAMILIES = [
-    ['\u05DE\u05E2"\u05DE', "\u05DE\u05E2\u05DE", "\u05DE\u05E2 \u05DE"],
-    // VAT
-    ["\u05EA\u05D5\u05E7\u05E3", "\u05D1\u05EA\u05D5\u05E7\u05E3"],
-    // quote validity
-    ["\u05DE\u05E7\u05D3\u05DE\u05D4"],
-    // advance payment
-    ["\u05D7\u05E9\u05D1\u05D5\u05E0\u05D9\u05EA"]
-    // invoicing
-  ];
-  function familyHits(norm) {
-    const hits = /* @__PURE__ */ new Set();
-    SIGNATURE_FAMILIES.forEach((fam, i) => {
-      if (fam.some((tok) => norm.includes(normalizeText(tok)))) hits.add(i);
-    });
-    return hits;
-  }
   function noteMatchesClause(noteLine, clauseTexts) {
     const noteNorm = normalizeText(noteLine);
     if (!noteNorm) return { redundant: false, clauseText: null };
     const noteTokens = tokens(noteLine);
-    const noteFam = familyHits(noteNorm);
     for (const clause of clauseTexts) {
       const clauseNorm = normalizeText(clause);
       if (!clauseNorm) continue;
@@ -354,12 +336,6 @@ var DocPreview = (() => {
         const shared = noteTokens.filter((t) => clauseTokenSet.has(t)).length;
         if (shared / noteTokens.length >= 0.7) {
           return { redundant: true, clauseText: clause };
-        }
-      }
-      if (noteFam.size > 0) {
-        const clauseFam = familyHits(clauseNorm);
-        for (const f of noteFam) {
-          if (clauseFam.has(f)) return { redundant: true, clauseText: clause };
         }
       }
     }

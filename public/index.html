@@ -6822,6 +6822,7 @@
 
       <!-- Footer with save/cancel (visible on Profile and AI tabs) -->
       <div class="settings-footer" id="settingsFooter">
+        <span id="profileSaveStatus" style="font-size:0.8rem;margin-inline-end:auto;"></span>
         <button class="btn-primary" id="profileSaveBtn">שמור</button>
         <button class="btn-secondary" id="profileCancelBtn">ביטול</button>
       </div>
@@ -11448,6 +11449,8 @@
     const profileCancelBtn = document.getElementById('profileCancelBtn');
     const profileLogo      = document.getElementById('profileLogo');
     const profileLogoStatus = document.getElementById('profileLogoStatus');
+    const profileSaveStatus = document.getElementById('profileSaveStatus');
+    let logoUploadPromise = null;
 
     const fields = ['profileName', 'profileNameEn', 'profileCompany', 'profileTitle', 'profileEmail', 'profileWebsite', 'profilePhone'];
     const fieldMap = {
@@ -11579,6 +11582,12 @@
     profileCancelBtn.addEventListener('click', closeSettings);
     settingsOverlay.addEventListener('click', (e) => { if (e.target === settingsOverlay) closeSettings(); });
 
+    function setSaveStatus(msg, color) {
+      if (!profileSaveStatus) return;
+      profileSaveStatus.textContent = msg || '';
+      profileSaveStatus.style.color = color || 'var(--text-muted)';
+    }
+
     profileSaveBtn.addEventListener('click', async () => {
       const data = {};
       fields.forEach(id => { data[fieldMap[id]] = document.getElementById(id).value; });
@@ -11591,8 +11600,18 @@
       data.aiModel = aiModelEl.value;
       data.aiApiKey = aiApiKeyEl.value;
       data.useClaudeOAuth = currentProfile.useClaudeOAuth || false;
+      // Preserve a just-uploaded logo so the save never drops it
+      data.logoPath = currentProfile.logoPath || '';
 
+      profileSaveBtn.disabled = true;
+      setSaveStatus('שומר…', 'var(--text-muted)');
       try {
+        // Wait for any in-flight logo upload so we send the final logoPath
+        if (logoUploadPromise) {
+          try { await logoUploadPromise; } catch {}
+          data.logoPath = currentProfile.logoPath || '';
+        }
+
         const res = await fetch('/api/user-profile', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -11603,10 +11622,20 @@
           currentProfile = result.profile;
           if (currentProfile.name) localStorage.setItem('ownerName', currentProfile.name);
           updateHeaderFromProfile();
-          closeSettings();
           if (window._renderDashboard) window._renderDashboard();
+          setSaveStatus('נשמר ✓', '#4ade80');
+          if (typeof showRecommendToast === 'function') showRecommendToast('הפרופיל נשמר ✓');
+          setTimeout(() => { setSaveStatus(''); closeSettings(); }, 700);
+        } else {
+          const errBody = await res.json().catch(() => ({}));
+          setSaveStatus('שמירה נכשלה: ' + (errBody.error || ('שגיאה ' + res.status)), '#f87171');
         }
-      } catch (err) { console.error('Failed to save profile:', err); }
+      } catch (err) {
+        console.error('Failed to save profile:', err);
+        setSaveStatus('שמירה נכשלה — בדוק שהשרת פועל', '#f87171');
+      } finally {
+        profileSaveBtn.disabled = false;
+      }
     });
 
     document.getElementById('testAiConnection').addEventListener('click', async () => {
@@ -11632,22 +11661,29 @@
       }
     });
 
-    profileLogo.addEventListener('change', async () => {
+    profileLogo.addEventListener('change', () => {
       const file = profileLogo.files[0];
       if (!file) return;
       const formData = new FormData();
       formData.append('logo', file);
-      try {
-        profileLogoStatus.textContent = 'מעלה...';
-        const res = await fetch('/api/user-profile/logo', { method: 'POST', body: formData });
-        if (res.ok) {
-          const result = await res.json();
-          currentProfile.logoPath = result.logoPath;
-          profileLogoStatus.textContent = result.logoPath;
-        } else {
-          profileLogoStatus.textContent = 'שגיאה';
+      profileLogoStatus.textContent = 'מעלה...';
+      logoUploadPromise = (async () => {
+        try {
+          const res = await fetch('/api/user-profile/logo', { method: 'POST', body: formData });
+          if (res.ok) {
+            const result = await res.json();
+            currentProfile.logoPath = result.logoPath;
+            profileLogoStatus.textContent = result.logoPath;
+          } else {
+            const errBody = await res.json().catch(() => ({}));
+            profileLogoStatus.textContent = 'שגיאה: ' + (errBody.error || res.status);
+          }
+        } catch (err) {
+          profileLogoStatus.textContent = 'שגיאה: ' + (err.message || 'נכשל');
+        } finally {
+          logoUploadPromise = null;
         }
-      } catch { profileLogoStatus.textContent = 'שגיאה'; }
+      })();
     });
 
     function updateHeaderFromProfile() {
