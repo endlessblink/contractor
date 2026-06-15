@@ -3151,14 +3151,15 @@
     .bulk-cancel-btn:hover { border-color: var(--accent-border); color: var(--text-primary); }
 
     /* ── Context Menu ── */
+    /* Context menu — dashboard anchor (warm light popover, forest accents) */
     .ctx-menu {
       position: fixed; z-index: 10000; direction: rtl;
-      background: var(--elevated-bg, rgba(30,32,40,0.95));
-      border: 1px solid var(--border); border-radius: 10px;
+      background: rgba(255,255,253,0.98);
+      border: 1px solid rgba(51,61,70,0.14); border-radius: 14px;
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 18px 44px rgba(38,48,58,0.18), 0 2px 8px rgba(38,48,58,0.10);
       min-width: 180px; max-width: 220px; overflow: hidden;
-      padding: 4px 0;
+      padding: 5px;
       animation: ctxMenuIn 120ms ease;
     }
     @keyframes ctxMenuIn {
@@ -3166,15 +3167,15 @@
       to   { opacity: 1; transform: scale(1); }
     }
     .ctx-menu-item {
-      padding: 8px 16px; cursor: pointer; font-size: 0.85rem;
+      padding: 9px 14px; cursor: pointer; font-size: 0.85rem;
       direction: rtl; display: flex; align-items: center; gap: 8px;
-      color: var(--text-primary); transition: background 100ms;
+      color: #1c2531; transition: background 100ms; border-radius: 9px;
       white-space: nowrap;
     }
-    .ctx-menu-item:hover { background: var(--accent-subtle-hover, rgba(99,102,241,0.1)); }
-    .ctx-menu-item.danger { color: #f87171; }
-    .ctx-menu-item.danger:hover { color: #f87171; background: rgba(248,113,113,0.1); }
-    .ctx-menu-separator { border-top: 1px solid var(--border); margin: 4px 0; }
+    .ctx-menu-item:hover { background: rgba(18,63,55,0.08); }
+    .ctx-menu-item.danger { color: #c0392b; }
+    .ctx-menu-item.danger:hover { color: #c0392b; background: rgba(192,57,43,0.08); }
+    .ctx-menu-separator { border-top: 1px solid rgba(51,61,70,0.12); margin: 4px 6px; }
 
     /* ── Nav Sidebar (document view) ── */
     .nav-sidebar {
@@ -4690,6 +4691,12 @@
       color: var(--workspace-accent);
       background: linear-gradient(145deg, var(--workspace-accent-soft), #f7fbf9);
       border: 1px solid rgba(18, 63, 55, 0.10);
+    }
+    .client-mgmt-projects {
+      color: #15573f !important;
+      background: #eaf4ef !important;
+      border: 1px solid rgba(18, 63, 55, 0.16) !important;
+      border-radius: 999px !important;
     }
 
     .hub-action-btn,
