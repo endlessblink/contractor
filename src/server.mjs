@@ -34,7 +34,7 @@ import { generateDocument } from './generate-quote.mjs';
 import mammoth from 'mammoth';
 import { exec, execSync } from 'child_process';
 import { createRequire } from 'module';
-import { chatCompletion, chatCompletionStream, parseSSEStream, getProviderConfig } from './ai-provider.mjs';
+import { chatCompletion, chatCompletionStream, parseSSEStream, getProviderConfig, buildAttempts } from './ai-provider.mjs';
 import { IS_PKG, USER_DATA_DIR, APP_DIR, SNAPSHOT_DIR, initUserDataDir, resolveData, resolveAsset } from './app-paths.mjs';
 import { CURRENT_VERSION, checkForUpdate, checkUpdateAvailable, downloadAndInstall } from './updater.mjs';
 import { buildRuntimeSkillsPromptSection, initRuntimeSkills, loadRuntimeSkill, loadRuntimeSkills, saveRuntimeSkill, USER_SKILLS_DIR } from './runtime-skills.mjs';
@@ -3102,8 +3102,12 @@ ${clauseList.join('\n')}
 
     res.json({ recommendations });
   } catch (err) {
-    console.error('[recommend-clauses] error:', err.message);
-    res.status(500).json({ error: err.message });
+    // Smart recommendations are a best-effort enhancement. If the AI provider
+    // is unavailable (no credits, rate-limited, misconfigured), degrade
+    // gracefully — the clause selector still works with manual + required
+    // selection. Returning 200 with empty recommendations avoids a console 500.
+    console.error('[recommend-clauses] AI unavailable, returning empty recommendations:', err.message);
+    res.json({ recommendations: {}, aiUnavailable: true, reason: err.message.slice(0, 200) });
   }
 });
 
@@ -3432,15 +3436,17 @@ app.get('/api/claude-code-status', (req, res) => {
 app.get('/api/ai-status', async (req, res) => {
   try {
     const config = getProviderConfig();
+    // Fallback chain (file reads only — no API calls)
+    const fallbackChain = buildAttempts().map(a => a.label);
     if (!config.configured) {
-      return res.json({ configured: false, provider: config.provider, model: config.model });
+      return res.json({ configured: false, provider: config.provider, model: config.model, fallbackChain });
     }
-    // Actually test the API connection with a minimal request
+    // Actually test the API connection with a minimal request (uses the chain)
     try {
       await chatCompletion({ system: 'Reply with just OK', messages: [{ role: 'user', content: 'test' }], maxTokens: 5 });
-      res.json({ configured: true, provider: config.provider, model: config.model, useClaudeOAuth: config.useClaudeOAuth });
+      res.json({ configured: true, provider: config.provider, model: config.model, useClaudeOAuth: config.useClaudeOAuth, fallbackChain });
     } catch (apiErr) {
-      res.json({ configured: true, provider: config.provider, model: config.model, connectionError: apiErr.message });
+      res.json({ configured: true, provider: config.provider, model: config.model, connectionError: apiErr.message, fallbackChain });
     }
   } catch (err) {
     res.json({ configured: false, error: err.message });
