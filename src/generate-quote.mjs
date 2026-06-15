@@ -34,7 +34,7 @@ const DEFAULT_LOGO_PATH = path.join(PROJECT_DIR, "assets", "logo.png");
 
 // Read intrinsic pixel dimensions from a PNG or JPEG buffer (no deps).
 // Returns { width, height } or null if it can't be parsed.
-function readImageSize(buf) {
+export function readImageSize(buf) {
   if (!buf || buf.length < 24) return null;
   // PNG: 8-byte signature, then IHDR with width@16 / height@20 (big-endian)
   if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
@@ -58,7 +58,7 @@ function readImageSize(buf) {
 }
 
 // Scale image dimensions to fit within a square box while preserving aspect ratio.
-function fitLogo(buf, box) {
+export function fitLogo(buf, box) {
   const size = readImageSize(buf);
   if (!size || !size.width || !size.height) return { width: box, height: box };
   const scale = Math.min(box / size.width, box / size.height);
