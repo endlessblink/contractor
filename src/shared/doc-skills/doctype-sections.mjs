@@ -7,7 +7,8 @@
  *
  * Current rules:
  * - Signature section: only for contracts and work orders, not quotes
- * - Contract clauses (obligations, IP, termination): only for contracts/work orders
+ *
+ * (Clause sections are gated by appliesTo in the clause resolver, not here.)
  */
 
 /** @type {import('./registry.mjs').DocSkill} */
@@ -27,10 +28,6 @@ export const doctypeSectionsSkill = {
 
     // Signature: only for contracts and work orders
     data._sectionFlags.showSignature = (docType === 'contract' || docType === 'workOrder');
-
-    // Contract-specific clause sections
-    const isContractLike = (docType === 'contract' || docType === 'workOrder');
-    data._sectionFlags.showContractClauses = isContractLike;
 
     if (data._sectionFlags.showSignature === false) {
       ctx.logs.push(`[doctype-sections] Hiding signature for docType="${docType}"`);

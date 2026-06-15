@@ -344,6 +344,10 @@ function renderCvPreviewHTML(data) {
  * @returns {string} Complete HTML string for preview
  */
 export function renderPreviewHTML(data, options = {}) {
+  // Attach clauses DB so the dedupe-notes skill can reconcile notes against
+  // clauses (same as generateDocument), keeping preview consistent with output.
+  if (options.clausesDb) data._clausesDb = options.clausesDb;
+
   // Run doc-skills pipeline (mutates data in-place)
   processDocData(data);
 
@@ -559,16 +563,13 @@ export function renderPreviewHTML(data, options = {}) {
       parts.push('</tr></table>');
     }
 
-    // Contract-specific payment clauses
-    if ((documentType === 'contract' || documentType === 'workOrder') && clausesDb) {
+    // Payment clauses for any doc type (filtered by appliesTo). Notes are
+    // reconciled against clauses upstream, so no per-clause dedup hack here.
+    if (clausesDb) {
       const paymentClauses = getClauseTexts('paymentTerms');
       if (paymentClauses.length > 0) {
         parts.push('<ul class="doc-dash-list">');
-        paymentClauses.forEach(text => {
-          if (!text.includes('אינו כולל מע"מ') || !generalNotes.includes('מע"מ')) {
-            parts.push(`<li>${esc(text)}</li>`);
-          }
-        });
+        paymentClauses.forEach(text => parts.push(`<li>${esc(text)}</li>`));
         parts.push('</ul>');
       }
     }
@@ -593,52 +594,53 @@ export function renderPreviewHTML(data, options = {}) {
     parts.push('</ul></div>');
   }
 
-  // Contract/Work Order specific clause sections
-  if (documentType === 'contract' || documentType === 'workOrder') {
-    const clauseSections = [
-      { key: 'clientObligations', title: 'התחייבויות הלקוח', style: 'dash' },
-      { key: 'earlyTermination', title: 'הפסקת עבודה מוקדמת', style: 'dash' },
-      { key: 'revisions', title: 'תיקונים והערות', style: 'dash' },
-      { key: 'deliveryProcess', title: 'תהליך סיום ומסירה', style: 'dash' },
-      { key: 'intellectualProperty', title: 'קניין רוחני, רישוי ואחריות', style: 'paragraph' },
-      { key: 'aiDisclaimers', title: 'הצהרות לקוח (AI גנרטיבי)', style: 'paragraph' },
-      { key: 'warrantyAndCompletion', title: 'הגדרת "סיום" ותקופת אחריות', style: 'paragraph' },
-      { key: 'commercialResponsibility', title: 'אחריות לשימוש מסחרי', style: 'paragraph' },
-      { key: 'confidentiality', title: 'סודיות', style: 'paragraph' },
-      { key: 'projectTermination', title: 'סיום הפרויקט', style: 'dash' },
-      { key: 'generalTerms', title: 'תנאים כלליים', style: 'paragraph' },
-    ];
+  // Legal / terms clause sections — each renders iff its category yields
+  // clauses for the current doc type (getClauseTexts filters by appliesTo).
+  const clauseSections = [
+    { key: 'clientObligations', title: 'התחייבויות הלקוח', style: 'dash' },
+    { key: 'earlyTermination', title: 'הפסקת עבודה מוקדמת', style: 'dash' },
+    { key: 'revisions', title: 'תיקונים והערות', style: 'dash' },
+    { key: 'deliveryProcess', title: 'תהליך סיום ומסירה', style: 'dash' },
+    { key: 'intellectualProperty', title: 'קניין רוחני, רישוי ואחריות', style: 'paragraph' },
+    { key: 'aiDisclaimers', title: 'הצהרות לקוח (AI גנרטיבי)', style: 'paragraph' },
+    { key: 'warrantyAndCompletion', title: 'הגדרת "סיום" ותקופת אחריות', style: 'paragraph' },
+    { key: 'commercialResponsibility', title: 'אחריות לשימוש מסחרי', style: 'paragraph' },
+    { key: 'confidentiality', title: 'סודיות', style: 'paragraph' },
+    { key: 'projectTermination', title: 'סיום הפרויקט', style: 'dash' },
+    { key: 'generalTerms', title: 'תנאים כלליים', style: 'paragraph' },
+  ];
 
-    for (const section of clauseSections) {
-      const clauseTexts = getClauseTexts(section.key);
-      if (clauseTexts.length > 0) {
-        parts.push('<div class="doc-section">');
-        parts.push(`<h2 class="doc-section-header">${esc(section.title)}</h2>`);
-        if (section.style === 'dash') {
-          parts.push('<ul class="doc-dash-list">');
-          clauseTexts.forEach(text => parts.push(`<li>${esc(text)}</li>`));
-          parts.push('</ul>');
-        } else {
-          clauseTexts.forEach(text => parts.push(`<p class="doc-paragraph">${esc(text)}</p>`));
-        }
-        parts.push('</div>');
+  for (const section of clauseSections) {
+    const clauseTexts = getClauseTexts(section.key);
+    if (clauseTexts.length > 0) {
+      parts.push('<div class="doc-section">');
+      parts.push(`<h2 class="doc-section-header">${esc(section.title)}</h2>`);
+      if (section.style === 'dash') {
+        parts.push('<ul class="doc-dash-list">');
+        clauseTexts.forEach(text => parts.push(`<li>${esc(text)}</li>`));
+        parts.push('</ul>');
+      } else {
+        clauseTexts.forEach(text => parts.push(`<p class="doc-paragraph">${esc(text)}</p>`));
       }
+      parts.push('</div>');
     }
   }
 
-  // General notes
+  // General notes (project-specific remarks only — skip header if empty)
   if (generalNotes) {
-    parts.push('<div class="doc-section">');
-    parts.push('<h2 class="doc-section-header">הערות כלליות</h2>');
     let noteLines = generalNotes.split('\n').filter(l => l.trim());
     if (noteLines.length === 1 && noteLines[0].includes('. ')) {
       noteLines = noteLines[0].split(/\.\s+/).filter(l => l.trim()).map(l => l.endsWith('.') ? l : l + '.');
     }
-    parts.push('<ul class="doc-dash-list">');
-    for (const line of noteLines) {
-      parts.push(`<li>${esc(line.replace(/^[•\-]\s*/, ''))}</li>`);
+    if (noteLines.length > 0) {
+      parts.push('<div class="doc-section">');
+      parts.push('<h2 class="doc-section-header">הערות כלליות</h2>');
+      parts.push('<ul class="doc-dash-list">');
+      for (const line of noteLines) {
+        parts.push(`<li>${esc(line.replace(/^[•\-]\s*/, ''))}</li>`);
+      }
+      parts.push('</ul></div>');
     }
-    parts.push('</ul></div>');
   }
 
   // Signature (contracts/work orders only)

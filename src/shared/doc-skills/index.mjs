@@ -13,6 +13,7 @@ import { splitSentencesSkill } from './split-sentences.mjs';
 import { filterMetaTextSkill } from './filter-meta-text.mjs';
 import { logTransformsSkill } from './log-transforms.mjs';
 import { doctypeSectionsSkill } from './doctype-sections.mjs';
+import { dedupeNotesSkill } from './dedupe-notes.mjs';
 
 // Register skills in execution order
 clearSkills();
@@ -21,7 +22,8 @@ registerSkill(stripOptionPrefixSkill);
 registerSkill(filterMetaTextSkill);  // filter before split so meta lines don't get split
 registerSkill(splitSentencesSkill);
 registerSkill(doctypeSectionsSkill);
-registerSkill(logTransformsSkill);
+registerSkill(dedupeNotesSkill);  // reconcile notes against clauses (clauses = source of truth)
+registerSkill(logTransformsSkill);  // log last so it records dedupe-notes strips
 
 /**
  * Process document data through the doc-skills pipeline.

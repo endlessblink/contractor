@@ -9066,8 +9066,26 @@
       // Switch to chat tab
       switchTab('chat');
 
+      // Run deterministic, code-level validation first so the bot's review is
+      // grounded in concrete findings rather than only its own reasoning.
+      let autoChecks = '';
+      try {
+        const vres = await fetch('/api/validate-form', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ formContext: getFormState() }),
+        });
+        if (vres.ok) {
+          const { errors = [], warnings = [] } = await vres.json();
+          const lines = [...errors, ...warnings].map(w => '- ' + (w.he || w.code));
+          if (lines.length > 0) {
+            autoChecks = '\n\n## תוצאות בדיקה אוטומטית (קוד, לא משוער)\nטפל בכל אחת מהבעיות הבאות ב-FORM_UPDATE:\n' + lines.join('\n');
+          }
+        }
+      } catch { /* validation is best-effort; bot still reviews */ }
+
       // Build the review message
-      const reviewMsg = 'בדוק את הטופס לפני יצירת מסמך. דווח על:\n1. שדות חסרים או חובה\n2. סעיפים שנבחרו שלא רלוונטיים או סעיפים חסרים שכדאי להוסיף\n3. בעיות תמחור (מחיר נמוך/גבוה מדי, פריטים חסרים)\n4. בעיות בעברית (שגיאות, ניסוח לא מקצועי)\n\nחשוב: בסוף התשובה, חובה לכלול בלוק <!--FORM_UPDATE:{"actions":[...]}-->  עם כל התיקונים המומלצים כדי שאוכל ללחוץ "החל תיקונים" ולהחיל אותם ישירות.\nאל תכתוב מסמך — רק דווח על בעיות + FORM_UPDATE.';
+      const reviewMsg = 'בדוק את הטופס לפני יצירת מסמך. דווח על:\n1. שדות חסרים או חובה\n2. סעיפים שנבחרו שלא רלוונטיים או סעיפים חסרים שכדאי להוסיף\n3. בעיות תמחור (מחיר נמוך/גבוה מדי, פריטים חסרים)\n4. בעיות בעברית (שגיאות, ניסוח לא מקצועי)\n\nחשוב: בסוף התשובה, חובה לכלול בלוק <!--FORM_UPDATE:{"actions":[...]}-->  עם כל התיקונים המומלצים כדי שאוכל ללחוץ "החל תיקונים" ולהחיל אותם ישירות.\nאל תכתוב מסמך — רק דווח על בעיות + FORM_UPDATE.' + autoChecks;
 
       // Wait a tick for tab switch to render, then inject into input and send
       await new Promise(r => setTimeout(r, 50));

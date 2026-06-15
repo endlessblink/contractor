@@ -267,10 +267,147 @@ var DocPreview = (() => {
       const docType = data.documentType || "quote";
       if (!data._sectionFlags) data._sectionFlags = {};
       data._sectionFlags.showSignature = docType === "contract" || docType === "workOrder";
-      const isContractLike = docType === "contract" || docType === "workOrder";
-      data._sectionFlags.showContractClauses = isContractLike;
       if (data._sectionFlags.showSignature === false) {
         ctx.logs.push(`[doctype-sections] Hiding signature for docType="${docType}"`);
+      }
+      return ctx;
+    }
+  };
+
+  // src/shared/clause-resolver.mjs
+  function resolveDocTypeKey(documentType) {
+    return documentType === "quote" ? "quote" : documentType === "contract" ? "contract" : documentType === "cv" ? "cv" : "workOrder";
+  }
+  function resolveClauses(clausesDb, opts = {}) {
+    const result = {};
+    if (!clausesDb || !clausesDb.clauses) return result;
+    const {
+      documentType = "quote",
+      serviceType = "",
+      selectedClauses = null,
+      clauseEdits = {},
+      language = "he"
+    } = opts;
+    const docTypeKey = resolveDocTypeKey(documentType);
+    let relevantClauseIds = null;
+    if (serviceType && clausesDb.serviceTemplates) {
+      const template = clausesDb.serviceTemplates.find((t) => t.type === serviceType);
+      if (template && template.relevantClauses) {
+        relevantClauseIds = new Set(template.relevantClauses);
+      }
+    }
+    const hasSelection = Array.isArray(selectedClauses) && selectedClauses.length > 0;
+    for (const categoryKey of Object.keys(clausesDb.clauses)) {
+      const category = clausesDb.clauses[categoryKey];
+      if (!category || !Array.isArray(category.clauses)) continue;
+      result[categoryKey] = category.clauses.filter((c) => {
+        if (!c.appliesTo || !c.appliesTo.includes(docTypeKey)) return false;
+        if (hasSelection) return selectedClauses.includes(c.id);
+        if (relevantClauseIds) return relevantClauseIds.has(c.id) || c.required;
+        return true;
+      }).map((c) => {
+        const raw = clauseEdits[c.id] || c.text;
+        const text = typeof raw === "object" ? raw[language] || raw.he || raw.en || "" : raw;
+        return { id: c.id, text, required: !!c.required, appliesTo: c.appliesTo || [] };
+      });
+    }
+    return result;
+  }
+
+  // src/shared/form-validation.mjs
+  function normalizeText(s) {
+    return String(s || "").replace(/^[•‣⁃◦•·‣\-–—]\s*/, "").toLowerCase().replace(/["'״׳“”‟"'`.,;:!?()\[\]{}־–—\-]/g, " ").replace(/\s+/g, " ").trim();
+  }
+  function tokens(s) {
+    return normalizeText(s).split(" ").filter((w) => w.length >= 2);
+  }
+  var SIGNATURE_FAMILIES = [
+    ['\u05DE\u05E2"\u05DE', "\u05DE\u05E2\u05DE", "\u05DE\u05E2 \u05DE"],
+    // VAT
+    ["\u05EA\u05D5\u05E7\u05E3", "\u05D1\u05EA\u05D5\u05E7\u05E3"],
+    // quote validity
+    ["\u05DE\u05E7\u05D3\u05DE\u05D4"],
+    // advance payment
+    ["\u05D7\u05E9\u05D1\u05D5\u05E0\u05D9\u05EA"]
+    // invoicing
+  ];
+  function familyHits(norm) {
+    const hits = /* @__PURE__ */ new Set();
+    SIGNATURE_FAMILIES.forEach((fam, i) => {
+      if (fam.some((tok) => norm.includes(normalizeText(tok)))) hits.add(i);
+    });
+    return hits;
+  }
+  function noteMatchesClause(noteLine, clauseTexts) {
+    const noteNorm = normalizeText(noteLine);
+    if (!noteNorm) return { redundant: false, clauseText: null };
+    const noteTokens = tokens(noteLine);
+    const noteFam = familyHits(noteNorm);
+    for (const clause of clauseTexts) {
+      const clauseNorm = normalizeText(clause);
+      if (!clauseNorm) continue;
+      if (noteNorm.length >= 8 && (clauseNorm.includes(noteNorm) || noteNorm.includes(clauseNorm))) {
+        return { redundant: true, clauseText: clause };
+      }
+      if (noteTokens.length >= 3) {
+        const clauseTokenSet = new Set(tokens(clause));
+        const shared = noteTokens.filter((t) => clauseTokenSet.has(t)).length;
+        if (shared / noteTokens.length >= 0.7) {
+          return { redundant: true, clauseText: clause };
+        }
+      }
+      if (noteFam.size > 0) {
+        const clauseFam = familyHits(clauseNorm);
+        for (const f of noteFam) {
+          if (clauseFam.has(f)) return { redundant: true, clauseText: clause };
+        }
+      }
+    }
+    return { redundant: false, clauseText: null };
+  }
+  function findRedundantNotes(noteLines, clauseTexts) {
+    const kept = [];
+    const redundant = [];
+    for (const line of noteLines) {
+      if (!line || !line.trim()) continue;
+      const m = noteMatchesClause(line, clauseTexts);
+      if (m.redundant) redundant.push({ line, clauseText: m.clauseText });
+      else kept.push(line);
+    }
+    return { kept, redundant };
+  }
+  function allClauseTexts(resolved) {
+    const out = [];
+    for (const key of Object.keys(resolved || {})) {
+      for (const c of resolved[key]) if (c.text) out.push(c.text);
+    }
+    return out;
+  }
+
+  // src/shared/doc-skills/dedupe-notes.mjs
+  var dedupeNotesSkill = {
+    name: "dedupe-notes",
+    stage: "transform",
+    failMode: "graceful",
+    run(ctx) {
+      const data = ctx.data;
+      if (!data || !data.generalNotes || !data._clausesDb) return ctx;
+      if (data.documentType === "cv") return ctx;
+      const resolved = resolveClauses(data._clausesDb, {
+        documentType: data.documentType || "quote",
+        serviceType: data.serviceType || "",
+        selectedClauses: data.selectedClauses || null,
+        clauseEdits: data.clauseEdits || {},
+        language: data.userProfile && data.userProfile.language || data.language || "he"
+      });
+      const clauseTexts = allClauseTexts(resolved);
+      if (clauseTexts.length === 0) return ctx;
+      const noteLines = data.generalNotes.split("\n").filter((l) => l.trim());
+      const { kept, redundant } = findRedundantNotes(noteLines, clauseTexts);
+      if (redundant.length > 0) {
+        data.generalNotes = kept.join("\n");
+        data._notesWarnings = redundant.map((r) => r.line.trim());
+        ctx.logs.push(`[dedupe-notes] stripped ${redundant.length} note line(s) duplicating clauses`);
       }
       return ctx;
     }
@@ -283,6 +420,7 @@ var DocPreview = (() => {
   registerSkill(filterMetaTextSkill);
   registerSkill(splitSentencesSkill);
   registerSkill(doctypeSectionsSkill);
+  registerSkill(dedupeNotesSkill);
   registerSkill(logTransformsSkill);
   function processDocData(data) {
     const ctx = createDocContext(data);
@@ -596,6 +734,7 @@ var DocPreview = (() => {
     return parts.join("\n");
   }
   function renderPreviewHTML(data, options = {}) {
+    if (options.clausesDb) data._clausesDb = options.clausesDb;
     processDocData(data);
     const {
       clientName = "",
@@ -758,15 +897,11 @@ var DocPreview = (() => {
         }
         parts.push("</tr></table>");
       }
-      if ((documentType === "contract" || documentType === "workOrder") && clausesDb) {
+      if (clausesDb) {
         const paymentClauses = getClauseTexts("paymentTerms");
         if (paymentClauses.length > 0) {
           parts.push('<ul class="doc-dash-list">');
-          paymentClauses.forEach((text) => {
-            if (!text.includes('\u05D0\u05D9\u05E0\u05D5 \u05DB\u05D5\u05DC\u05DC \u05DE\u05E2"\u05DE') || !generalNotes.includes('\u05DE\u05E2"\u05DE')) {
-              parts.push(`<li>${esc(text)}</li>`);
-            }
-          });
+          paymentClauses.forEach((text) => parts.push(`<li>${esc(text)}</li>`));
           parts.push("</ul>");
         }
       }
@@ -786,48 +921,48 @@ var DocPreview = (() => {
       }
       parts.push("</ul></div>");
     }
-    if (documentType === "contract" || documentType === "workOrder") {
-      const clauseSections = [
-        { key: "clientObligations", title: "\u05D4\u05EA\u05D7\u05D9\u05D9\u05D1\u05D5\u05D9\u05D5\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7", style: "dash" },
-        { key: "earlyTermination", title: "\u05D4\u05E4\u05E1\u05E7\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4 \u05DE\u05D5\u05E7\u05D3\u05DE\u05EA", style: "dash" },
-        { key: "revisions", title: "\u05EA\u05D9\u05E7\u05D5\u05E0\u05D9\u05DD \u05D5\u05D4\u05E2\u05E8\u05D5\u05EA", style: "dash" },
-        { key: "deliveryProcess", title: "\u05EA\u05D4\u05DC\u05D9\u05DA \u05E1\u05D9\u05D5\u05DD \u05D5\u05DE\u05E1\u05D9\u05E8\u05D4", style: "dash" },
-        { key: "intellectualProperty", title: "\u05E7\u05E0\u05D9\u05D9\u05DF \u05E8\u05D5\u05D7\u05E0\u05D9, \u05E8\u05D9\u05E9\u05D5\u05D9 \u05D5\u05D0\u05D7\u05E8\u05D9\u05D5\u05EA", style: "paragraph" },
-        { key: "aiDisclaimers", title: "\u05D4\u05E6\u05D4\u05E8\u05D5\u05EA \u05DC\u05E7\u05D5\u05D7 (AI \u05D2\u05E0\u05E8\u05D8\u05D9\u05D1\u05D9)", style: "paragraph" },
-        { key: "warrantyAndCompletion", title: '\u05D4\u05D2\u05D3\u05E8\u05EA "\u05E1\u05D9\u05D5\u05DD" \u05D5\u05EA\u05E7\u05D5\u05E4\u05EA \u05D0\u05D7\u05E8\u05D9\u05D5\u05EA', style: "paragraph" },
-        { key: "commercialResponsibility", title: "\u05D0\u05D7\u05E8\u05D9\u05D5\u05EA \u05DC\u05E9\u05D9\u05DE\u05D5\u05E9 \u05DE\u05E1\u05D7\u05E8\u05D9", style: "paragraph" },
-        { key: "confidentiality", title: "\u05E1\u05D5\u05D3\u05D9\u05D5\u05EA", style: "paragraph" },
-        { key: "projectTermination", title: "\u05E1\u05D9\u05D5\u05DD \u05D4\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8", style: "dash" },
-        { key: "generalTerms", title: "\u05EA\u05E0\u05D0\u05D9\u05DD \u05DB\u05DC\u05DC\u05D9\u05D9\u05DD", style: "paragraph" }
-      ];
-      for (const section of clauseSections) {
-        const clauseTexts = getClauseTexts(section.key);
-        if (clauseTexts.length > 0) {
-          parts.push('<div class="doc-section">');
-          parts.push(`<h2 class="doc-section-header">${esc(section.title)}</h2>`);
-          if (section.style === "dash") {
-            parts.push('<ul class="doc-dash-list">');
-            clauseTexts.forEach((text) => parts.push(`<li>${esc(text)}</li>`));
-            parts.push("</ul>");
-          } else {
-            clauseTexts.forEach((text) => parts.push(`<p class="doc-paragraph">${esc(text)}</p>`));
-          }
-          parts.push("</div>");
+    const clauseSections = [
+      { key: "clientObligations", title: "\u05D4\u05EA\u05D7\u05D9\u05D9\u05D1\u05D5\u05D9\u05D5\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7", style: "dash" },
+      { key: "earlyTermination", title: "\u05D4\u05E4\u05E1\u05E7\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4 \u05DE\u05D5\u05E7\u05D3\u05DE\u05EA", style: "dash" },
+      { key: "revisions", title: "\u05EA\u05D9\u05E7\u05D5\u05E0\u05D9\u05DD \u05D5\u05D4\u05E2\u05E8\u05D5\u05EA", style: "dash" },
+      { key: "deliveryProcess", title: "\u05EA\u05D4\u05DC\u05D9\u05DA \u05E1\u05D9\u05D5\u05DD \u05D5\u05DE\u05E1\u05D9\u05E8\u05D4", style: "dash" },
+      { key: "intellectualProperty", title: "\u05E7\u05E0\u05D9\u05D9\u05DF \u05E8\u05D5\u05D7\u05E0\u05D9, \u05E8\u05D9\u05E9\u05D5\u05D9 \u05D5\u05D0\u05D7\u05E8\u05D9\u05D5\u05EA", style: "paragraph" },
+      { key: "aiDisclaimers", title: "\u05D4\u05E6\u05D4\u05E8\u05D5\u05EA \u05DC\u05E7\u05D5\u05D7 (AI \u05D2\u05E0\u05E8\u05D8\u05D9\u05D1\u05D9)", style: "paragraph" },
+      { key: "warrantyAndCompletion", title: '\u05D4\u05D2\u05D3\u05E8\u05EA "\u05E1\u05D9\u05D5\u05DD" \u05D5\u05EA\u05E7\u05D5\u05E4\u05EA \u05D0\u05D7\u05E8\u05D9\u05D5\u05EA', style: "paragraph" },
+      { key: "commercialResponsibility", title: "\u05D0\u05D7\u05E8\u05D9\u05D5\u05EA \u05DC\u05E9\u05D9\u05DE\u05D5\u05E9 \u05DE\u05E1\u05D7\u05E8\u05D9", style: "paragraph" },
+      { key: "confidentiality", title: "\u05E1\u05D5\u05D3\u05D9\u05D5\u05EA", style: "paragraph" },
+      { key: "projectTermination", title: "\u05E1\u05D9\u05D5\u05DD \u05D4\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8", style: "dash" },
+      { key: "generalTerms", title: "\u05EA\u05E0\u05D0\u05D9\u05DD \u05DB\u05DC\u05DC\u05D9\u05D9\u05DD", style: "paragraph" }
+    ];
+    for (const section of clauseSections) {
+      const clauseTexts = getClauseTexts(section.key);
+      if (clauseTexts.length > 0) {
+        parts.push('<div class="doc-section">');
+        parts.push(`<h2 class="doc-section-header">${esc(section.title)}</h2>`);
+        if (section.style === "dash") {
+          parts.push('<ul class="doc-dash-list">');
+          clauseTexts.forEach((text) => parts.push(`<li>${esc(text)}</li>`));
+          parts.push("</ul>");
+        } else {
+          clauseTexts.forEach((text) => parts.push(`<p class="doc-paragraph">${esc(text)}</p>`));
         }
+        parts.push("</div>");
       }
     }
     if (generalNotes) {
-      parts.push('<div class="doc-section">');
-      parts.push('<h2 class="doc-section-header">\u05D4\u05E2\u05E8\u05D5\u05EA \u05DB\u05DC\u05DC\u05D9\u05D5\u05EA</h2>');
       let noteLines = generalNotes.split("\n").filter((l) => l.trim());
       if (noteLines.length === 1 && noteLines[0].includes(". ")) {
         noteLines = noteLines[0].split(/\.\s+/).filter((l) => l.trim()).map((l) => l.endsWith(".") ? l : l + ".");
       }
-      parts.push('<ul class="doc-dash-list">');
-      for (const line of noteLines) {
-        parts.push(`<li>${esc(line.replace(/^[•\-]\s*/, ""))}</li>`);
+      if (noteLines.length > 0) {
+        parts.push('<div class="doc-section">');
+        parts.push('<h2 class="doc-section-header">\u05D4\u05E2\u05E8\u05D5\u05EA \u05DB\u05DC\u05DC\u05D9\u05D5\u05EA</h2>');
+        parts.push('<ul class="doc-dash-list">');
+        for (const line of noteLines) {
+          parts.push(`<li>${esc(line.replace(/^[•\-]\s*/, ""))}</li>`);
+        }
+        parts.push("</ul></div>");
       }
-      parts.push("</ul></div>");
     }
     const showSignature = data._sectionFlags?.showSignature !== false ? documentType === "contract" || documentType === "workOrder" : data._sectionFlags.showSignature;
     if (showSignature) {

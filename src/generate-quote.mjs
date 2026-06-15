@@ -22,6 +22,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { IS_PKG, resolveData } from "./app-paths.mjs";
 import { processDocData } from "./shared/doc-skills/index.mjs";
+import { resolveClauses, getCategoryTexts } from "./shared/clause-resolver.mjs";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -222,6 +223,32 @@ function dashParagraph(text) {
   });
 }
 
+/**
+ * Render a clause section: a shaded header followed by its clause texts.
+ * Returns an array of paragraphs (empty if there are no texts, so the header
+ * is never emitted for an empty section).
+ *
+ * @param {string} headerText
+ * @param {string[]} texts
+ * @param {'bullets'|'prose'} [style] - bullets = bulleted list (short clauses);
+ *   prose = justified paragraphs (long-form legal clauses)
+ */
+function clauseBlock(headerText, texts, style = 'bullets') {
+  if (!texts || texts.length === 0) return [];
+  const out = [sectionHeader(headerText)];
+  texts.forEach((text, i) => {
+    if (style === 'prose') {
+      out.push(rtlParagraph([rtlRun(text)], {
+        spacing: { before: i === 0 ? 60 : 0, after: 160 },
+        alignment: AlignmentType.BOTH,
+      }));
+    } else {
+      out.push(dashParagraph(text));
+    }
+  });
+  return out;
+}
+
 function normalizeArray(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
   if (typeof value === 'string' && value.trim()) return value.split('\n').map(v => v.trim()).filter(Boolean);
@@ -408,6 +435,15 @@ async function generateCvDocument(data) {
  * @returns {Promise<Buffer>} DOCX file as a Buffer
  */
 export async function generateDocument(data) {
+  // Load clauses database BEFORE the doc-skills pipeline so skills
+  // (e.g. dedupe-notes) can reconcile notes against the resolved clauses.
+  let clausesDb = null;
+  try {
+    const dbPath = path.join(PROJECT_DIR, 'knowledge', 'clauses-db.json');
+    clausesDb = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+  } catch { /* clauses DB not available */ }
+  data._clausesDb = clausesDb;
+
   // Run doc-skills pipeline to clean/transform data before rendering
   processDocData(data);
 
@@ -434,46 +470,14 @@ export async function generateDocument(data) {
 
   const language = userProfile.language || 'he';
 
-  // Load clauses database for contracts
-  let clausesDb = null;
-  try {
-    const dbPath = path.join(PROJECT_DIR, 'knowledge', 'clauses-db.json');
-    clausesDb = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-  } catch { /* clauses DB not available */ }
+  // clausesDb was loaded at the top of generateDocument (before the doc-skills
+  // pipeline) and attached as data._clausesDb.
 
-  // Find the service template's relevant clause IDs (if serviceType is provided)
-  let relevantClauseIds = null;
-  if (serviceType && clausesDb && clausesDb.serviceTemplates) {
-    const template = clausesDb.serviceTemplates.find(t => t.type === serviceType);
-    if (template && template.relevantClauses) {
-      relevantClauseIds = new Set(template.relevantClauses);
-    }
-  }
-
-  function getClauseTexts(categoryKey) {
-    if (!clausesDb || !clausesDb.clauses || !clausesDb.clauses[categoryKey]) return [];
-    const docTypeKey = documentType === 'quote' ? 'quote' : documentType === 'contract' ? 'contract' : documentType === 'cv' ? 'cv' : 'workOrder';
-    return clausesDb.clauses[categoryKey].clauses
-      .filter(c => {
-        // Must apply to this document type
-        if (!c.appliesTo.includes(docTypeKey)) return false;
-        // If user explicitly selected clauses in the form, use that selection
-        if (selectedClauses && Array.isArray(selectedClauses) && selectedClauses.length > 0) {
-          return selectedClauses.includes(c.id);
-        }
-        // If we have a service template, filter by relevant clauses (but always include required ones)
-        if (relevantClauseIds) {
-          return relevantClauseIds.has(c.id) || c.required;
-        }
-        // No service template — include all clauses for this doc type
-        return true;
-      })
-      .map(c => {
-        const text = clauseEdits[c.id] || c.text;
-        // Support bilingual text: { he: "...", en: "..." }
-        return typeof text === 'object' ? (text[language] || text.he || text.en || '') : text;
-      });
-  }
+  // Resolve the effective clauses once via the shared resolver.
+  const resolvedClauses = resolveClauses(clausesDb, {
+    documentType, serviceType, selectedClauses, clauseEdits, language,
+  });
+  const getClauseTexts = (categoryKey) => getCategoryTexts(resolvedClauses, categoryKey);
 
   const logoPath = userProfile.logoPath
     ? (path.isAbsolute(userProfile.logoPath) ? userProfile.logoPath : path.join(PROJECT_DIR, 'data', userProfile.logoPath))
@@ -792,16 +796,30 @@ export async function generateDocument(data) {
     // Render options as a table
     if (options.length > 0) {
       const optHeaderShading = { type: ShadingType.CLEAR, color: "auto", fill: LIGHT_BLUE };
+      const cellMargins = { top: 80, bottom: 80, left: 120, right: 120 };
       const optRows = [
         new TableRow({
+          tableHeader: true,
           children: [
-            makeCell("אופציה", { bold: true, shading: optHeaderShading, width: { size: 20, type: WidthType.PERCENTAGE } }),
-            makeCell("פירוט", { bold: true, shading: optHeaderShading, width: { size: 80, type: WidthType.PERCENTAGE } }),
+            new TableCell({
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              borders: cellBorders,
+              verticalAlign: VerticalAlign.CENTER,
+              margins: cellMargins,
+              shading: optHeaderShading,
+              children: [rtlParagraph([rtlRun("אופציה", { bold: true, boldComplexScript: true })])],
+            }),
+            new TableCell({
+              width: { size: 80, type: WidthType.PERCENTAGE },
+              borders: cellBorders,
+              verticalAlign: VerticalAlign.CENTER,
+              margins: cellMargins,
+              shading: optHeaderShading,
+              children: [rtlParagraph([rtlRun("פירוט", { bold: true, boldComplexScript: true })])],
+            }),
           ],
         }),
       ];
-
-      const cellMargins = { top: 80, bottom: 80, left: 120, right: 120 };
 
       for (const opt of options) {
         const descParagraphs = [];
@@ -811,17 +829,18 @@ export async function generateDocument(data) {
             { spacing: { after: 100 } }
           ));
         }
-        for (const detail of opt.details) {
+        opt.details.forEach((detail, di) => {
           descParagraphs.push(rtlParagraph(
             [rtlRun(detail)],
-            { spacing: { after: 80 }, numbering: { reference: "bullet-list", level: 0 } }
+            { spacing: { before: di === 0 ? 40 : 0, after: 80 }, numbering: { reference: "bullet-list", level: 0 } }
           ));
-        }
+        });
         if (descParagraphs.length === 0) {
           descParagraphs.push(rtlParagraph([rtlRun('')]));
         }
 
         optRows.push(new TableRow({
+          cantSplit: true,
           children: [
             new TableCell({
               width: { size: 20, type: WidthType.PERCENTAGE },
@@ -845,6 +864,7 @@ export async function generateDocument(data) {
         rows: optRows,
         width: { size: 100, type: WidthType.PERCENTAGE },
         layout: TableLayoutType.FIXED,
+        columnWidths: [2000, 8000],
         visuallyRightToLeft: true,
       }));
     }
@@ -958,14 +978,12 @@ export async function generateDocument(data) {
       // Totals already shown in pricing tables — no duplication needed
     }
 
-    // Add contract-specific payment clauses
-    if ((documentType === 'contract' || documentType === 'workOrder') && clausesDb) {
+    // Add payment clauses for any doc type (filtered by appliesTo in the resolver).
+    // Notes are reconciled against clauses by the dedupe-notes doc-skill, so no
+    // per-clause dedup hack is needed here.
+    if (clausesDb) {
       const paymentClauses = getClauseTexts('paymentTerms');
-      paymentClauses.forEach(text => {
-        if (!text.includes('אינו כולל מע"מ') || !generalNotes.includes('מע"מ')) {
-          bodyChildren.push(dashParagraph(text));
-        }
-      });
+      paymentClauses.forEach(text => bodyChildren.push(dashParagraph(text)));
     }
     const invoiceClauseSelected = selectedClauses && selectedClauses.includes('payment-invoice');
     if (!invoiceClauseSelected) {
@@ -982,96 +1000,38 @@ export async function generateDocument(data) {
     }
   }
 
-  // ── Contract/Work Order specific sections ──
-  if (documentType === 'contract' || documentType === 'workOrder') {
-    // Client obligations section
-    const clientObligations = getClauseTexts('clientObligations');
-    if (clientObligations.length > 0) {
-      bodyChildren.push(sectionHeader('התחייבויות הלקוח'));
-      clientObligations.forEach(text => bodyChildren.push(dashParagraph(text)));
-    }
+  // ── Legal / terms clause sections ──
+  // Each section renders iff its category yields clauses for the current doc
+  // type. getClauseTexts filters by appliesTo, so quotes get their quote-only
+  // clauses (validity, VAT exclusion, …) and contract-only categories stay
+  // hidden on quotes via the empty-array guard inside clauseBlock.
+  // Short-list clauses use bulleted style; long-form legal clauses use prose.
+  bodyChildren.push(...clauseBlock('התחייבויות הלקוח', getClauseTexts('clientObligations'), 'bullets'));
+  bodyChildren.push(...clauseBlock('הפסקת עבודה מוקדמת', getClauseTexts('earlyTermination'), 'bullets'));
+  bodyChildren.push(...clauseBlock('תיקונים והערות', getClauseTexts('revisions'), 'bullets'));
+  bodyChildren.push(...clauseBlock('תהליך סיום ומסירה', getClauseTexts('deliveryProcess'), 'bullets'));
+  bodyChildren.push(...clauseBlock('קניין רוחני, רישוי ואחריות', getClauseTexts('intellectualProperty'), 'prose'));
+  bodyChildren.push(...clauseBlock('הצהרות לקוח (AI גנרטיבי)', getClauseTexts('aiDisclaimers'), 'prose'));
+  bodyChildren.push(...clauseBlock('הגדרת "סיום" ותקופת אחריות', getClauseTexts('warrantyAndCompletion'), 'prose'));
+  bodyChildren.push(...clauseBlock('אחריות לשימוש מסחרי', getClauseTexts('commercialResponsibility'), 'prose'));
+  bodyChildren.push(...clauseBlock('סודיות', getClauseTexts('confidentiality'), 'prose'));
+  bodyChildren.push(...clauseBlock('סיום הפרויקט', getClauseTexts('projectTermination'), 'bullets'));
+  bodyChildren.push(...clauseBlock('תנאים כלליים', getClauseTexts('generalTerms'), 'prose'));
 
-    // Early termination
-    const termination = getClauseTexts('earlyTermination');
-    if (termination.length > 0) {
-      bodyChildren.push(sectionHeader('הפסקת עבודה מוקדמת'));
-      termination.forEach(text => bodyChildren.push(dashParagraph(text)));
-    }
-
-    // Revisions policy
-    const revisions = getClauseTexts('revisions');
-    if (revisions.length > 0) {
-      bodyChildren.push(sectionHeader('תיקונים והערות'));
-      revisions.forEach(text => bodyChildren.push(dashParagraph(text)));
-    }
-
-    // Delivery process
-    const delivery = getClauseTexts('deliveryProcess');
-    if (delivery.length > 0) {
-      bodyChildren.push(sectionHeader('תהליך סיום ומסירה'));
-      delivery.forEach(text => bodyChildren.push(dashParagraph(text)));
-    }
-
-    // IP, licensing & responsibility
-    const ip = getClauseTexts('intellectualProperty');
-    if (ip.length > 0) {
-      bodyChildren.push(sectionHeader('קניין רוחני, רישוי ואחריות'));
-      ip.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
-    }
-
-    // AI disclaimers
-    const aiDisclaimers = getClauseTexts('aiDisclaimers');
-    if (aiDisclaimers.length > 0) {
-      bodyChildren.push(sectionHeader('הצהרות לקוח (AI גנרטיבי)'));
-      aiDisclaimers.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
-    }
-
-    // Warranty & completion
-    const warranty = getClauseTexts('warrantyAndCompletion');
-    if (warranty.length > 0) {
-      bodyChildren.push(sectionHeader('הגדרת "סיום" ותקופת אחריות'));
-      warranty.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
-    }
-
-    // Commercial responsibility
-    const commercial = getClauseTexts('commercialResponsibility');
-    if (commercial.length > 0) {
-      bodyChildren.push(sectionHeader('אחריות לשימוש מסחרי'));
-      commercial.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
-    }
-
-    // Confidentiality
-    const confidentiality = getClauseTexts('confidentiality');
-    if (confidentiality.length > 0) {
-      bodyChildren.push(sectionHeader('סודיות'));
-      confidentiality.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
-    }
-
-    // Project termination
-    const projectTermination = getClauseTexts('projectTermination');
-    if (projectTermination.length > 0) {
-      bodyChildren.push(sectionHeader('סיום הפרויקט'));
-      projectTermination.forEach(text => bodyChildren.push(dashParagraph(text)));
-    }
-
-    // General terms (liability, cancellation, force majeure)
-    const generalTerms = getClauseTexts('generalTerms');
-    if (generalTerms.length > 0) {
-      bodyChildren.push(sectionHeader('תנאים כלליים'));
-      generalTerms.forEach(text => bodyChildren.push(rtlParagraph([rtlRun(text)], { spacing: { after: 160 }, alignment: AlignmentType.BOTH })));
-    }
-  }
-
-  // General notes section
+  // General notes section (project-specific remarks only — legal/terms content
+  // lives in the clause sections; the dedupe-notes skill strips any note line
+  // that duplicates a clause, which can leave notes empty).
   if (generalNotes) {
-    bodyChildren.push(sectionHeader("הערות כלליות"));
     let noteLines = generalNotes.split("\n").filter(l => l.trim());
     // If all notes are on one line, split by period/sentence
     if (noteLines.length === 1 && noteLines[0].includes('. ')) {
       noteLines = noteLines[0].split(/\.\s+/).filter(l => l.trim()).map(l => l.endsWith('.') ? l : l + '.');
     }
-    for (const line of noteLines) {
-      bodyChildren.push(dashParagraph(line.replace(/^[•\-]\s*/, "")));
+    if (noteLines.length > 0) {
+      bodyChildren.push(sectionHeader("הערות כלליות"));
+      for (const line of noteLines) {
+        bodyChildren.push(dashParagraph(line.replace(/^[•\-]\s*/, "")));
+      }
     }
   }
 

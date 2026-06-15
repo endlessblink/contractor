@@ -911,7 +911,8 @@ describe('Doc-skills scenarios', () => {
     });
     assert.strictEqual(result.failed, false, 'Full contract pipeline should not fail');
     assert.strictEqual(result.data._sectionFlags.showSignature, true, 'Contract should have signature');
-    assert.strictEqual(result.data._sectionFlags.showContractClauses, true, 'Contract should show clauses');
+    // Clause sections are now gated by appliesTo in the clause resolver, not by
+    // a _sectionFlags flag — so there is no showContractClauses to assert here.
   });
 
   it('handles empty data gracefully', () => {
