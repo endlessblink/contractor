@@ -206,14 +206,14 @@
 
     /* ── BUTTON TOKEN: Dark mode — universal outline reset ── */
     /* Catches ALL buttons except utility/nav buttons via :not() exclusions */
-    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):not(.add-row-btn):not(.generate-btn):not(.save-form-btn):not(.review-form-btn) {
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):not(.add-row-btn):not(.generate-btn):not(.save-form-btn):not(.review-form-btn):not(.btn-primary) {
       background: var(--btn-accent-bg) !important;
       color: var(--btn-accent-color) !important;
       border: var(--btn-accent-border) !important;
       box-shadow: none !important;
       background-image: none !important;
     }
-    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):not(.add-row-btn):not(.generate-btn):not(.save-form-btn):not(.review-form-btn):hover:not(:disabled) {
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):not(.add-row-btn):not(.generate-btn):not(.save-form-btn):not(.review-form-btn):not(.btn-primary):hover:not(:disabled) {
       background: var(--btn-accent-hover-bg) !important;
       box-shadow: none !important;
     }
@@ -5078,6 +5078,7 @@
     .save-form-btn,
     .review-form-btn,
     .learn-btn,
+    .btn-primary,
     .hub-modal-submit,
     .confirm-ok-btn:not(.danger) {
       color: #f8fbf8 !important;
@@ -5090,6 +5091,7 @@
     .save-form-btn:hover,
     .review-form-btn:hover,
     .learn-btn:hover,
+    .btn-primary:hover,
     .hub-modal-submit:hover,
     .confirm-ok-btn:not(.danger):hover {
       background: #0d493e !important;
@@ -5158,7 +5160,8 @@
     .confirm-modal,
     .project-panel,
     .hub-modal,
-    .template-modal {
+    .template-modal,
+    .analysis-modal {
       color: var(--workspace-ink);
       background:
         radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.76), transparent 26rem),
@@ -5166,6 +5169,36 @@
       border: 1px solid rgba(51, 61, 70, 0.16);
       border-radius: 26px;
       box-shadow: 0 30px 90px rgba(0,0,0,0.28);
+      /* These modals force a LIGHT surface regardless of theme. Remap the full
+         token set (like #view-document) so no dark-theme token leaks in dark
+         mode — labels, inputs, accents, and buttons all render correctly. */
+      --text-primary: #17202b;
+      --text-secondary: #5c6675;
+      --text-muted: #8a93a0;
+      --text-label: #4d5865;
+      --border: rgba(51,61,70,0.14);
+      --border-strong: rgba(51,61,70,0.22);
+      --card-bg: rgba(255,255,253,0.92);
+      --panel-bg: rgba(255,255,253,0.92);
+      --elevated-bg: rgba(247,248,245,0.90);
+      --input-bg: rgba(255,255,253,0.80);
+      --input-bg-focus: rgba(255,255,255,0.95);
+      --input-border: rgba(51,61,70,0.18);
+      --accent: #1f7a5c;
+      --accent-hover: #18684e;
+      --accent-text: #15573f;
+      --accent-subtle: rgba(31,122,92,0.08);
+      --accent-subtle-hover: rgba(31,122,92,0.14);
+      --accent-border: rgba(31,122,92,0.30);
+      --input-focus-border: #1f7a5c;
+      --success-text: #15573f;
+      --section-header-text: #17202b;
+      --section-header-bg: rgba(247,248,245,0.85);
+      /* neutralize the global dark-mode button reset inside light modals */
+      --btn-accent-bg: rgba(255,255,253,0.92);
+      --btn-accent-color: #17202b;
+      --btn-accent-border: 1px solid rgba(51,61,70,0.16);
+      --btn-accent-hover-bg: rgba(247,248,245,0.96);
     }
     .docs-modal-header,
     .settings-header,
