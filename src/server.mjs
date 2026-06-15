@@ -1077,6 +1077,27 @@ app.post('/api/import-markdown', markdownUpload.single('file'), async (req, res)
   }
 });
 
+// JSON sibling of /api/import-markdown — lets external tools / HTTP clients push
+// raw Markdown text (no file upload) and get a structured editable draft back.
+app.post('/api/import-markdown-text', async (req, res) => {
+  try {
+    const { markdown, filename, projectId } = req.body || {};
+    if (typeof markdown !== 'string' || !markdown.trim()) {
+      return res.status(400).json({ error: 'markdown text is required' });
+    }
+    const result = await contractorServices.importMarkdown({
+      markdown,
+      filename: filename || 'import.md',
+      projectId: projectId || undefined,
+      useAiFallback: false,
+    });
+    res.status(201).json(result);
+  } catch (err) {
+    console.error('Markdown text import error:', err);
+    res.status(400).json({ error: err.message || 'Failed to import Markdown' });
+  }
+});
+
 // List ALL reference documents recursively
 app.get('/api/references', (_req, res) => {
   try {

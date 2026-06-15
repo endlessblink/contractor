@@ -49,6 +49,22 @@ The MCP tools list clients and projects, read project drafts, import Markdown,
 update drafts, and explicitly generate DOCX files. Draft writes never generate
 documents automatically.
 
+### Pushing a quote from an external tool
+
+Any connected tool (Claude Code/Desktop, Codex, Antigravity) can generate a
+quote as Markdown and call `contractor_import_markdown` with the Markdown text.
+This creates a structured, editable draft project on disk — no web app or cloud
+call required, and it works even when the GUI is closed. Open Contractor to
+review and edit the draft.
+
+### Importing manually (no MCP)
+
+In the app, the dashboard has an **"ייבא הצעה (Markdown / הדבק טקסט)"** button:
+drop a `.md` file or paste Markdown, and a structured draft opens in the editor.
+HTTP clients can do the same by POSTing JSON to `/api/import-markdown-text`
+(`{ "markdown": "...", "filename": "import.md" }`) or a file to
+`/api/import-markdown`.
+
 ## Features
 
 - **Dashboard** — View project stats, manage clients and documents at a glance

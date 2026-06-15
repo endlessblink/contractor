@@ -5434,6 +5434,7 @@
                   <span>צור מסמך חדש</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                 </button>
+                <button class="dash-action-btn" id="dashImportMd">ייבא הצעה (Markdown / הדבק טקסט)</button>
                 <button class="dash-action-btn" id="dashAddClient">לקוח חדש</button>
                 <button class="dash-action-btn" id="dashAddProject">פרויקט חדש</button>
               </div>
@@ -6450,6 +6451,31 @@
       <div class="hub-modal-footer">
         <button class="hub-modal-submit" id="modalProjectSubmit">שמור</button>
         <button class="hub-modal-cancel" data-close-modal="addProjectModal">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Import Markdown Quote Modal ── -->
+  <div class="hub-modal-overlay" id="importMdModal" style="display:none">
+    <div class="hub-modal">
+      <div class="hub-modal-header">
+        <h3>ייבוא הצעת מחיר</h3>
+        <button class="hub-modal-close" data-close-modal="importMdModal">&times;</button>
+      </div>
+      <div class="hub-modal-body">
+        <div class="hub-field">
+          <label class="hub-field-label">בחר קובץ Markdown (.md)</label>
+          <input type="file" class="hub-field-input" id="importMdFile" accept=".md" dir="rtl" />
+        </div>
+        <div class="hub-field">
+          <label class="hub-field-label">או הדבק טקסט Markdown</label>
+          <textarea class="hub-field-input" id="importMdText" dir="rtl" rows="10" placeholder="# הצעת מחיר ..." style="resize:vertical;font-family:monospace"></textarea>
+        </div>
+        <div class="doc-error" id="importMdError" style="display:none"></div>
+      </div>
+      <div class="hub-modal-footer">
+        <button class="hub-modal-submit" id="importMdSubmit">צור טיוטה</button>
+        <button class="hub-modal-cancel" data-close-modal="importMdModal">ביטול</button>
       </div>
     </div>
   </div>
@@ -13239,6 +13265,58 @@
       openModal('addProjectModal');
       setTimeout(function() { document.getElementById('modalProjectName').focus(); }, 100);
     }
+    function openImportMdModal() {
+      var fileEl = document.getElementById('importMdFile');
+      var textEl = document.getElementById('importMdText');
+      var errEl = document.getElementById('importMdError');
+      if (fileEl) fileEl.value = '';
+      if (textEl) textEl.value = '';
+      if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+      openModal('importMdModal');
+      setTimeout(function() { if (textEl) textEl.focus(); }, 100);
+    }
+    async function submitImportMd() {
+      var fileEl = document.getElementById('importMdFile');
+      var textEl = document.getElementById('importMdText');
+      var errEl = document.getElementById('importMdError');
+      var btn = document.getElementById('importMdSubmit');
+      function showErr(msg) { if (errEl) { errEl.textContent = msg; errEl.style.display = 'flex'; } }
+      var file = fileEl && fileEl.files && fileEl.files[0];
+      var text = textEl ? textEl.value.trim() : '';
+      if (!file && !text) { showErr('בחר קובץ Markdown או הדבק טקסט.'); return; }
+      if (btn) { btn.disabled = true; btn.textContent = 'מייבא...'; }
+      try {
+        var imported;
+        if (file) {
+          var fd = new FormData();
+          fd.append('file', file);
+          var r1 = await fetch('/api/import-markdown', { method: 'POST', body: fd });
+          imported = await r1.json();
+          if (!r1.ok) throw new Error(imported.error || 'הייבוא נכשל');
+        } else {
+          var r2 = await fetch('/api/import-markdown-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ markdown: text, filename: 'paste.md' })
+          });
+          imported = await r2.json();
+          if (!r2.ok) throw new Error(imported.error || 'הייבוא נכשל');
+        }
+        closeModal('importMdModal');
+        if (typeof window._switchProject === 'function') await window._switchProject(imported.projectId);
+        if (typeof window._navigate === 'function') {
+          window._navigate('document', { projectId: imported.projectId, docType: imported.documentType });
+        }
+      } catch (err) {
+        showErr('שגיאה בייבוא: ' + (err.message || 'נסה שוב'));
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'צור טיוטה'; }
+      }
+    }
+    var dashImportMd = document.getElementById('dashImportMd');
+    if (dashImportMd) dashImportMd.addEventListener('click', function() { openImportMdModal(); });
+    var importMdSubmit = document.getElementById('importMdSubmit');
+    if (importMdSubmit) importMdSubmit.addEventListener('click', function() { submitImportMd(); });
     document.querySelectorAll('.hub-modal-overlay').forEach(function(overlay) {
       overlay.addEventListener('click', function(e) {
         if (e.target === overlay) overlay.style.display = 'none';
