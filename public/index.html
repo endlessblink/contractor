@@ -40,6 +40,7 @@
       --elevated-bg:         #f3f4f6;
       --accent:              #2ba8a0;
       --accent-hover:        #1e918a;
+      --on-accent:           #07201e;
       --accent-subtle:       rgba(43, 168, 160, 0.07);
       --accent-subtle-hover: rgba(43, 168, 160, 0.13);
       --accent-border:       rgba(43, 168, 160, 0.3);
@@ -130,6 +131,7 @@
       --elevated-bg:         #263144;
       --accent:              #00d2b4;
       --accent-hover:        #00e6c5;
+      --on-accent:           #06201c;
       --accent-subtle:       rgba(0, 210, 180, 0.08);
       --accent-subtle-hover: rgba(0, 210, 180, 0.14);
       --accent-border:       rgba(0, 210, 180, 0.25);
@@ -146,7 +148,7 @@
       --chip-border:         rgba(0, 210, 180, 0.15);
       --chip-label:          #00d2b4;
       --chip-amount:         #00b89e;
-      --chip-pct:            #008f7a;
+      --chip-pct:            #00b89e;
       --nav-bg:              #171d29;
       --nav-border:          rgba(255,255,255,0.13);
       --nav-text:            rgba(255, 255, 255, 0.42);
@@ -1043,7 +1045,7 @@
       top: -24px;
       right: 0;
       background: var(--accent);
-      color: white;
+      color: var(--on-accent);
       font-size: 0.7rem;
       padding: 2px 8px;
       border-radius: 4px;
@@ -4242,7 +4244,7 @@
     .tmpl-clause-item .tmpl-clause-required-badge {
       font-size: 0.6rem;
       background: var(--accent);
-      color: white;
+      color: var(--on-accent);
       padding: 1px 5px;
       border-radius: 3px;
       margin-inline-start: 4px;
@@ -8231,7 +8233,7 @@
       if (!t) {
         t = document.createElement('div');
         t.id = '_recommendToast';
-        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#00d2b4;color:#fff;padding:8px 18px;border-radius:8px;font-size:0.85rem;font-weight:500;z-index:9999;opacity:0;transition:opacity 0.25s;pointer-events:none;direction:rtl;';
+        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--on-accent);padding:8px 18px;border-radius:8px;font-size:0.85rem;font-weight:500;z-index:9999;opacity:0;transition:opacity 0.25s;pointer-events:none;direction:rtl;';
         document.body.appendChild(t);
       }
       t.textContent = msg;
