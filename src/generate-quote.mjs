@@ -31,6 +31,39 @@ const __dirname = path.dirname(__filename);
 const PROJECT_DIR = path.resolve(__dirname, "..");
 const DEFAULT_LOGO_PATH = path.join(PROJECT_DIR, "assets", "logo.png");
 
+// Read intrinsic pixel dimensions from a PNG or JPEG buffer (no deps).
+// Returns { width, height } or null if it can't be parsed.
+function readImageSize(buf) {
+  if (!buf || buf.length < 24) return null;
+  // PNG: 8-byte signature, then IHDR with width@16 / height@20 (big-endian)
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  }
+  // JPEG: scan SOFn markers for height/width
+  if (buf[0] === 0xff && buf[1] === 0xd8) {
+    let off = 2;
+    while (off + 9 < buf.length) {
+      if (buf[off] !== 0xff) { off++; continue; }
+      const marker = buf[off + 1];
+      // SOF0..SOF15 (excluding DHT/DRI/etc.) carry frame dimensions
+      if (marker >= 0xc0 && marker <= 0xcf &&
+          marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        return { height: buf.readUInt16BE(off + 5), width: buf.readUInt16BE(off + 7) };
+      }
+      off += 2 + buf.readUInt16BE(off + 2);
+    }
+  }
+  return null;
+}
+
+// Scale image dimensions to fit within a square box while preserving aspect ratio.
+function fitLogo(buf, box) {
+  const size = readImageSize(buf);
+  if (!size || !size.width || !size.height) return { width: box, height: box };
+  const scale = Math.min(box / size.width, box / size.height);
+  return { width: Math.round(size.width * scale), height: Math.round(size.height * scale) };
+}
+
 const FONT = "Heebo";
 const FONT_OBJ = { ascii: FONT, cs: FONT, eastAsia: FONT, hAnsi: FONT };
 
@@ -637,7 +670,7 @@ export async function generateDocument(data) {
                 children: logoBuffer ? [
                   new ImageRun({
                     data: logoBuffer,
-                    transformation: { width: 80, height: 80 },
+                    transformation: fitLogo(logoBuffer, 80),
                     type: "png",
                   }),
                 ] : [],
