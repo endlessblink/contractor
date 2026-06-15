@@ -4967,9 +4967,10 @@
 
     /* Knowledge modal — align action buttons to the dashboard anchor.
        Each card gets one forest-green primary; utilities are ghost outlines.
-       !important needed to beat the global dark-mode button reset. */
-    .docs-modal-body #uploadTrigger,
-    .docs-modal-body .analyze-bar-btn:not(:disabled) {
+       Targeted by ID: the global dark-mode button reset sets background
+       !important at high specificity, so only an ID selector reliably wins. */
+    #uploadTrigger,
+    #analyzeKbBtn:not(:disabled) {
       color: #f8fbf8 !important;
       background: #123f37 !important;
       border: 1px solid rgba(18,63,55,0.18) !important;
@@ -4978,14 +4979,15 @@
       font-weight: 700 !important;
       transition: background 0.18s, transform 0.15s, box-shadow 0.18s !important;
     }
-    .docs-modal-body #uploadTrigger:hover,
-    .docs-modal-body .analyze-bar-btn:not(:disabled):hover {
+    #uploadTrigger:hover,
+    #analyzeKbBtn:not(:disabled):hover {
       background: #0d493e !important;
       transform: translateY(-2px);
     }
-    .docs-modal-body .refresh-btn,
-    .docs-modal-body #uploadFolderTrigger {
-      color: #334250 !important;
+    #refreshDocs,
+    #uploadFolderTrigger,
+    #analyzeKbBtn:disabled {
+      color: #51606f !important;
       background: rgba(255,255,255,0.72) !important;
       border: 1px solid rgba(51,61,70,0.16) !important;
       border-radius: 12px !important;
@@ -4993,16 +4995,14 @@
       opacity: 1 !important;
       transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.15s !important;
     }
-    .docs-modal-body .refresh-btn:hover,
-    .docs-modal-body #uploadFolderTrigger:hover {
+    #refreshDocs:hover,
+    #uploadFolderTrigger:hover {
       color: #12352f !important;
       background: rgba(255,255,255,0.94) !important;
       border-color: rgba(18,53,47,0.30) !important;
       transform: translateY(-1px);
     }
-    .docs-modal-body .analyze-bar-btn:disabled {
-      opacity: 0.45 !important;
-    }
+    #analyzeKbBtn:disabled { cursor: not-allowed; }
     /* Learned/success status reads forest green, not bright teal */
     .docs-modal-body .learn-status.success,
     .docs-modal-body .upload-status.success { color: #1c6b54 !important; }
