@@ -28,6 +28,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join, extname } from 'path';
 import { readFileSync, readdirSync, statSync, mkdirSync, writeFileSync, rmSync, existsSync, copyFileSync } from 'fs';
 import { homedir } from 'os';
+import { createHash } from 'crypto';
 import multer from 'multer';
 import { generateDocument } from './generate-quote.mjs';
 import mammoth from 'mammoth';
@@ -96,9 +97,11 @@ mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!PROJECTS_DIR.startsWith('/snapshot/')) mkdirSync(PROJECTS_DIR, { recursive: true });
 if (!KNOWLEDGE_DIR.startsWith('/snapshot/')) mkdirSync(KNOWLEDGE_DIR, { recursive: true });
 
-// ─── Auto-initialize clause database from sample if missing ──────────────────
+// ─── Auto-initialize / refresh clause database from sample ───────────────────
 const clausesDbPath = join(KNOWLEDGE_DIR, 'clauses-db.json');
 const clausesSamplePath = join(SNAPSHOT_DIR, 'knowledge', 'clauses-db.sample.json');
+// Canonical hash of the clause CONTENT only (ignores _seedHash/_previousDefaultHashes meta).
+const clausesContentHash = (db) => createHash('sha256').update(JSON.stringify(db?.clauses || {})).digest('hex');
 if (!existsSync(clausesDbPath)) {
   if (existsSync(clausesSamplePath)) {
     copyFileSync(clausesSamplePath, clausesDbPath);
@@ -106,6 +109,21 @@ if (!existsSync(clausesDbPath)) {
   } else {
     writeFileSync(clausesDbPath, JSON.stringify({ clauses: {}, serviceTemplates: [], paymentPatterns: [], standardTerms: {} }, null, 2), 'utf-8');
   }
+} else if (existsSync(clausesSamplePath)) {
+  // Refresh the bundled DEFAULTS on update — but ONLY when the user has not
+  // customized their clause DB (its content still matches a previously-shipped
+  // default). Never clobber user-edited/learned clauses.
+  try {
+    const sample = JSON.parse(readFileSync(clausesSamplePath, 'utf-8'));
+    const user = JSON.parse(readFileSync(clausesDbPath, 'utf-8'));
+    const userHash = clausesContentHash(user);
+    const sampleHash = clausesContentHash(sample);
+    const priorDefaults = new Set(sample._previousDefaultHashes || []);
+    if (userHash !== sampleHash && priorDefaults.has(userHash)) {
+      copyFileSync(clausesSamplePath, clausesDbPath);
+      console.log('Clause database was the unmodified default — refreshed to the new bundled clauses.');
+    }
+  } catch { /* on any error, leave the user's DB untouched */ }
 }
 
 // ─── Load clause database on startup ─────────────────────────────────────────
