@@ -4965,6 +4965,48 @@
       transform: translateY(-2px);
     }
 
+    /* Knowledge modal — align action buttons to the dashboard anchor.
+       Each card gets one forest-green primary; utilities are ghost outlines.
+       !important needed to beat the global dark-mode button reset. */
+    .docs-modal-body #uploadTrigger,
+    .docs-modal-body .analyze-bar-btn:not(:disabled) {
+      color: #f8fbf8 !important;
+      background: #123f37 !important;
+      border: 1px solid rgba(18,63,55,0.18) !important;
+      border-radius: 14px !important;
+      box-shadow: 0 14px 30px rgba(18,63,55,0.18) !important;
+      font-weight: 700 !important;
+      transition: background 0.18s, transform 0.15s, box-shadow 0.18s !important;
+    }
+    .docs-modal-body #uploadTrigger:hover,
+    .docs-modal-body .analyze-bar-btn:not(:disabled):hover {
+      background: #0d493e !important;
+      transform: translateY(-2px);
+    }
+    .docs-modal-body .refresh-btn,
+    .docs-modal-body #uploadFolderTrigger {
+      color: #334250 !important;
+      background: rgba(255,255,255,0.72) !important;
+      border: 1px solid rgba(51,61,70,0.16) !important;
+      border-radius: 12px !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
+      transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.15s !important;
+    }
+    .docs-modal-body .refresh-btn:hover,
+    .docs-modal-body #uploadFolderTrigger:hover {
+      color: #12352f !important;
+      background: rgba(255,255,255,0.94) !important;
+      border-color: rgba(18,53,47,0.30) !important;
+      transform: translateY(-1px);
+    }
+    .docs-modal-body .analyze-bar-btn:disabled {
+      opacity: 0.45 !important;
+    }
+    /* Learned/success status reads forest green, not bright teal */
+    .docs-modal-body .learn-status.success,
+    .docs-modal-body .upload-status.success { color: #1c6b54 !important; }
+
     /* Documents, knowledge, settings, modals */
     .docs-modal-overlay,
     .settings-overlay,
@@ -5029,7 +5071,7 @@
     .docs-modal-box {
       width: min(1180px, calc(100vw - 48px));
       height: min(860px, calc(100vh - 48px));
-      border-radius: 8px;
+      border-radius: 20px;
     }
     .docs-modal-header {
       min-height: 58px;
@@ -5050,7 +5092,9 @@
     }
     .docs-modal-body {
       padding: 0;
-      background: #edf0ec;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.72), transparent 30rem),
+        linear-gradient(180deg, #eef0ed 0%, #e2e5e1 52%, #d8ddd8 100%);
     }
     .docs-modal-body .docs-panel {
       display: grid;
@@ -5069,8 +5113,8 @@
       color: #1c2531;
       background: rgba(255,255,253,0.94);
       border: 1px solid rgba(51,61,70,0.14);
-      border-radius: 8px;
-      box-shadow: 0 10px 28px rgba(38,48,58,0.06);
+      border-radius: 22px;
+      box-shadow: 0 18px 44px rgba(38,48,58,0.10);
     }
     .docs-modal-body .learn-section,
     .docs-modal-body .upload-zone {
@@ -5146,13 +5190,13 @@
       color: #1c2531;
       background: #f7f9f6;
       border: 1px dashed rgba(18,63,55,0.26);
-      border-radius: 8px;
+      border-radius: 16px;
     }
     .docs-modal-body .ref-item {
       color: #1c2531;
       background: #f8faf7;
       border-color: rgba(51,61,70,0.13);
-      border-radius: 8px;
+      border-radius: 14px;
       box-shadow: none;
     }
     .docs-modal-body .ref-item-name { color: #1c2531; }
@@ -5168,7 +5212,7 @@
       color: #1c2531;
       background: #f8faf7;
       border-color: rgba(51,61,70,0.13);
-      border-radius: 8px;
+      border-radius: 14px;
       box-shadow: none;
     }
     .docs-modal-body .file-card .file-name { color: #1c2531; }
