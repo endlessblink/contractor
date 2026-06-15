@@ -103,6 +103,42 @@ describe('Contractor shared services', () => {
     }
   });
 
+  it('generates quote legal terms from the clauses DB and keeps only project-specific notes', async () => {
+    const { services } = makeServices();
+    const project = await services.createProject({ name: 'הצעת תנאים מה-DB' });
+    const formState = {
+      clientName: 'לקוח תנאים',
+      docType: 'quote',
+      projectDescription: 'בדיקת תנאים מתוך מאגר סעיפים',
+      serviceDetails: 'שירות בדיקה',
+      pricingItems: [
+        { desc: 'שירות בדיקה', qty: 1, price: 1000 },
+      ],
+      paymentStructure: 'two',
+      selectedClauses: [
+        'general-quote-validity',
+        'general-vat-exclusion-standard',
+      ],
+      notes: [
+        'המחיר אינו כולל מע"מ.',
+        'המסירה תכלול קובץ מקור פתוח לעריכה עתידית.',
+      ].join('\n'),
+      documentDate: '2026-06-16',
+    };
+
+    await services.upsertDocumentDraft({ projectId: project.id, docType: 'quote', formState });
+    const generated = await services.generateDocument({ projectId: project.id, docType: 'quote' });
+
+    const text = (await mammoth.extractRawText({ buffer: readFileSync(generated.path) })).value;
+    assert.match(text, /תנאים כלליים/);
+    assert.match(text, /ההצעה בתוקף ל-30 יום/);
+    assert.match(text, /המחיר אינו כולל מע"מ/);
+    assert.match(text, /המסירה תכלול קובץ מקור פתוח לעריכה עתידית/);
+
+    const vatOccurrences = text.match(/המחיר אינו כולל מע"מ/g) || [];
+    assert.equal(vatOccurrences.length, 1, 'VAT clause should render once from clauses, not duplicate in notes');
+  });
+
   it('writes project JSON atomically without temporary files remaining', async () => {
     const { dataDir, services } = makeServices();
     const project = await services.createProject({ name: 'Atomic Project' });
@@ -115,5 +151,57 @@ describe('Contractor shared services', () => {
     const projectPath = join(dataDir, 'projects', project.id, 'project.json');
     assert.doesNotThrow(() => JSON.parse(readFileSync(projectPath, 'utf8')));
     assert.equal(services.listProjects().projects.length, 1);
+  });
+
+  // Regression: imported quotes must be filed under a client so they are not
+  // orphaned and unreachable in the UI.
+  it('files an imported quote under a client when the recipient is a real name', async () => {
+    const { services } = makeServices();
+    const markdown = [
+      '# הצעת מחיר — אתר תדמית',
+      '',
+      'לכבוד: חברת אורות בע"מ',
+      '',
+      '## מחיר',
+      '| פריט | כמות | מחיר (₪) |',
+      '|---|---|---|',
+      '| עיצוב אתר | 1 | 8000 |',
+    ].join('\n');
+
+    const result = await services.importMarkdown({ markdown, filename: 'orot.md', useAiFallback: false });
+    assert.ok(result.clientId, 'import should link a client');
+
+    const linked = services.listClients().find(c => c.id === result.clientId);
+    assert.ok(linked, 'linked client should exist');
+    assert.equal(linked.name, 'חברת אורות בע"מ');
+
+    const indexEntry = services.listProjects().projects.find(p => p.id === result.projectId);
+    assert.equal(indexEntry.clientId, result.clientId, 'index entry must carry clientId so it shows under the client');
+  });
+
+  it('leaves an imported quote client-less when the recipient is only a placeholder', async () => {
+    const { services } = makeServices();
+    const markdown = [
+      '# הצעת מחיר — סרטוני AI',
+      '',
+      'לכבוד: [שם הספק / חברה]',
+      '',
+      '## מחיר',
+      '| פריט | כמות | מחיר (₪) |',
+      '|---|---|---|',
+      '| הפקת סרטון | 2 | 7000 |',
+    ].join('\n');
+
+    const result = await services.importMarkdown({ markdown, filename: 'ai.md', useAiFallback: false });
+    assert.equal(result.clientId, null, 'placeholder recipient must not create a client');
+    assert.equal(services.listClients().length, 0, 'no junk client should be created');
+  });
+
+  it('findOrCreateClient reuses an existing client instead of duplicating', async () => {
+    const { services } = makeServices();
+    const first = await services.findOrCreateClient({ name: 'חברת אורות בע"מ' });
+    const again = await services.findOrCreateClient({ name: 'חברת אורות' });
+    assert.equal(again.id, first.id, 'a fuzzy-matching name should reuse the existing client');
+    assert.equal(services.listClients().length, 1);
   });
 });
