@@ -435,13 +435,23 @@ async function generateCvDocument(data) {
  * @returns {Promise<Buffer>} DOCX file as a Buffer
  */
 export async function generateDocument(data) {
-  // Load clauses database BEFORE the doc-skills pipeline so skills
+  // Resolve the clauses database BEFORE the doc-skills pipeline so skills
   // (e.g. dedupe-notes) can reconcile notes against the resolved clauses.
-  let clausesDb = null;
-  try {
-    const dbPath = path.join(PROJECT_DIR, 'knowledge', 'clauses-db.json');
-    clausesDb = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-  } catch { /* clauses DB not available */ }
+  // CRITICAL: this MUST be the same DB the server/UI use to build the clause
+  // selector and the selectedClauses whitelist — otherwise clause IDs won't
+  // match and every selected clause gets filtered out. Prefer a DB the caller
+  // passed in (server passes its loaded clausesDb), then the active user-data
+  // DB (resolveData), and only then the bundled copy as a last resort.
+  let clausesDb = data._clausesDb || null;
+  if (!clausesDb) {
+    const candidates = [
+      path.join(PROJECT_DIR, 'knowledge', 'clauses-db.json'),
+      resolveData('knowledge', 'clauses-db.json'),
+    ];
+    for (const dbPath of candidates) {
+      try { clausesDb = JSON.parse(fs.readFileSync(dbPath, 'utf-8')); break; } catch { /* try next */ }
+    }
+  }
   data._clausesDb = clausesDb;
 
   // Run doc-skills pipeline to clean/transform data before rendering

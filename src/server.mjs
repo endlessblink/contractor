@@ -2295,7 +2295,9 @@ app.post('/api/generate-document', async (req, res) => {
       data.generalNotes = '';
     }
 
-    const buffer = await generateDocument({ ...data, userProfile });
+    // Pass the server's loaded clauses DB so the generator filters the SAME
+    // clauses the UI showed (matching IDs) — otherwise selectedClauses can't match.
+    const buffer = await generateDocument({ ...data, userProfile, _clausesDb: clausesDb });
 
     // Build a descriptive Hebrew filename
     const typeNames = { quote: 'הצעת מחיר', contract: 'חוזה', workOrder: 'הזמנת עבודה', cv: 'קורות חיים' };

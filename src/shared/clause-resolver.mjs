@@ -65,7 +65,9 @@ export function resolveClauses(clausesDb, opts = {}) {
       .filter(c => {
         // Must apply to this document type
         if (!c.appliesTo || !c.appliesTo.includes(docTypeKey)) return false;
-        // Explicit user selection acts as a whitelist
+        // Explicit user selection acts as a whitelist. Missing required clauses
+        // are surfaced by validateForm() as warnings (so the bot/UI can add
+        // them), rather than being force-included here.
         if (hasSelection) return selectedClauses.includes(c.id);
         // Service template filtering (but always include required clauses)
         if (relevantClauseIds) return relevantClauseIds.has(c.id) || c.required;
