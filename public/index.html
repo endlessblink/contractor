@@ -206,14 +206,14 @@
 
     /* ── BUTTON TOKEN: Dark mode — universal outline reset ── */
     /* Catches ALL buttons except utility/nav buttons via :not() exclusions */
-    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn) {
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):not(.add-row-btn) {
       background: var(--btn-accent-bg) !important;
       color: var(--btn-accent-color) !important;
       border: var(--btn-accent-border) !important;
       box-shadow: none !important;
       background-image: none !important;
     }
-    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):hover:not(:disabled) {
+    html.dark button:not(.sidebar-link):not(.panel-minimize-btn):not(.sidebar-client-btn):not(.sidebar-dropdown-item):not(.sidebar-dropdown-add):not([class*="close"]):not([class*="toggle"]):not([class*="delete-row"]):not(.confirm-cancel-btn):not(.sidebar-chevron):not(.theme-toggle):not(.chat-toolbar button):not([class*="category-"]):not(.clause-reset-btn):not(.fu-text):not(.sidebar-action-btn):not(.rail-btn):not(.hub-action-btn):not(.nav-doc-btn):not(.dash-action-btn):not(.dash-primary-action):not(.dash-doc-type):not(.dash-section-add):not(.hub-modal-submit):not(.hub-modal-cancel):not(.client-mgmt-btn):not(.nav-sidebar-add):not(.nav-sidebar-toggle):not(.dash-empty-btn):not(.add-row-btn):hover:not(:disabled) {
       background: var(--btn-accent-hover-bg) !important;
       box-shadow: none !important;
     }
@@ -4953,6 +4953,74 @@
     .pricing-table thead tr { background: rgba(232,235,232,0.72); }
     .pricing-table th { color: #596574; border-bottom-color: var(--workspace-border); }
     .pricing-table td { border-bottom-color: rgba(51, 61, 70, 0.09); }
+
+    /* ── Payment & pricing — workspace readability + spacing (anchor) ── */
+    .pricing-totals {
+      background: rgba(247,248,245,0.80) !important;
+      border: 1px solid var(--workspace-border) !important;
+      border-radius: 16px !important;
+    }
+    .pricing-totals .total-label { color: var(--workspace-copy); }
+    .pricing-totals .total-value { color: var(--workspace-ink); }
+    .pricing-totals .total-value.highlight { color: #15573f; }
+
+    .add-row-btn {
+      background: rgba(255,255,255,0.66);
+      color: #15573f;
+      border: 1.5px dashed rgba(18,63,55,0.34);
+    }
+    .add-row-btn:hover {
+      background: rgba(234,244,239,0.92);
+      border-color: rgba(18,63,55,0.52);
+      box-shadow: none;
+    }
+
+    .installment-chip {
+      background: #eef7f4;
+      border: 1px solid rgba(18,63,55,0.16);
+      border-radius: 14px;
+    }
+    .installment-chip .chip-label { color: var(--workspace-copy); }
+    .installment-chip .chip-amount { color: #15573f; }
+    .installment-chip .chip-pct { color: #2f7a5e; }
+
+    /* Custom installments: card-per-row, two lines, fully readable */
+    .custom-installments { padding: 14px; gap: 10px; }
+    .custom-installment-row {
+      grid-template-columns: auto 76px auto minmax(0, 1fr);
+      grid-template-areas:
+        "label pct suffix amount"
+        "desc  desc desc   desc";
+      gap: 10px 10px;
+      padding: 12px 14px;
+      background: rgba(255,255,253,0.92);
+      border: 1px solid var(--workspace-border);
+      border-radius: 14px;
+    }
+    .custom-installment-row label {
+      grid-area: label; align-self: center;
+      color: var(--workspace-ink); min-width: 0;
+    }
+    .custom-installment-row > input[type="number"] { grid-area: pct; }
+    .custom-installment-row .pct-suffix {
+      grid-area: suffix; align-self: center; color: var(--workspace-copy);
+    }
+    .custom-installment-row .installment-description { grid-area: desc; }
+    .custom-installment-row .amount-preview {
+      grid-area: amount; align-self: center; justify-self: start;
+      color: #15573f; font-weight: 700; margin: 0;
+    }
+    .custom-installment-row input {
+      width: 100%; min-width: 0;
+      color: var(--workspace-ink);
+      background: rgba(255,255,253,0.74);
+      border: 1px solid rgba(51,61,70,0.18);
+      border-radius: 10px;
+    }
+    .custom-installment-row input:focus {
+      border-color: rgba(18,63,55,0.34);
+      box-shadow: 0 0 0 4px rgba(18,63,55,0.08);
+    }
 
     .generate-btn,
     .learn-btn,
