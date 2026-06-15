@@ -226,6 +226,7 @@ export function createContractorServices({
       index.projects.push(entry);
     }
     entry.name = project.name;
+    if (project.clientId) entry.clientId = project.clientId;
     entry.clientName = project.formStates?.[project.activeDocType]?.clientName || entry.clientName || '';
     entry.docType = project.activeDocType || '';
     entry.docTypes = Object.keys(project.formStates || {});
@@ -235,6 +236,56 @@ export function createContractorServices({
       ? readdirSync(generatedDir).filter(name => !name.startsWith('.')).length
       : 0;
     atomicWriteJson(indexPath, index);
+  }
+
+  function readClients() {
+    try {
+      return JSON.parse(readFileSync(clientsPath, 'utf8')).clients || [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Find an existing client by (fuzzy) name or create a new one. Mirrors the
+  // matching used by the HTTP /api/clients/match endpoint so imports reuse
+  // clients instead of duplicating them.
+  async function findOrCreateClient({ name, company } = {}) {
+    const trimmed = String(name || '').trim();
+    if (!trimmed) return null;
+    return serializeWrite(() => {
+      const data = (() => {
+        try { return JSON.parse(readFileSync(clientsPath, 'utf8')); } catch { return { clients: [] }; }
+      })();
+      data.clients ||= [];
+      const normalized = trimmed.toLowerCase();
+      const existing = data.clients.find(client => {
+        const clientName = String(client.name || '').trim().toLowerCase();
+        return clientName && (clientName === normalized
+          || clientName.includes(normalized) || normalized.includes(clientName));
+      });
+      if (existing) return clone(existing);
+
+      const base = slugify(trimmed).replace(/^project-/, 'client-') || `client-${Date.now()}`;
+      let id = base;
+      let suffix = 2;
+      while (data.clients.some(client => client.id === id)) id = `${base}-${suffix++}`;
+      const now = new Date().toISOString();
+      const client = {
+        id,
+        name: trimmed,
+        company: String(company || '').trim(),
+        contactName: '',
+        email: '',
+        phone: '',
+        notes: '',
+        defaultPaymentStructure: '',
+        createdAt: now,
+        updatedAt: now,
+      };
+      data.clients.push(client);
+      atomicWriteJson(clientsPath, data);
+      return clone(client);
+    });
   }
 
   async function createProject({ name, clientId } = {}) {
@@ -308,9 +359,21 @@ export function createContractorServices({
     };
 
     let targetId = projectId;
+    let linkedClientId;
     if (!targetId) {
+      // File the imported quote under a client when the Markdown has a real
+      // recipient. Placeholder/empty recipients stay client-less (assign later).
+      const recipientName = String(parsed.formState?.clientName || '').trim();
+      if (recipientName) {
+        const client = await findOrCreateClient({
+          name: recipientName,
+          company: parsed.formState?.clientCompany,
+        });
+        linkedClientId = client?.id;
+      }
       const project = await createProject({
         name: parsed.formState?.projectDescription || parsed.title || 'מסמך מיובא',
+        clientId: linkedClientId,
       });
       targetId = project.id;
     }
@@ -347,6 +410,7 @@ export function createContractorServices({
       projectId: targetId,
       documentType: draft.docType,
       formState: draft.formState,
+      clientId: linkedClientId || readProject(targetId).clientId || null,
       confidence: parsed.confidence,
       warnings: parsed.warnings || [],
       unresolvedFields: parsed.unresolvedFields || [],
@@ -404,6 +468,7 @@ export function createContractorServices({
       return clone(readProject(projectId));
     },
     createProject,
+    findOrCreateClient,
     upsertDocumentDraft,
     importMarkdown,
     generateDocument,

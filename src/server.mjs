@@ -1732,6 +1732,10 @@ app.put('/api/projects/:id', (req, res) => {
     if (name && typeof name === 'string' && name.trim()) {
       project.name = name.trim();
     }
+    if (clientId !== undefined) {
+      if (clientId) project.clientId = clientId;
+      else delete project.clientId;
+    }
     writeProject(id, project);
 
     const index = readIndex();
@@ -1751,6 +1755,56 @@ app.put('/api/projects/:id', (req, res) => {
     res.json(project);
   } catch (err) {
     console.error('Error updating project:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Assign a client to a project — link an existing clientId, or find-or-create
+// a client from a name. Used to connect an imported/orphan document to a client.
+app.post('/api/projects/:id/assign-client', (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+    const { clientId, clientName, clientCompany } = req.body || {};
+    const project = readProject(id);
+    const data = loadClients();
+
+    let client;
+    if (clientId) {
+      client = data.clients.find(c => c.id === clientId);
+      if (!client) return res.status(404).json({ error: 'Client not found' });
+    } else {
+      const name = String(clientName || '').trim();
+      if (!name) return res.status(400).json({ error: 'clientId or clientName is required' });
+      const match = fuzzyMatchClient(name, data.clients).find(m => m.score >= 80);
+      if (match) {
+        client = data.clients.find(c => c.id === match.id);
+      } else {
+        let newId = generateClientId(name);
+        let suffix = 2;
+        while (data.clients.some(c => c.id === newId)) newId = `${generateClientId(name)}-${suffix++}`;
+        const now = new Date().toISOString();
+        client = {
+          id: newId, name, company: String(clientCompany || '').trim(),
+          contactName: '', email: '', phone: '', notes: '',
+          defaultPaymentStructure: '', createdAt: now, updatedAt: now,
+        };
+        data.clients.push(client);
+        saveClients(data);
+      }
+    }
+
+    project.clientId = client.id;
+    writeProject(id, project);
+    const index = readIndex();
+    const entry = index.projects.find(p => p.id === id);
+    if (entry) { entry.clientId = client.id; writeIndex(index); }
+
+    res.status(201).json({ projectId: id, clientId: client.id, client });
+  } catch (err) {
+    console.error('Error assigning client:', err);
     res.status(500).json({ error: err.message });
   }
 });

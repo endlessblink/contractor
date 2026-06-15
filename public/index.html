@@ -13496,7 +13496,7 @@
     // ── Modal submit handlers ──
     var modalClientSubmit = document.getElementById('modalClientSubmit');
     if (modalClientSubmit) {
-      modalClientSubmit.addEventListener('click', function() {
+      modalClientSubmit.addEventListener('click', async function() {
         var name = document.getElementById('modalClientName').value.trim();
         if (!name) { document.getElementById('modalClientName').focus(); return; }
         var body = {
@@ -13506,15 +13506,26 @@
           email: document.getElementById('modalClientEmail').value.trim(),
           phone: document.getElementById('modalClientPhone').value.trim()
         };
-        fetch('/api/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-          .then(function(res) {
-            if (res.ok) {
-              closeModal('addClientModal');
-              if (navState.view === 'clients') renderClientsView();
-              else if (navState.view === 'home') renderDashboard();
-              else renderNavSidebar();
-            }
-          });
+        try {
+          var res = await fetch('/api/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          if (!res.ok) return;
+          var created = await res.json();
+          closeModal('addClientModal');
+          // If a document is open and not yet linked to a client, connect it now.
+          var pid = window._currentProjectId;
+          if (pid && navState.view === 'document') {
+            try {
+              await fetch('/api/projects/' + encodeURIComponent(pid) + '/assign-client',
+                { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: created.id }) });
+            } catch (e) { /* leave unlinked on failure */ }
+          }
+          // Refresh caches so the new client/link is visible immediately.
+          try { var cd = await (await fetch('/api/clients')).json(); window._allClients = cd.clients || []; } catch (e) {}
+          try { var pd = await (await fetch('/api/projects')).json(); window._allProjects = pd.projects || []; } catch (e) {}
+          if (navState.view === 'clients') renderClientsView();
+          else if (navState.view === 'home') renderDashboard();
+          else renderNavSidebar();
+        } catch (e) { /* network error */ }
       });
     }
     var modalProjectSubmit = document.getElementById('modalProjectSubmit');
