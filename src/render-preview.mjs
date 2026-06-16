@@ -601,13 +601,13 @@ export function renderPreviewHTML(data, options = {}) {
     { key: 'earlyTermination', title: 'הפסקת עבודה מוקדמת', style: 'dash' },
     { key: 'revisions', title: 'תיקונים והערות', style: 'dash' },
     { key: 'deliveryProcess', title: 'תהליך סיום ומסירה', style: 'dash' },
-    { key: 'intellectualProperty', title: 'קניין רוחני, רישוי ואחריות', style: 'paragraph' },
-    { key: 'aiDisclaimers', title: 'הצהרות לקוח (AI גנרטיבי)', style: 'paragraph' },
-    { key: 'warrantyAndCompletion', title: 'הגדרת "סיום" ותקופת אחריות', style: 'paragraph' },
-    { key: 'commercialResponsibility', title: 'אחריות לשימוש מסחרי', style: 'paragraph' },
-    { key: 'confidentiality', title: 'סודיות', style: 'paragraph' },
+    { key: 'intellectualProperty', title: 'קניין רוחני, רישוי ואחריות', style: 'dash' },
+    { key: 'aiDisclaimers', title: 'הצהרות לקוח (AI גנרטיבי)', style: 'dash' },
+    { key: 'warrantyAndCompletion', title: 'הגדרת "סיום" ותקופת אחריות', style: 'dash' },
+    { key: 'commercialResponsibility', title: 'אחריות לשימוש מסחרי', style: 'dash' },
+    { key: 'confidentiality', title: 'סודיות', style: 'dash' },
     { key: 'projectTermination', title: 'סיום הפרויקט', style: 'dash' },
-    { key: 'generalTerms', title: 'תנאים כלליים', style: 'paragraph' },
+    { key: 'generalTerms', title: 'תנאים כלליים', style: 'dash' },
   ];
 
   for (const section of clauseSections) {

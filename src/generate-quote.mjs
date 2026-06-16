@@ -1020,13 +1020,13 @@ export async function generateDocument(data) {
   bodyChildren.push(...clauseBlock('הפסקת עבודה מוקדמת', getClauseTexts('earlyTermination'), 'bullets'));
   bodyChildren.push(...clauseBlock('תיקונים והערות', getClauseTexts('revisions'), 'bullets'));
   bodyChildren.push(...clauseBlock('תהליך סיום ומסירה', getClauseTexts('deliveryProcess'), 'bullets'));
-  bodyChildren.push(...clauseBlock('קניין רוחני, רישוי ואחריות', getClauseTexts('intellectualProperty'), 'prose'));
-  bodyChildren.push(...clauseBlock('הצהרות לקוח (AI גנרטיבי)', getClauseTexts('aiDisclaimers'), 'prose'));
-  bodyChildren.push(...clauseBlock('הגדרת "סיום" ותקופת אחריות', getClauseTexts('warrantyAndCompletion'), 'prose'));
-  bodyChildren.push(...clauseBlock('אחריות לשימוש מסחרי', getClauseTexts('commercialResponsibility'), 'prose'));
-  bodyChildren.push(...clauseBlock('סודיות', getClauseTexts('confidentiality'), 'prose'));
+  bodyChildren.push(...clauseBlock('קניין רוחני, רישוי ואחריות', getClauseTexts('intellectualProperty'), 'bullets'));
+  bodyChildren.push(...clauseBlock('הצהרות לקוח (AI גנרטיבי)', getClauseTexts('aiDisclaimers'), 'bullets'));
+  bodyChildren.push(...clauseBlock('הגדרת "סיום" ותקופת אחריות', getClauseTexts('warrantyAndCompletion'), 'bullets'));
+  bodyChildren.push(...clauseBlock('אחריות לשימוש מסחרי', getClauseTexts('commercialResponsibility'), 'bullets'));
+  bodyChildren.push(...clauseBlock('סודיות', getClauseTexts('confidentiality'), 'bullets'));
   bodyChildren.push(...clauseBlock('סיום הפרויקט', getClauseTexts('projectTermination'), 'bullets'));
-  bodyChildren.push(...clauseBlock('תנאים כלליים', getClauseTexts('generalTerms'), 'prose'));
+  bodyChildren.push(...clauseBlock('תנאים כלליים', getClauseTexts('generalTerms'), 'bullets'));
 
   // General notes section (project-specific remarks only — legal/terms content
   // lives in the clause sections; the dedupe-notes skill strips any note line
