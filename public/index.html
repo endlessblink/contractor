@@ -5390,6 +5390,209 @@
     .docs-modal-body .file-card .file-meta { color: #657181; }
     .docs-modal-body .empty-state { padding: 20px; }
 
+    .cv-workspace {
+      display: grid;
+      grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+      gap: 16px;
+      height: 100%;
+      padding: 18px;
+      color: var(--workspace-ink);
+      background: transparent;
+    }
+    .cv-versions-panel,
+    .cv-editor-panel {
+      min-height: 0;
+      overflow: auto;
+      background: rgba(255,255,253,0.78);
+      border: 1px solid var(--workspace-border);
+      border-radius: 22px;
+      box-shadow: var(--workspace-shadow-soft);
+    }
+    .cv-versions-panel { padding: 16px; }
+    .cv-panel-header,
+    .cv-editor-topbar,
+    .cv-intake-actions,
+    .cv-section-title-row,
+    .cv-topbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .cv-panel-header h2,
+    .cv-empty-state h2 {
+      margin: 0;
+      font-size: 1.35rem;
+      color: var(--workspace-ink);
+    }
+    .cv-panel-header p,
+    .cv-empty-state p,
+    .cv-status-line,
+    .cv-intake-copy p {
+      margin: 4px 0 0;
+      color: var(--workspace-muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .cv-version-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .cv-version-card {
+      width: 100%;
+      text-align: right;
+      padding: 12px;
+      border: 1px solid rgba(51, 61, 70, 0.14);
+      border-radius: 14px;
+      color: var(--workspace-ink);
+      background: rgba(255,255,253,0.72);
+      cursor: pointer;
+    }
+    .cv-version-card.active {
+      border-color: rgba(18,63,55,0.34);
+      background: #eef7f4;
+    }
+    .cv-version-card strong { display: block; font-size: 0.95rem; }
+    .cv-version-card span { display: block; margin-top: 3px; color: var(--workspace-muted); font-size: 0.8rem; }
+    .cv-editor-panel { padding: 0; }
+    .cv-empty-state {
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      min-height: 420px;
+      padding: 28px;
+      text-align: center;
+    }
+    .cv-editor-shell {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+    }
+    .cv-editor-topbar {
+      padding: 16px;
+      background: rgba(247,248,245,0.82);
+      border: 1px solid var(--workspace-border);
+      border-radius: 18px;
+    }
+    .cv-title-input {
+      width: min(420px, 100%);
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--workspace-ink);
+      font: 800 1.25rem 'Heebo', sans-serif;
+    }
+    .cv-action-btn {
+      border: 1px solid rgba(18,63,55,0.24);
+      border-radius: 12px;
+      background: rgba(255,255,253,0.84);
+      color: #123f37;
+      padding: 9px 14px;
+      font: 700 0.88rem 'Heebo', sans-serif;
+      cursor: pointer;
+    }
+    .cv-action-btn.primary {
+      color: #f8fbf8;
+      background: #153f38;
+      border-color: #153f38;
+    }
+    .cv-action-btn.small { padding: 6px 10px; font-size: 0.78rem; }
+    .cv-action-btn:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+    .cv-intake-panel,
+    .cv-baseline-panel,
+    .cv-block-panel,
+    .cv-fields-grid {
+      padding: 16px;
+      background: rgba(255,255,253,0.76);
+      border: 1px solid var(--workspace-border);
+      border-radius: 18px;
+    }
+    .cv-intake-panel {
+      display: grid;
+      gap: 12px;
+    }
+    .cv-intake-panel textarea,
+    .cv-block-panel textarea,
+    .cv-fields-grid input,
+    .cv-link-row input {
+      width: 100%;
+      border: 1px solid rgba(51, 61, 70, 0.18);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,253,0.84);
+      color: var(--workspace-ink);
+      font: 0.92rem/1.55 'Heebo', sans-serif;
+      outline: none;
+    }
+    .cv-intake-panel textarea:focus,
+    .cv-block-panel textarea:focus,
+    .cv-fields-grid input:focus,
+    .cv-link-row input:focus {
+      border-color: rgba(18,63,55,0.34);
+      box-shadow: 0 0 0 4px rgba(18,63,55,0.08);
+    }
+    .cv-fields-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .cv-fields-grid label {
+      display: grid;
+      gap: 5px;
+      color: #4d5865;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .cv-link-rows {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .cv-link-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 180px) minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .cv-link-row input[data-part="url"],
+    .cv-fields-grid input[dir="ltr"] {
+      direction: ltr;
+      text-align: left;
+      unicode-bidi: plaintext;
+    }
+    .cv-checklist {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .cv-check {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(51, 61, 70, 0.14);
+      background: rgba(255,255,253,0.8);
+      color: var(--workspace-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .cv-check.ok {
+      color: #15573f;
+      background: #eef7f4;
+      border-color: rgba(18,63,55,0.22);
+    }
+    .cv-file-status { color: var(--workspace-muted); font-size: 0.82rem; }
+    @media (max-width: 900px) {
+      .cv-workspace { grid-template-columns: 1fr; height: auto; }
+      .cv-fields-grid { grid-template-columns: 1fr; }
+      .cv-link-row { grid-template-columns: 1fr; }
+      .cv-editor-topbar,
+      .cv-panel-header,
+      .cv-intake-actions { align-items: stretch; flex-direction: column; }
+    }
+
     @media (max-width: 900px) {
       .sidebar { width: 48px; }
       .panels-row { padding: 10px; gap: 10px; }
@@ -5440,6 +5643,9 @@
       </button>
       <button class="rail-btn" data-view="docs" data-tooltip="מסמכים" aria-label="מסמכים">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </button>
+      <button class="rail-btn" data-view="cv" data-tooltip="קורות חיים" aria-label="קורות חיים">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10v18H7z"/><circle cx="12" cy="9" r="2.4"/><path d="M9 16c.8-1.8 5.2-1.8 6 0"/><path d="M9 19h6"/></svg>
       </button>
       <button class="rail-btn" data-view="document" data-tooltip="בונה מסמכים" aria-label="בונה מסמכים" id="railDocBuilder">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/></svg>
@@ -5592,6 +5798,7 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                 </button>
                 <button class="dash-action-btn" id="dashImportMd">ייבא הצעה (Markdown / הדבק טקסט)</button>
+                <button class="dash-action-btn" id="dashOpenCv">קורות חיים</button>
                 <button class="dash-action-btn" id="dashAddClient">לקוח חדש</button>
                 <button class="dash-action-btn" id="dashAddProject">פרויקט חדש</button>
               </div>
@@ -5612,11 +5819,6 @@
                 <span class="dash-doc-icon" aria-hidden="true"><svg viewBox="0 0 24 24" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8l1 3H7z"/><path d="M6 6h12v15H6z"/><path d="M9 14l2 2 4-5"/></svg></span>
                 <span class="dash-doc-type-label">הזמנת עבודה</span>
                 <span class="dash-doc-type-desc">אישור קצר להתחלה.</span>
-              </button>
-              <button class="dash-doc-type" data-doc-type="cv" type="button">
-                <span class="dash-doc-icon" aria-hidden="true"><svg viewBox="0 0 24 24" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10v18H7z"/><circle cx="12" cy="9" r="2.3"/><path d="M9 16c.7-1.7 5.3-1.7 6 0"/><path d="M9 19h6"/></svg></span>
-                <span class="dash-doc-type-label">קורות חיים</span>
-                <span class="dash-doc-type-desc">פרופיל נקי לשליחה.</span>
               </button>
             </section>
 
@@ -5679,6 +5881,92 @@
               <button class="bulk-delete-btn" id="bulkDeleteBtn">מחק נבחרים</button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- CV Creator View -->
+      <div class="hub-view" id="view-cv">
+        <div class="cv-workspace" dir="rtl">
+          <aside class="cv-versions-panel">
+            <div class="cv-panel-header">
+              <div>
+                <h2>קורות חיים</h2>
+                <p>גרסאות CV נפרדות מפרויקטים ולקוחות.</p>
+              </div>
+              <button class="cv-action-btn primary" id="cvNewVersionBtn" type="button">חדש</button>
+            </div>
+            <div class="cv-version-list" id="cvVersionList"></div>
+          </aside>
+          <main class="cv-editor-panel">
+            <div class="cv-empty-state" id="cvEmptyState">
+              <h2>בנה CV מתוך בסיס קיים</h2>
+              <p>צור גרסה, הדבק טקסט מ-LinkedIn או העלה CV/צילום מסך. המערכת תשלים מבנה מקצועי לפי הפרופיל שלך בלי להמציא פרטים.</p>
+              <button class="cv-action-btn primary" id="cvEmptyCreateBtn" type="button">צור גרסת CV</button>
+            </div>
+            <div class="cv-editor-shell" id="cvEditorShell" hidden>
+              <div class="cv-editor-topbar">
+                <div>
+                  <input class="cv-title-input" id="cvVersionName" placeholder="שם הגרסה">
+                  <p class="cv-status-line" id="cvBaselineStatus">נדרש בסיס CV לפני יצירה.</p>
+                </div>
+                <div class="cv-topbar-actions">
+                  <button class="cv-action-btn" id="cvSaveBtn" type="button">שמור</button>
+                  <button class="cv-action-btn primary" id="cvGenerateBtn" type="button">צור DOCX</button>
+                </div>
+              </div>
+
+              <section class="cv-intake-panel">
+                <div class="cv-intake-copy">
+                  <h3>ייבוא והשלמה</h3>
+                  <p>הדבק טקסט מ-LinkedIn, העלה CV קיים, או צרף צילום מסך.</p>
+                </div>
+                <textarea id="cvIntakeText" rows="5" placeholder="הדבק כאן About / Experience / Profile מ-LinkedIn או אתר אחר..."></textarea>
+                <div class="cv-intake-actions">
+                  <input type="file" id="cvIntakeFiles" accept=".doc,.docx,.pdf,image/*" multiple hidden>
+                  <button class="cv-action-btn" id="cvChooseFilesBtn" type="button">הוסף קבצים / צילומי מסך</button>
+                  <span class="cv-file-status" id="cvFileStatus"></span>
+                  <button class="cv-action-btn primary" id="cvRunIntakeBtn" type="button">נתח והשלם</button>
+                </div>
+              </section>
+
+              <section class="cv-baseline-panel">
+                <h3>נקודות חסרות</h3>
+                <div class="cv-checklist" id="cvBaselineChecklist"></div>
+              </section>
+
+              <section class="cv-fields-grid">
+                <label>שם מלא<input id="cvFullName" data-cv-basic="fullName" type="text"></label>
+                <label>כותרת מקצועית<input id="cvHeadline" data-cv-basic="headline" type="text"></label>
+                <label>מיקום<input id="cvLocation" data-cv-basic="location" type="text"></label>
+                <label>טלפון<input id="cvPhone" data-cv-basic="phone" type="tel" dir="ltr"></label>
+                <label>אימייל<input id="cvEmail" data-cv-basic="email" type="email" dir="ltr"></label>
+              </section>
+
+              <section class="cv-block-panel">
+                <div class="cv-section-title-row">
+                  <h3>קישורים</h3>
+                  <button class="cv-action-btn small" id="cvAddLinkBtn" type="button">+ קישור</button>
+                </div>
+                <div class="cv-link-rows" id="cvLinksRows"></div>
+              </section>
+
+              <section class="cv-block-panel">
+                <h3>פרופיל</h3>
+                <textarea id="cvProfile" rows="5" placeholder="תקציר מקצועי קצר וממוקד..."></textarea>
+              </section>
+
+              <section class="cv-block-panel">
+                <h3>ניסיון / סעיפים</h3>
+                <textarea id="cvSectionsText" rows="8" placeholder="ניסיון מקצועי | תפקיד | ארגון | שנים | הישג ראשון; הישג שני&#10;פרויקטים נבחרים | שם הפרויקט — תיאור קצר"></textarea>
+              </section>
+
+              <section class="cv-block-panel">
+                <h3>כישורים ושפות</h3>
+                <textarea id="cvSkillsText" rows="4" placeholder="AI Video | Veo, Kling, ComfyUI&#10;AI Development | Claude, MCP servers"></textarea>
+                <textarea id="cvLanguagesText" rows="2" placeholder="עברית — שפת אם&#10;אנגלית — רמה גבוהה"></textarea>
+              </section>
+            </div>
+          </main>
         </div>
       </div>
 
@@ -5839,7 +6127,6 @@
                     <option value="quote">הצעת מחיר</option>
                     <option value="order">הזמנת עבודה</option>
                     <option value="contract">חוזה</option>
-                    <option value="cv">קורות חיים</option>
                   </select>
                 </div>
               </div>
@@ -6678,8 +6965,11 @@
           <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">ללא מפתח API — משתמש במנוי הקיים שלך</div>
         </div>
         <div id="obApiDivider" style="display:none;text-align:center;color:var(--text-muted);font-size:0.78rem;margin:12px 0;position:relative;"><span style="background:var(--card-bg);padding:0 12px;position:relative;z-index:1;">או הזן מפתח API</span><div style="position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border);"></div></div>
-        <div style="margin-bottom:14px;text-align:right;"><label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">ספק AI</label><select id="obAiProvider" style="width:100%;padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.88rem;font-family:inherit;direction:rtl;"><option value="anthropic">Anthropic (Claude) — מומלץ</option><option value="openai">OpenAI (GPT)</option><option value="openrouter">OpenRouter</option></select></div>
-        <div style="margin-bottom:14px;text-align:right;"><label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">מפתח API</label><input type="password" id="obAiKey" dir="ltr" placeholder="sk-..." style="width:100%;padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.88rem;font-family:inherit;box-sizing:border-box;" /></div>
+        <form autocomplete="off" onsubmit="return false">
+        <div style="margin-bottom:14px;text-align:right;"><label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">ספק AI</label><select id="obAiProvider" onchange="obProviderChanged()" style="width:100%;padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.88rem;font-family:inherit;direction:rtl;"><option value="claude-cli">Claude Code (מנוי — ללא מפתח)</option><option value="codex-cli">Codex / ChatGPT (מנוי — ללא מפתח)</option><option value="anthropic">Anthropic — מפתח API</option><option value="openai">OpenAI — מפתח API</option><option value="openrouter">OpenRouter — מפתח API</option></select></div>
+        <div id="obApiKeyRow" style="margin-bottom:14px;text-align:right;display:none;"><label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">מפתח API</label><input type="password" id="obAiKey" dir="ltr" placeholder="sk-..." autocomplete="off" style="width:100%;padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.88rem;font-family:inherit;box-sizing:border-box;" /></div>
+        <p id="obCliNote" style="font-size:0.72rem;color:var(--text-muted);margin:0 0 14px;">משתמש בהתחברות ה-CLI שלך (מנוי) — אין צורך במפתח API.</p>
+        </form>
         <div style="padding:10px 0;display:flex;justify-content:center;gap:10px;"><button onclick="obPrev()" style="padding:9px 20px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);">חזור</button><button onclick="obNext()" style="padding:9px 20px;border-radius:8px;font-size:0.85rem;font-family:inherit;cursor:pointer;border:1px solid var(--accent-border);background:var(--accent-subtle);color:var(--accent-text);font-weight:600;">המשך</button><button onclick="obNext()" style="padding:9px 14px;border-radius:8px;font-size:0.75rem;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-muted);">דלג</button></div>
       </div>
       <div class="ob-step" data-step="3" style="display:none;padding:20px 40px 30px;">
@@ -6776,23 +7066,34 @@
           </div>
 
           <div class="settings-divider">
-            <span>או הזן מפתח API</span>
+            <span>בחירת חיבור AI</span>
           </div>
 
-          <!-- Manual API Key Setup -->
-          <div id="manualAiSetup">
+          <!-- AI connection setup -->
+          <form id="manualAiSetup" autocomplete="off" onsubmit="return false">
             <div class="settings-form-group">
-              <label for="settingsAiProvider">AI Provider</label>
+              <label for="settingsAiProvider">חיבור ל-AI</label>
               <select id="settingsAiProvider">
-                <option value="anthropic">Anthropic (Claude)</option>
-                <option value="openai">OpenAI (GPT)</option>
-                <option value="openrouter">OpenRouter</option>
+                <option value="claude-cli">Claude Code (מנוי — ללא מפתח)</option>
+                <option value="codex-cli">Codex / ChatGPT (מנוי — ללא מפתח)</option>
+                <option value="anthropic">Anthropic — מפתח API</option>
+                <option value="openai">OpenAI — מפתח API</option>
+                <option value="openrouter">OpenRouter — מפתח API</option>
               </select>
             </div>
 
             <div class="settings-form-group">
               <label for="settingsAiModel">Model</label>
               <select id="settingsAiModel">
+                <optgroup label="Claude" data-provider="claude-cli">
+                  <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (Recommended)</option>
+                  <option value="claude-opus-4-6">Claude Opus 4.6</option>
+                  <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Fast/Cheap)</option>
+                </optgroup>
+                <optgroup label="Codex / ChatGPT" data-provider="codex-cli">
+                  <option value="gpt-5-codex">GPT-5 Codex (Recommended)</option>
+                  <option value="gpt-5">GPT-5</option>
+                </optgroup>
                 <optgroup label="Anthropic" data-provider="anthropic">
                   <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (Recommended)</option>
                   <option value="claude-opus-4-6">Claude Opus 4.6</option>
@@ -6811,11 +7112,12 @@
               </select>
             </div>
 
-            <div class="settings-form-group">
+            <div class="settings-form-group" id="settingsApiKeyGroup">
               <label for="settingsAiApiKey">API Key</label>
-              <input type="password" id="settingsAiApiKey" placeholder="sk-...">
+              <input type="password" id="settingsAiApiKey" placeholder="sk-..." autocomplete="off">
             </div>
-          </div>
+            <p id="settingsCliNote" class="claude-code-desc" style="display:none;">משתמש בהתחברות ה-CLI שלך (מנוי) — אין צורך במפתח API. אם הספק נכשל, המערכת תעבור אוטומטית לחיבור הזמין הבא.</p>
+          </form>
 
           <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
             <button id="testAiConnection" type="button" class="settings-test-btn">Test Connection</button>
@@ -7203,6 +7505,36 @@
           btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>מלא טופס`;
           btn.addEventListener('click', () => {
             const targetDocType = formData.docType || 'quote';
+            if (targetDocType === 'cv') {
+              btn.disabled = true;
+              btn.textContent = 'יוצר גרסת CV...';
+              fetch('/api/cv-versions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: formData.cvData?.fullName || formData.clientName || 'קורות חיים',
+                  headline: formData.cvData?.headline || formData.projectDescription || '',
+                  cvData: formData.cvData || {
+                    fullName: formData.clientName || '',
+                    headline: formData.projectDescription || '',
+                    profile: formData.serviceDetails || '',
+                    sections: [],
+                    skills: [],
+                    languages: []
+                  }
+                })
+              }).then(function(res) {
+                if (!res.ok) throw new Error('CV create failed');
+                return res.json();
+              }).then(function() {
+                if (window._navigate) window._navigate('cv');
+              }).catch(function() {
+                alert('שגיאה ביצירת גרסת CV');
+                btn.disabled = false;
+                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>מלא טופס`;
+              });
+              return;
+            }
             const currentDocType = window._activeDocType || 'quote';
 
             if (targetDocType !== currentDocType && currentProjectId) {
@@ -11520,23 +11852,35 @@
       const aiModelEl = document.getElementById('settingsAiModel');
       const aiApiKeyEl = document.getElementById('settingsAiApiKey');
 
-      if (currentProfile.aiProvider) aiProviderEl.value = currentProfile.aiProvider;
+      // Map provider for display: a no-key/OAuth Anthropic profile is really a
+      // Claude Code CLI login → show claude-cli. Empty → claude-cli (default).
+      let provForUI = currentProfile.aiProvider || '';
+      const noApiKey = !currentProfile.aiApiKey;
+      if (!provForUI || (provForUI === 'anthropic' && (currentProfile.useClaudeOAuth || noApiKey))) provForUI = 'claude-cli';
+      aiProviderEl.value = provForUI;
       if (currentProfile.aiModel) aiModelEl.value = currentProfile.aiModel;
       if (currentProfile.aiApiKey) aiApiKeyEl.value = currentProfile.aiApiKey;
 
       // Refresh Claude Code card state
       checkClaudeCode();
 
-      // Filter model list based on provider
+      // Filter model list based on provider + show/hide the API-key field
       function updateProviderUI() {
+        const prov = aiProviderEl.value;
+        const isCliLogin = (prov === 'claude-cli' || prov === 'codex-cli');
+        // CLI logins use the subscription — no API key needed
+        const keyGroup = document.getElementById('settingsApiKeyGroup');
+        const cliNote = document.getElementById('settingsCliNote');
+        if (keyGroup) keyGroup.style.display = isCliLogin ? 'none' : '';
+        if (cliNote) cliNote.style.display = isCliLogin ? '' : 'none';
         // Show only optgroups matching the selected provider
         aiModelEl.querySelectorAll('optgroup').forEach(g => {
-          g.style.display = g.dataset.provider === aiProviderEl.value ? '' : 'none';
+          g.style.display = g.dataset.provider === prov ? '' : 'none';
         });
         // If current model doesn't match provider, select first visible option
         const currentOpt = aiModelEl.querySelector(`option[value="${aiModelEl.value}"]`);
-        if (currentOpt && currentOpt.closest('optgroup')?.dataset.provider !== aiProviderEl.value) {
-          const firstVisible = aiModelEl.querySelector(`optgroup[data-provider="${aiProviderEl.value}"] option`);
+        if (currentOpt && currentOpt.closest('optgroup')?.dataset.provider !== prov) {
+          const firstVisible = aiModelEl.querySelector(`optgroup[data-provider="${prov}"] option`);
           if (firstVisible) aiModelEl.value = firstVisible.value;
         }
       }
@@ -11637,7 +11981,9 @@
       data.aiProvider = aiProviderEl.value;
       data.aiModel = aiModelEl.value;
       data.aiApiKey = aiApiKeyEl.value;
-      data.useClaudeOAuth = currentProfile.useClaudeOAuth || false;
+      // CLI logins use the subscription; record the matching auth state/model.
+      data.useClaudeOAuth = (aiProviderEl.value === 'claude-cli');
+      if (aiProviderEl.value === 'codex-cli') data.codexModel = aiModelEl.value;
       // Preserve a just-uploaded logo so the save never drops it
       data.logoPath = currentProfile.logoPath || '';
 
@@ -11771,11 +12117,24 @@
           setTimeout(function() { obNext(); }, 1200);
         });
     };
+    window.obProviderChanged = function() {
+      var prov = document.getElementById('obAiProvider').value;
+      var isCli = (prov === 'claude-cli' || prov === 'codex-cli');
+      var row = document.getElementById('obApiKeyRow');
+      var note = document.getElementById('obCliNote');
+      if (row) row.style.display = isCli ? 'none' : '';
+      if (note) note.style.display = isCli ? '' : 'none';
+    };
     window.obNext = function() {
       if (_obStep === 2) {
         var provider = document.getElementById('obAiProvider').value;
         var key = document.getElementById('obAiKey').value.trim();
-        if (provider && key) fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aiProvider: provider, aiApiKey: key }) });
+        if (provider === 'claude-cli' || provider === 'codex-cli') {
+          // CLI login — no API key; record the auth mode.
+          fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aiProvider: provider, aiApiKey: '', useClaudeOAuth: provider === 'claude-cli' }) });
+        } else if (provider && key) {
+          fetch('/api/user-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aiProvider: provider, aiApiKey: key }) });
+        }
       }
       if (_obStep === 3) {
         var body = {};
@@ -12498,7 +12857,7 @@
 
       // Update rail active state
       document.querySelectorAll('.rail-btn').forEach(function(b) { b.classList.remove('active'); });
-      var railTarget = view === 'document' ? 'projects' : view === 'clients' ? 'clients' : view === 'projects' ? 'projects' : 'home';
+      var railTarget = view === 'document' ? 'projects' : view === 'cv' ? 'cv' : view === 'clients' ? 'clients' : view === 'projects' ? 'projects' : 'home';
       var railBtn = document.querySelector('.rail-btn[data-view="' + railTarget + '"]');
       if (railBtn) railBtn.classList.add('active');
 
@@ -12526,6 +12885,8 @@
         segments.push({ label: '\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA' });
       } else if (navState.view === 'projects') {
         segments.push({ label: '\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD' });
+      } else if (navState.view === 'cv') {
+        segments.push({ label: '\u05E7\u05D5\u05E8\u05D5\u05EA \u05D7\u05D9\u05D9\u05DD' });
       } else if (navState.view === 'document') {
         if (navState.projectId) {
           var project = (window._allProjects || []).find(function(p) { return p.id === navState.projectId; });
@@ -12561,6 +12922,7 @@
         case 'home': renderDashboard(); break;
         case 'clients': renderClientsView(); break;
         case 'projects': renderProjectsView(); break;
+        case 'cv': renderCvWorkspace(); break;
         case 'document':
           loadDocument(params);
           renderNavSidebar();
@@ -12587,6 +12949,297 @@
       order: '\u05D4\u05D6\u05DE\u05E0\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4',
       cv: '\u05E7\u05D5\u05E8\u05D5\u05EA \u05D7\u05D9\u05D9\u05DD'
     };
+
+    // ══════════════════════════════════════
+    // CV WORKSPACE
+    // ══════════════════════════════════════
+    var cvState = { initialized: false, versions: [], activeId: null, active: null, pendingFiles: [] };
+    var cvMissingLabels = {
+      fullName: '\u05E9\u05DD \u05DE\u05DC\u05D0',
+      headline: '\u05DB\u05D5\u05EA\u05E8\u05EA \u05DE\u05E7\u05E6\u05D5\u05E2\u05D9\u05EA',
+      profile: '\u05EA\u05E7\u05E6\u05D9\u05E8 \u05E4\u05E8\u05D5\u05E4\u05D9\u05DC',
+      sections: '\u05E0\u05D9\u05E1\u05D9\u05D5\u05DF / \u05E4\u05E8\u05D5\u05D9\u05E7\u05D8\u05D9\u05DD'
+    };
+
+    function initCvWorkspace() {
+      if (cvState.initialized) return;
+      cvState.initialized = true;
+      var newBtn = document.getElementById('cvNewVersionBtn');
+      var emptyBtn = document.getElementById('cvEmptyCreateBtn');
+      var saveBtn = document.getElementById('cvSaveBtn');
+      var generateBtn = document.getElementById('cvGenerateBtn');
+      var chooseBtn = document.getElementById('cvChooseFilesBtn');
+      var fileInput = document.getElementById('cvIntakeFiles');
+      var intakeBtn = document.getElementById('cvRunIntakeBtn');
+      var addLinkBtn = document.getElementById('cvAddLinkBtn');
+      if (newBtn) newBtn.addEventListener('click', createCvVersion);
+      if (emptyBtn) emptyBtn.addEventListener('click', createCvVersion);
+      if (saveBtn) saveBtn.addEventListener('click', saveActiveCvVersion);
+      if (generateBtn) generateBtn.addEventListener('click', generateActiveCv);
+      if (chooseBtn && fileInput) chooseBtn.addEventListener('click', function() { fileInput.click(); });
+      if (fileInput) fileInput.addEventListener('change', function() {
+        cvState.pendingFiles = Array.from(fileInput.files || []);
+        var status = document.getElementById('cvFileStatus');
+        if (status) status.textContent = cvState.pendingFiles.length ? cvState.pendingFiles.length + ' קבצים נבחרו' : '';
+      });
+      if (intakeBtn) intakeBtn.addEventListener('click', runCvIntake);
+      if (addLinkBtn) addLinkBtn.addEventListener('click', function() { addCvLinkRow('', ''); });
+      document.querySelectorAll('[data-cv-basic], #cvProfile, #cvSectionsText, #cvSkillsText, #cvLanguagesText, #cvVersionName').forEach(function(el) {
+        el.addEventListener('input', updateCvBaselineUi);
+      });
+    }
+
+    async function renderCvWorkspace() {
+      initCvWorkspace();
+      await loadCvVersions();
+    }
+
+    async function loadCvVersions() {
+      try {
+        var res = await fetch('/api/cv-versions');
+        var data = await res.json();
+        cvState.versions = data.versions || [];
+        cvState.activeId = cvState.activeId || data.activeCvId || (cvState.versions[0] && cvState.versions[0].id) || null;
+        renderCvVersionList();
+        if (cvState.activeId) await loadCvVersion(cvState.activeId);
+        else showCvEmptyState();
+      } catch (err) {
+        console.error('CV versions load failed:', err);
+        showCvEmptyState();
+      }
+    }
+
+    function showCvEmptyState() {
+      var empty = document.getElementById('cvEmptyState');
+      var shell = document.getElementById('cvEditorShell');
+      if (empty) empty.hidden = false;
+      if (shell) shell.hidden = true;
+    }
+
+    function showCvEditor() {
+      var empty = document.getElementById('cvEmptyState');
+      var shell = document.getElementById('cvEditorShell');
+      if (empty) empty.hidden = true;
+      if (shell) shell.hidden = false;
+    }
+
+    function renderCvVersionList() {
+      var list = document.getElementById('cvVersionList');
+      if (!list) return;
+      if (!cvState.versions.length) {
+        list.innerHTML = '<div class="cv-status-line">אין עדיין גרסאות CV.</div>';
+        return;
+      }
+      list.innerHTML = cvState.versions.map(function(v) {
+        var active = v.id === cvState.activeId ? ' active' : '';
+        var missing = v.baselineStatus && v.baselineStatus.missing && v.baselineStatus.missing.length
+          ? 'חסר: ' + v.baselineStatus.missing.map(function(k) { return cvMissingLabels[k] || k; }).join(', ')
+          : 'מוכן ליצירה';
+        return '<button class="cv-version-card' + active + '" data-cv-id="' + escHtml(v.id) + '" type="button"><strong>' + escHtml(v.name || 'קורות חיים') + '</strong><span>' + escHtml(v.headline || missing) + '</span></button>';
+      }).join('');
+      list.querySelectorAll('[data-cv-id]').forEach(function(btn) {
+        btn.addEventListener('click', function() { loadCvVersion(btn.dataset.cvId); });
+      });
+    }
+
+    async function createCvVersion() {
+      var res = await fetch('/api/cv-versions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'קורות חיים', cvData: {} })
+      });
+      if (!res.ok) return alert('שגיאה ביצירת גרסת CV');
+      var version = await res.json();
+      cvState.activeId = version.id;
+      cvState.active = version;
+      await loadCvVersions();
+    }
+
+    async function loadCvVersion(id) {
+      var res = await fetch('/api/cv-versions/' + encodeURIComponent(id));
+      if (!res.ok) return showCvEmptyState();
+      cvState.active = await res.json();
+      cvState.activeId = id;
+      renderCvVersionList();
+      fillCvEditor(cvState.active);
+      showCvEditor();
+    }
+
+    function addCvLinkRow(label, url) {
+      var rows = document.getElementById('cvLinksRows');
+      if (!rows) return;
+      var row = document.createElement('div');
+      row.className = 'cv-link-row';
+      row.innerHTML = '<input data-part="label" type="text" placeholder="LinkedIn / GitHub / תיק עבודות" value="' + escHtml(label || '') + '">' +
+        '<input data-part="url" type="text" dir="ltr" placeholder="https://..." value="' + escHtml(url || '') + '">' +
+        '<button class="cv-action-btn small" type="button">הסר</button>';
+      row.querySelector('button').addEventListener('click', function() { row.remove(); updateCvBaselineUi(); });
+      row.querySelectorAll('input').forEach(function(input) { input.addEventListener('input', updateCvBaselineUi); });
+      rows.appendChild(row);
+    }
+
+    function fillCvEditor(version) {
+      var cv = version.cvData || {};
+      var nameInput = document.getElementById('cvVersionName');
+      if (nameInput) nameInput.value = version.name || '';
+      document.querySelectorAll('[data-cv-basic]').forEach(function(el) {
+        el.value = cv[el.dataset.cvBasic] || '';
+      });
+      var profile = document.getElementById('cvProfile');
+      if (profile) profile.value = cv.profile || '';
+      var rows = document.getElementById('cvLinksRows');
+      if (rows) rows.innerHTML = '';
+      var links = Array.isArray(cv.links) && cv.links.length ? cv.links : [
+        { label: 'LinkedIn', url: '' },
+        { label: 'GitHub', url: '' },
+        { label: 'תיק עבודות', url: '' }
+      ];
+      links.forEach(function(link) { addCvLinkRow(link.label || '', link.url || ''); });
+      var sections = document.getElementById('cvSectionsText');
+      if (sections) sections.value = formatCvSectionsForWorkspace(cv.sections);
+      var skills = document.getElementById('cvSkillsText');
+      if (skills) skills.value = formatCvSkills(cv.skills);
+      var languages = document.getElementById('cvLanguagesText');
+      if (languages) languages.value = Array.isArray(cv.languages) ? cv.languages.join('\n') : '';
+      updateCvBaselineUi();
+    }
+
+    function parseCvSectionsFromWorkspace(value) {
+      return (value || '').split('\n').map(function(line) { return line.trim(); }).filter(Boolean).reduce(function(acc, line) {
+        var parts = line.split('|').map(function(p) { return p.trim(); });
+        if (parts.length >= 5) {
+          var title = parts[0];
+          var section = acc.find(function(s) { return s.title === title; });
+          if (!section) { section = { title: title, items: [] }; acc.push(section); }
+          section.items.push({ title: parts[1], organization: parts[2], dates: parts[3], bullets: parts.slice(4).join(' | ').split(';').map(function(v) { return v.trim(); }).filter(Boolean) });
+        } else if (parts.length >= 2) {
+          var simple = acc.find(function(s) { return s.title === parts[0]; });
+          if (!simple) { simple = { title: parts[0], items: [] }; acc.push(simple); }
+          simple.items.push(parts.slice(1).join(' | '));
+        }
+        return acc;
+      }, []);
+    }
+
+    function formatCvSectionsForWorkspace(sections) {
+      return (Array.isArray(sections) ? sections : []).flatMap(function(section) {
+        return (Array.isArray(section.items) ? section.items : []).map(function(item) {
+          if (typeof item === 'string') return [section.title, item].filter(Boolean).join(' | ');
+          var bullets = Array.isArray(item.bullets) ? item.bullets.join('; ') : '';
+          return [section.title, item.title, item.organization, item.dates || item.date, bullets].filter(Boolean).join(' | ');
+        });
+      }).join('\n');
+    }
+
+    function getCvDataFromWorkspace() {
+      var cv = {};
+      document.querySelectorAll('[data-cv-basic]').forEach(function(el) { cv[el.dataset.cvBasic] = el.value.trim(); });
+      cv.links = Array.from(document.querySelectorAll('#cvLinksRows .cv-link-row')).map(function(row) {
+        return {
+          label: row.querySelector('[data-part="label"]').value.trim(),
+          url: row.querySelector('[data-part="url"]').value.trim()
+        };
+      }).filter(function(link) { return link.label || link.url; });
+      cv.profile = (document.getElementById('cvProfile') || {}).value?.trim() || '';
+      cv.sections = parseCvSectionsFromWorkspace((document.getElementById('cvSectionsText') || {}).value || '');
+      cv.skills = parseCvSkills((document.getElementById('cvSkillsText') || {}).value || '');
+      cv.languages = ((document.getElementById('cvLanguagesText') || {}).value || '').split('\n').map(function(v) { return v.trim(); }).filter(Boolean);
+      return cv;
+    }
+
+    function getLocalCvBaseline(cv) {
+      var missing = [];
+      if (!cv.fullName) missing.push('fullName');
+      if (!cv.headline) missing.push('headline');
+      if (!cv.profile) missing.push('profile');
+      if (!cv.sections || !cv.sections.some(function(s) { return s.items && s.items.length; })) missing.push('sections');
+      return { complete: missing.length === 0, missing: missing };
+    }
+
+    function updateCvBaselineUi() {
+      var cv = getCvDataFromWorkspace();
+      var status = getLocalCvBaseline(cv);
+      var statusEl = document.getElementById('cvBaselineStatus');
+      var list = document.getElementById('cvBaselineChecklist');
+      var generateBtn = document.getElementById('cvGenerateBtn');
+      if (statusEl) statusEl.textContent = status.complete ? 'ה-CV מוכן ליצירת DOCX.' : 'חסרים פרטים בסיסיים לפני יצירה.';
+      if (generateBtn) generateBtn.disabled = !status.complete;
+      if (list) {
+        list.innerHTML = Object.keys(cvMissingLabels).map(function(key) {
+          var ok = !status.missing.includes(key);
+          return '<span class="cv-check' + (ok ? ' ok' : '') + '">' + (ok ? '✓ ' : '• ') + cvMissingLabels[key] + '</span>';
+        }).join('');
+      }
+    }
+
+    async function saveActiveCvVersion() {
+      if (!cvState.activeId) return;
+      var body = {
+        name: (document.getElementById('cvVersionName') || {}).value || 'קורות חיים',
+        cvData: getCvDataFromWorkspace()
+      };
+      var res = await fetch('/api/cv-versions/' + encodeURIComponent(cvState.activeId), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) return alert('שגיאה בשמירת CV');
+      cvState.active = await res.json();
+      await loadCvVersions();
+    }
+
+    async function runCvIntake() {
+      if (!cvState.activeId) return;
+      var text = (document.getElementById('cvIntakeText') || {}).value || '';
+      var form = new FormData();
+      form.append('text', text);
+      cvState.pendingFiles.forEach(function(file) { form.append('files', file); });
+      if (!text.trim() && cvState.pendingFiles.length === 0) return alert('צריך להדביק טקסט או לצרף קובץ / צילום מסך');
+      var btn = document.getElementById('cvRunIntakeBtn');
+      if (btn) { btn.disabled = true; btn.textContent = 'מנתח...'; }
+      try {
+        var res = await fetch('/api/cv-versions/' + encodeURIComponent(cvState.activeId) + '/intake', { method: 'POST', body: form });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'שגיאה בניתוח CV');
+        cvState.pendingFiles = [];
+        var fileInput = document.getElementById('cvIntakeFiles');
+        if (fileInput) fileInput.value = '';
+        var status = document.getElementById('cvFileStatus');
+        if (status) status.textContent = data.extraction?.sourceSummary || 'הנתונים עודכנו';
+        var intake = document.getElementById('cvIntakeText');
+        if (intake) intake.value = '';
+        cvState.active = data.version;
+        fillCvEditor(data.version);
+        await loadCvVersions();
+      } catch (err) {
+        alert(err.message || 'שגיאה בניתוח CV');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'נתח והשלם'; }
+      }
+    }
+
+    async function generateActiveCv() {
+      if (!cvState.activeId) return;
+      await saveActiveCvVersion();
+      var cvData = getCvDataFromWorkspace();
+      var res = await fetch('/api/cv-versions/' + encodeURIComponent(cvState.activeId) + '/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cvData: cvData })
+      });
+      if (!res.ok) {
+        var err = await res.json().catch(function() { return {}; });
+        return alert(err.error || 'שגיאה ביצירת CV');
+      }
+      var blob = await res.blob();
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cv.docx';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      await loadCvVersions();
+    }
 
     // ══════════════════════════════════════
     // DASHBOARD
@@ -13552,6 +14205,8 @@
     if (dashAddClient) dashAddClient.addEventListener('click', function() { openAddClientModal(); });
     var dashAddProject = document.getElementById('dashAddProject');
     if (dashAddProject) dashAddProject.addEventListener('click', function() { openAddProjectModal(); });
+    var dashOpenCv = document.getElementById('dashOpenCv');
+    if (dashOpenCv) dashOpenCv.addEventListener('click', function() { navigate('cv'); });
     var dashNewDoc = document.getElementById('dashNewDoc');
     if (dashNewDoc) dashNewDoc.addEventListener('click', function() {
       // If there are projects, open the most recent one; otherwise prompt to create a project first
@@ -13568,6 +14223,10 @@
     document.querySelectorAll('.dash-doc-type').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var requestedDocType = btn.dataset.docType || 'quote';
+        if (requestedDocType === 'cv') {
+          navigate('cv');
+          return;
+        }
         var projects = window._allProjects || [];
         if (projects.length > 0) {
           var p = projects[0];

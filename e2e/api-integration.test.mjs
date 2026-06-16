@@ -667,7 +667,70 @@ describe('Service Templates CRUD', () => {
 });
 
 // ===========================================================================
-// 7. Demo Data
+// 7. CV Versions
+// ===========================================================================
+
+describe('CV Versions', () => {
+  let cvId;
+
+  it('POST /api/cv-versions creates a standalone CV version', async () => {
+    const beforeClients = await api('GET', '/api/clients');
+    const beforeProjects = await api('GET', '/api/projects');
+
+    const { status, data } = await api('POST', '/api/cv-versions', {
+      name: 'CV Test Version',
+      cvData: {
+        fullName: 'מועמד בדיקה',
+        headline: 'יוצר תוכן AI',
+      },
+    });
+
+    assert.equal(status, 201);
+    assert.equal(data.name, 'CV Test Version');
+    assert.equal(data.cvData.fullName, 'מועמד בדיקה');
+    cvId = data.id;
+
+    const afterClients = await api('GET', '/api/clients');
+    const afterProjects = await api('GET', '/api/projects');
+    assert.equal(afterClients.data.clients.length, beforeClients.data.clients.length, 'CV version should not create a client');
+    assert.equal(afterProjects.data.projects.length, beforeProjects.data.projects.length, 'CV version should not create a project');
+  });
+
+  it('GET /api/cv-versions lists created versions', async () => {
+    const { status, data } = await api('GET', '/api/cv-versions');
+    assert.equal(status, 200);
+    assert.ok(Array.isArray(data.versions));
+    assert.ok(data.versions.some(v => v.id === cvId));
+  });
+
+  it('PUT /api/cv-versions/:id updates cvData and baseline status', async () => {
+    const { status, data } = await api('PUT', `/api/cv-versions/${cvId}`, {
+      cvData: {
+        fullName: 'מועמד בדיקה',
+        headline: 'יוצר תוכן AI',
+        profile: 'תקציר מקצועי קצר.',
+        sections: [{ title: 'ניסיון מקצועי', items: ['הפקת וידאו AI'] }],
+        skills: [{ category: 'AI', items: ['ComfyUI'] }],
+        languages: ['עברית — שפת אם'],
+      },
+    });
+    assert.equal(status, 200);
+    assert.equal(data.baselineStatus.complete, true);
+  });
+
+  it('POST /api/cv-versions/:id/generate rejects incomplete baseline', async () => {
+    const { data: incomplete } = await api('POST', '/api/cv-versions', { name: 'Incomplete CV', cvData: { fullName: 'רק שם' } });
+    const { status, data } = await api('POST', `/api/cv-versions/${incomplete.id}/generate`, {
+      cvData: { fullName: 'רק שם' },
+    });
+    assert.equal(status, 422);
+    assert.equal(data.baselineStatus.complete, false);
+    assert.ok(data.baselineStatus.missing.includes('profile'));
+  });
+});
+
+// ===========================================================================
+// 8. Demo Data
 // ===========================================================================
 describe('Demo Data', () => {
   it('POST /api/load-demo creates demo project and client', async () => {

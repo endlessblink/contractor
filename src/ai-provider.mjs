@@ -44,8 +44,27 @@ export function getProviderConfig() {
   const profile = loadProfile();
   const provider = profile.aiProvider || 'anthropic';
   const model = profile.aiModel || 'claude-sonnet-4-6';
-  const apiKey = process.env.ANTHROPIC_API_KEY || profile.aiApiKey || '';
 
+  // Explicit CLI-login primaries — use the local subscription, no API key.
+  if (provider === 'claude-cli') {
+    const oauth = readClaudeOAuth();
+    return oauth
+      ? { provider: 'anthropic', model, apiKey: null, accessToken: oauth.accessToken, useClaudeOAuth: true, configured: true }
+      : { provider: 'anthropic', model, apiKey: null, accessToken: null, useClaudeOAuth: false, configured: false };
+  }
+  if (provider === 'codex-cli') {
+    const codex = readCodexOAuth();
+    const cModel = profile.codexModel || 'gpt-5-codex';
+    if (codex?.accessToken) {
+      return { provider: 'codex', model: cModel, apiKey: null, accessToken: codex.accessToken, accountId: codex.accountId, useClaudeOAuth: false, configured: true };
+    }
+    if (codex?.apiKey) {
+      return { provider: 'openai', model: profile.codexModel || 'gpt-5', apiKey: codex.apiKey, accessToken: null, useClaudeOAuth: false, configured: true };
+    }
+    return { provider: 'codex', model: cModel, apiKey: null, accessToken: null, useClaudeOAuth: false, configured: false };
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY || profile.aiApiKey || '';
   if (apiKey) {
     return { provider, model, apiKey, accessToken: null, useClaudeOAuth: false, configured: true };
   }
@@ -75,6 +94,8 @@ export function buildAttempts() {
       attempts.push(primary.useClaudeOAuth
         ? { kind: 'anthropic-oauth', model: primary.model, accessToken: primary.accessToken, label: 'Claude (OAuth)' }
         : { kind: 'anthropic-key', model: primary.model, apiKey: primary.apiKey, label: 'Anthropic (API key)' });
+    } else if (primary.provider === 'codex') {
+      attempts.push({ kind: 'codex-oauth', model: primary.model, accessToken: primary.accessToken, accountId: primary.accountId, label: 'Codex/ChatGPT (CLI)' });
     } else if (primary.provider === 'openrouter') {
       attempts.push({ kind: 'openrouter', model: primary.model, apiKey: primary.apiKey, label: 'OpenRouter' });
     } else { // openai
@@ -164,6 +185,42 @@ function headersFor(a) {
   throw new Error(`Unknown attempt kind: ${a.kind}`);
 }
 
+function toDataUrl(block) {
+  const source = block?.source || {};
+  if (source.type === 'base64' && source.data) {
+    return `data:${source.media_type || 'image/png'};base64,${source.data}`;
+  }
+  if (block?.image_url?.url) return block.image_url.url;
+  if (typeof block?.url === 'string') return block.url;
+  return '';
+}
+
+function normalizeChatContentForOpenAI(content) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return String(content || '');
+  return content.map(block => {
+    if (block?.type === 'text') return { type: 'text', text: block.text || '' };
+    if (block?.type === 'image') return { type: 'image_url', image_url: { url: toDataUrl(block) } };
+    if (block?.type === 'image_url') return block;
+    return { type: 'text', text: String(block?.text || '') };
+  }).filter(block => block.type !== 'image_url' || block.image_url?.url);
+}
+
+function normalizeResponseContent(content, role) {
+  if (typeof content === 'string') {
+    return [{ type: role === 'assistant' ? 'output_text' : 'input_text', text: content }];
+  }
+  if (!Array.isArray(content)) {
+    return [{ type: role === 'assistant' ? 'output_text' : 'input_text', text: String(content || '') }];
+  }
+  const textType = role === 'assistant' ? 'output_text' : 'input_text';
+  return content.map(block => {
+    if (block?.type === 'text') return { type: textType, text: block.text || '' };
+    if (block?.type === 'image' || block?.type === 'image_url') return { type: 'input_image', image_url: toDataUrl(block) };
+    return { type: textType, text: String(block?.text || '') };
+  }).filter(block => block.type !== 'input_image' || block.image_url);
+}
+
 function bodyFor(a, { system, messages, maxTokens, stream }) {
   if (a.kind === 'anthropic-key') {
     return { model: a.model, max_tokens: maxTokens || 4096, system, messages, stream };
@@ -177,7 +234,7 @@ function bodyFor(a, { system, messages, maxTokens, stream }) {
   if (a.kind === 'openai' || a.kind === 'openrouter') {
     const msgs = [];
     if (system) msgs.push({ role: 'system', content: system });
-    for (const m of messages) msgs.push({ role: m.role, content: m.content });
+    for (const m of messages) msgs.push({ role: m.role, content: normalizeChatContentForOpenAI(m.content) });
     return { model: a.model, max_tokens: maxTokens || 4096, messages: msgs, stream };
   }
   if (a.kind === 'codex-oauth') {
@@ -185,7 +242,7 @@ function bodyFor(a, { system, messages, maxTokens, stream }) {
     const input = messages.map(m => ({
       type: 'message',
       role: m.role,
-      content: [{ type: m.role === 'assistant' ? 'output_text' : 'input_text', text: typeof m.content === 'string' ? m.content : String(m.content) }],
+      content: normalizeResponseContent(m.content, m.role),
     }));
     return { model: a.model, instructions: system || '', input, stream, store: false };
   }

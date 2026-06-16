@@ -71,6 +71,7 @@ const UPLOADS_DIR = IS_PKG ? resolveData('uploads') : (process.env.CONTRACTOR_DA
 mkdirSync(join(DATA_DIR, 'knowledge', 'pending-extractions'), { recursive: true });
 mkdirSync(join(DATA_DIR, 'references'), { recursive: true });
 mkdirSync(join(DATA_DIR, 'projects'), { recursive: true });
+mkdirSync(join(DATA_DIR, 'cv'), { recursive: true });
 mkdirSync(join(DATA_DIR, 'skills'), { recursive: true });
 // New data-based paths with fallback to old locations (dev mode only)
 // When running as pkg, always use DATA_DIR paths — snapshot is read-only
@@ -82,6 +83,7 @@ const PROJECTS_DIR = IS_PKG || process.env.CONTRACTOR_DATA_DIR
   ? join(DATA_DIR, 'projects')
   : (readdirSync(join(DATA_DIR, 'projects')).length > 0
     ? join(DATA_DIR, 'projects') : join(PROJECT_DIR, 'projects'));
+const CV_DIR = join(DATA_DIR, 'cv');
 const KNOWLEDGE_DIR = IS_PKG
   ? join(DATA_DIR, 'knowledge')
   : (existsSync(join(DATA_DIR, 'knowledge', 'clauses-db.json'))
@@ -95,6 +97,7 @@ console.log(`Loaded runtime skills: ${runtimeSkills.length} editable Markdown sk
 mkdirSync(OUTPUT_DIR, { recursive: true });
 mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!PROJECTS_DIR.startsWith('/snapshot/')) mkdirSync(PROJECTS_DIR, { recursive: true });
+mkdirSync(CV_DIR, { recursive: true });
 if (!KNOWLEDGE_DIR.startsWith('/snapshot/')) mkdirSync(KNOWLEDGE_DIR, { recursive: true });
 
 // ─── Auto-initialize / refresh clause database from sample ───────────────────
@@ -446,6 +449,142 @@ function getProjectPath(id, subfolder) {
   return p;
 }
 
+// ─── CV version helper functions ──────────────────────────────────────────────
+
+function safeCvId(id) {
+  return !!id && !id.includes('..') && !id.includes('/') && !id.includes('\\');
+}
+
+function readCvIndex() {
+  try {
+    const raw = readFileSync(join(CV_DIR, '_index.json'), 'utf-8');
+    const data = JSON.parse(raw);
+    return { versions: Array.isArray(data.versions) ? data.versions : [], activeCvId: data.activeCvId || null };
+  } catch {
+    return { versions: [], activeCvId: null };
+  }
+}
+
+function writeCvIndex(data) {
+  mkdirSync(CV_DIR, { recursive: true });
+  writeFileSync(join(CV_DIR, '_index.json'), JSON.stringify({
+    versions: Array.isArray(data.versions) ? data.versions : [],
+    activeCvId: data.activeCvId || null,
+  }, null, 2), 'utf-8');
+}
+
+function emptyCvData(seed = {}) {
+  return {
+    fullName: seed.fullName || seed.name || userProfile.name || userProfile.nameEn || '',
+    headline: seed.headline || seed.title || userProfile.title || userProfile.titleEn || '',
+    location: seed.location || '',
+    phone: seed.phone || userProfile.phone || '',
+    email: seed.email || userProfile.email || '',
+    links: Array.isArray(seed.links) ? seed.links : (userProfile.website ? [{ label: 'Website', url: userProfile.website }] : []),
+    profile: seed.profile || '',
+    sections: Array.isArray(seed.sections) ? seed.sections : [],
+    skills: Array.isArray(seed.skills) ? seed.skills : [],
+    languages: Array.isArray(seed.languages) ? seed.languages : [],
+  };
+}
+
+function normalizeCvData(data = {}) {
+  return {
+    fullName: String(data.fullName || '').trim(),
+    headline: String(data.headline || '').trim(),
+    location: String(data.location || '').trim(),
+    phone: String(data.phone || '').trim(),
+    email: String(data.email || '').trim(),
+    links: Array.isArray(data.links) ? data.links.filter(link => link && (link.label || link.url)).map(link => ({
+      label: String(link.label || '').trim(),
+      url: String(link.url || '').trim(),
+    })) : [],
+    profile: String(data.profile || '').trim(),
+    sections: Array.isArray(data.sections) ? data.sections.filter(section => section && section.title).map(section => ({
+      title: String(section.title || '').trim(),
+      items: Array.isArray(section.items) ? section.items : [],
+    })) : [],
+    skills: Array.isArray(data.skills) ? data.skills : [],
+    languages: Array.isArray(data.languages) ? data.languages.filter(Boolean).map(v => String(v).trim()) : [],
+  };
+}
+
+function hasSectionContent(cvData) {
+  return Array.isArray(cvData.sections) && cvData.sections.some(section => Array.isArray(section.items) && section.items.length > 0);
+}
+
+function getCvBaselineStatus(cvData = {}) {
+  const cv = normalizeCvData(cvData);
+  const missing = [];
+  if (!cv.fullName) missing.push('fullName');
+  if (!cv.headline) missing.push('headline');
+  if (!cv.profile) missing.push('profile');
+  if (!hasSectionContent(cv)) missing.push('sections');
+  return { complete: missing.length === 0, missing };
+}
+
+function readCvVersion(id) {
+  if (!safeCvId(id)) return null;
+  try {
+    const raw = readFileSync(join(CV_DIR, id, 'cv.json'), 'utf-8');
+    const data = JSON.parse(raw);
+    data.cvData = normalizeCvData(data.cvData || {});
+    data.baselineStatus = getCvBaselineStatus(data.cvData);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCvVersion(id, data) {
+  const dir = join(CV_DIR, id);
+  mkdirSync(join(dir, 'uploads'), { recursive: true });
+  mkdirSync(join(dir, 'output'), { recursive: true });
+  const cvData = normalizeCvData(data.cvData || {});
+  const next = {
+    ...data,
+    id,
+    name: data.name || cvData.fullName || 'קורות חיים',
+    headline: data.headline || cvData.headline || '',
+    cvData,
+    baselineStatus: getCvBaselineStatus(cvData),
+    intakeSources: Array.isArray(data.intakeSources) ? data.intakeSources : [],
+    createdAt: data.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  writeFileSync(join(dir, 'cv.json'), JSON.stringify(next, null, 2), 'utf-8');
+  return next;
+}
+
+function mergeListByKey(existing, incoming, keyFn) {
+  const out = [];
+  const seen = new Set();
+  for (const item of [...(existing || []), ...(incoming || [])]) {
+    const key = keyFn(item);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
+function mergeCvData(existing = {}, incoming = {}) {
+  const current = normalizeCvData(existing);
+  const next = normalizeCvData(incoming);
+  return normalizeCvData({
+    fullName: next.fullName || current.fullName,
+    headline: next.headline || current.headline,
+    location: next.location || current.location,
+    phone: next.phone || current.phone,
+    email: next.email || current.email,
+    profile: next.profile || current.profile,
+    links: mergeListByKey(current.links, next.links, link => `${link.label || ''}|${link.url || ''}`.toLowerCase()),
+    sections: mergeListByKey(current.sections, next.sections, section => String(section.title || '').toLowerCase()),
+    skills: next.skills.length ? next.skills : current.skills,
+    languages: mergeListByKey(current.languages, next.languages, item => String(item).toLowerCase()),
+  });
+}
+
 function loadLearnedContext() {
   try {
     const raw = readFileSync(join(KNOWLEDGE_DIR, 'learned-context.json'), 'utf-8');
@@ -545,6 +684,7 @@ function loadContextFile(filepath) {
 
 const freelanceSkill = loadContextFile('skills/freelance-doc-maker.md');
 const rtlSkill = loadContextFile('skills/rtl-hebrew-docx.md');
+const cvSkill = loadContextFile('skills/israeli-cv-builder.md');
 
 // List reference documents for context
 function getRefDocList() {
@@ -652,7 +792,7 @@ ${langNote}
 1. הצעת מחיר — הצעה ראשונית ללקוח
 2. הזמנת עבודה — הסכם פורמלי אחרי אישור הצעה
 3. חוזה — הסכם מפורט עם תנאים מלאים
-4. קורות חיים — CV מקצועי בעברית עם תמיכה מלאה ב-RTL ומונחים באנגלית
+קורות חיים אינם חלק מפרויקטים/לקוחות. הם נוצרים באזור נפרד בשם "קורות חיים" עם גרסאות CV עצמאיות.
 
 ## מסמכי עזר זמינים במערכת
 המשתמש יכול לנתח מסמכים קיימים דרך לשונית "מסמכים" באפליקציה.
@@ -664,10 +804,11 @@ ${langNote}
 ## האפליקציה
 המשתמש עובד עם אפליקציית יצירת מסמכים שכוללת:
 - לשונית צ'אט (כאן) — לשאלות, עזרה, ייעוץ, והכנת מסמכים
-- לשונית יצירת מסמך — טופס למילוי פרטים ויצירת DOCX
+- לשונית יצירת מסמך — טופס למילוי הצעות מחיר, חוזים והזמנות עבודה
+- אזור קורות חיים — גרסאות CV, ייבוא CV קיים, טקסט LinkedIn וצילומי מסך, ויצירת DOCX
 - לשונית מסמכים — צפייה במסמכים שנוצרו, העלאת קבצים, ניתוח מסמכים קיימים
 
-## כשהמשתמש מבקש ליצור מסמך (הצעת מחיר / חוזה / הזמנת עבודה / קורות חיים)
+## כשהמשתמש מבקש ליצור מסמך עסקי (הצעת מחיר / חוזה / הזמנת עבודה)
 
 ### שלב 1: שאל שאלות קריטיות
 אם חסר מידע קריטי, שאל **רק** את מה שחסר מתוך:
@@ -700,13 +841,13 @@ ${langNote}
 - JSON לא תקין יידחה אוטומטית
 
 ## FORM_DATA לקורות חיים
-כאשר המשתמש מבקש ליצור או לשפר קורות חיים, השתמש ב-docType:"cv" והוסף אובייקט cvData. אל תנסה לדחוס את קורות החיים לשדות תמחור או חוזה.
+כאשר המשתמש מבקש ליצור או לשפר קורות חיים, השתמש ב-docType:"cv" והוסף אובייקט cvData. כפתור הפעולה יפתח גרסת CV באזור "קורות חיים" ולא בפרויקט/לקוח.
 
 מבנה מומלץ:
 <!--FORM_DATA:{"clientName":"שם המועמד","clientCompany":"","docType":"cv","projectDescription":"כותרת מקצועית קצרה","serviceDetails":"תקציר פרופיל קצר","pricingItems":[],"paymentStructure":"two","timeline":"","notes":"","cvData":{"fullName":"...","headline":"...","location":"...","phone":"...","email":"...","links":[{"label":"LinkedIn","url":"..."}],"profile":"...","sections":[{"title":"ניסיון מקצועי","items":[{"title":"...","organization":"...","dates":"...","bullets":["..."]}]}],"skills":[{"category":"...","items":["..."]}],"languages":["עברית — שפת אם"]}}}-->
 
 כללי CV:
-- clientName יהיה שם המועמד כדי שהפרויקט והקובץ יהיו מזוהים.
+- clientName יהיה שם המועמד רק לצורך זיהוי ראשוני; אין ליצור לקוח או פרויקט עבור CV.
 - projectDescription יהיה הכותרת המקצועית הקצרה.
 - serviceDetails יהיה תקציר הפרופיל.
 - pricingItems חייב להיות מערך ריק.
@@ -889,6 +1030,10 @@ const markdownUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024, files: 1 },
 });
+const cvUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 12 * 1024 * 1024, files: 8 },
+});
 
 // Dynamic multer for project-aware uploads
 const dynamicUpload = multer({
@@ -912,7 +1057,7 @@ const dynamicUpload = multer({
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.disable('x-powered-by');
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '15mb' }));
 // Log all POST requests for debugging
 app.use((req, _res, next) => {
   if (req.method === 'POST') console.log(`[REQ] ${req.method} ${req.url} (${req.headers['content-type'] || 'no content-type'})`);
@@ -1976,6 +2121,314 @@ function handleSaveForm(req, res) {
 }
 app.put('/api/projects/:id/form', handleSaveForm);
 app.post('/api/projects/:id/form', handleSaveForm);
+
+// ─── CV version endpoints ────────────────────────────────────────────────────
+
+async function extractCvFileText(file) {
+  const ext = (file.originalname || file.filename || '').split('.').pop().toLowerCase();
+  if (ext === 'docx' || ext === 'doc') {
+    const result = await mammoth.extractRawText({ buffer: file.buffer });
+    return result.value || '';
+  }
+  if (ext === 'pdf') {
+    const pdfData = await getPdfParser().parse(file.buffer);
+    return pdfData.text || '';
+  }
+  return '';
+}
+
+function buildCvExtractionPrompt({ existingCvData, sourceText }) {
+  return `אתה עורך קורות חיים מקצועי בעברית.
+המטרה: לעדכן אובייקט cvData קיים מתוך מקורות כמו קורות חיים קיימים, פרופיל LinkedIn, טקסט מועתק או צילום מסך.
+
+כללים:
+- אל תמציא תפקידים, שנים, מוסדות או הישגים שלא מופיעים במקורות או בפרופיל המשתמש.
+- מותר לנסח מחדש בצורה מקצועית וברורה.
+- שמור מונחי כלים וטכנולוגיות באנגלית כשהם מופיעים כך.
+- החזר JSON בלבד.
+
+מבנה החזרה:
+{
+  "cvData": {
+    "fullName": "",
+    "headline": "",
+    "location": "",
+    "phone": "",
+    "email": "",
+    "links": [{"label":"LinkedIn","url":""}],
+    "profile": "",
+    "sections": [{"title":"ניסיון מקצועי","items":[{"title":"","organization":"","dates":"","bullets":[""]}]}],
+    "skills": [{"category":"כלים","items":[""]}],
+    "languages": [""]
+  },
+  "missingFields": [],
+  "confidenceNotes": [],
+  "sourceSummary": ""
+}
+
+פרופיל משתמש בסיסי:
+${JSON.stringify(userProfile, null, 2)}
+
+הנחיות CV:
+${cvSkill}
+
+cvData קיים:
+${JSON.stringify(existingCvData || {}, null, 2)}
+
+טקסט מקור:
+${sourceText || ''}`;
+}
+
+async function extractCvDataWithAi({ existingCvData, sourceText, images }) {
+  const content = [];
+  for (const img of images || []) {
+    if (!img?.data) continue;
+    content.push({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: img.type || img.mediaType || 'image/png',
+        data: String(img.data).replace(/^data:image\/[^;]+;base64,/, ''),
+      },
+    });
+  }
+  content.push({ type: 'text', text: buildCvExtractionPrompt({ existingCvData, sourceText }) });
+  const response = await chatCompletion({
+    system: 'Return valid JSON only. You extract and improve structured Hebrew CV data.',
+    messages: [{ role: 'user', content }],
+    maxTokens: 4096,
+  });
+  const parsed = extractJSON(response.text);
+  if (!parsed || typeof parsed !== 'object') throw new Error('AI returned invalid CV extraction JSON');
+  return {
+    cvData: normalizeCvData(parsed.cvData || {}),
+    missingFields: Array.isArray(parsed.missingFields) ? parsed.missingFields : [],
+    confidenceNotes: Array.isArray(parsed.confidenceNotes) ? parsed.confidenceNotes : [],
+    sourceSummary: parsed.sourceSummary || '',
+    providerUsed: response.providerUsed || '',
+  };
+}
+
+app.get('/api/cv-versions', (_req, res) => {
+  try {
+    const index = readCvIndex();
+    res.json(index);
+  } catch (err) {
+    console.error('Error reading CV versions:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/cv-versions', (req, res) => {
+  try {
+    const rawName = String(req.body?.name || req.body?.cvData?.fullName || userProfile.name || 'קורות חיים').trim();
+    const idBase = slugify(rawName).replace(/^project-/, 'cv-') || `cv-${Date.now()}`;
+    let id = idBase;
+    let suffix = 2;
+    while (readCvVersion(id)) id = `${idBase}-${suffix++}`;
+    const now = new Date().toISOString();
+    const version = writeCvVersion(id, {
+      id,
+      name: rawName,
+      headline: req.body?.headline || req.body?.cvData?.headline || '',
+      cvData: emptyCvData(req.body?.cvData || {}),
+      intakeSources: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+    const index = readCvIndex();
+    index.versions.unshift({
+      id,
+      name: version.name,
+      headline: version.headline,
+      updatedAt: version.updatedAt,
+      baselineStatus: version.baselineStatus,
+    });
+    index.activeCvId = id;
+    writeCvIndex(index);
+    res.status(201).json(version);
+  } catch (err) {
+    console.error('Error creating CV version:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/cv-versions/:id', (req, res) => {
+  try {
+    const version = readCvVersion(req.params.id);
+    if (!version) return res.status(404).json({ error: 'CV version not found' });
+    res.json(version);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/cv-versions/:id', (req, res) => {
+  try {
+    const existing = readCvVersion(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'CV version not found' });
+    const version = writeCvVersion(req.params.id, {
+      ...existing,
+      ...req.body,
+      cvData: req.body?.cvData ? normalizeCvData(req.body.cvData) : existing.cvData,
+      intakeSources: existing.intakeSources,
+    });
+    const index = readCvIndex();
+    const entry = index.versions.find(v => v.id === req.params.id);
+    if (entry) {
+      entry.name = version.name;
+      entry.headline = version.headline;
+      entry.updatedAt = version.updatedAt;
+      entry.baselineStatus = version.baselineStatus;
+    }
+    writeCvIndex(index);
+    res.json(version);
+  } catch (err) {
+    console.error('Error updating CV version:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/cv-versions/:id', (req, res) => {
+  try {
+    if (!safeCvId(req.params.id)) return res.status(400).json({ error: 'Invalid CV ID' });
+    rmSync(join(CV_DIR, req.params.id), { recursive: true, force: true });
+    const index = readCvIndex();
+    index.versions = index.versions.filter(v => v.id !== req.params.id);
+    if (index.activeCvId === req.params.id) index.activeCvId = index.versions[0]?.id || null;
+    writeCvIndex(index);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/cv-versions/:id/intake', cvUpload.array('files', 8), async (req, res) => {
+  try {
+    const existing = readCvVersion(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'CV version not found' });
+    let sourceText = String(req.body?.text || req.body?.pastedText || '').trim();
+    const images = [];
+    for (const file of req.files || []) {
+      if (file.mimetype?.startsWith('image/')) {
+        images.push({ type: file.mimetype, data: file.buffer.toString('base64') });
+        writeFileSync(join(CV_DIR, req.params.id, 'uploads', `${Date.now()}_${file.originalname}`), file.buffer);
+      } else {
+        const extracted = await extractCvFileText(file);
+        if (extracted) sourceText += `\n\n${extracted}`;
+        writeFileSync(join(CV_DIR, req.params.id, 'uploads', `${Date.now()}_${file.originalname}`), file.buffer);
+      }
+    }
+    if (req.body?.images) {
+      const parsedImages = typeof req.body.images === 'string' ? JSON.parse(req.body.images || '[]') : req.body.images;
+      if (Array.isArray(parsedImages)) images.push(...parsedImages);
+    }
+    if (!sourceText && images.length === 0) return res.status(400).json({ error: 'Provide pasted text, DOCX/PDF, or image screenshots.' });
+
+    let extraction;
+    const localCv = sourceText ? parseCvTextToAnalysis(sourceText) : null;
+    if (localCv && images.length === 0) {
+      extraction = {
+        cvData: normalizeCvData(localCv.cvData),
+        missingFields: [],
+        confidenceNotes: ['Parsed locally from CV-like text.'],
+        sourceSummary: 'קורות חיים שחולצו מטקסט/מסמך קיים',
+        providerUsed: 'local-parser',
+      };
+    } else {
+      extraction = await extractCvDataWithAi({ existingCvData: existing.cvData, sourceText, images });
+    }
+
+    const mergedCvData = mergeCvData(existing.cvData, extraction.cvData);
+    const source = {
+      type: images.length ? (sourceText ? 'mixed' : 'image') : 'text',
+      summary: extraction.sourceSummary || '',
+      providerUsed: extraction.providerUsed || '',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = writeCvVersion(req.params.id, {
+      ...existing,
+      cvData: mergedCvData,
+      intakeSources: [...(existing.intakeSources || []), source],
+    });
+    const index = readCvIndex();
+    const entry = index.versions.find(v => v.id === req.params.id);
+    if (entry) {
+      entry.name = updated.name;
+      entry.headline = updated.headline;
+      entry.updatedAt = updated.updatedAt;
+      entry.baselineStatus = updated.baselineStatus;
+    }
+    writeCvIndex(index);
+    res.json({ success: true, version: updated, extraction });
+  } catch (err) {
+    console.error('CV intake error:', err);
+    const message = /image|vision|content|unsupported/i.test(err.message || '')
+      ? 'Image extraction unavailable with the current AI provider/model. Paste text or upload DOCX/PDF.'
+      : err.message;
+    res.status(500).json({ error: message });
+  }
+});
+
+app.post('/api/cv-versions/:id/generate', async (req, res) => {
+  try {
+    const version = readCvVersion(req.params.id);
+    if (!version) return res.status(404).json({ error: 'CV version not found' });
+    const cvData = normalizeCvData(req.body?.cvData || version.cvData);
+    const baselineStatus = getCvBaselineStatus(cvData);
+    if (!baselineStatus.complete) {
+      return res.status(422).json({ error: 'CV baseline is incomplete.', baselineStatus });
+    }
+    const data = {
+      clientName: cvData.fullName,
+      clientCompany: '',
+      documentType: 'cv',
+      projectDescription: cvData.headline || version.headline || 'קורות חיים',
+      serviceDetails: cvData.profile || '',
+      cvData,
+      pricingItems: [],
+      paymentTerms: { type: 'none', installments: [] },
+      timeline: '',
+      generalNotes: '',
+      documentDate: req.body?.documentDate || null,
+    };
+    const buffer = await generateDocument({ ...data, userProfile, _clausesDb: clausesDb });
+    const outputDir = join(CV_DIR, req.params.id, 'output');
+    mkdirSync(outputDir, { recursive: true });
+    const date = new Date();
+    const dateStr = `${date.getDate()}.${date.getMonth() + 1}.${String(date.getFullYear()).slice(-2)}`;
+    const seq = readdirSync(outputDir).filter(f => f.endsWith('.docx')).length + 1;
+    const filename = ['קורות חיים', cvData.fullName, cvData.headline, dateStr, String(seq)]
+      .filter(Boolean).join(' - ')
+      .replace(/[^\w\u0590-\u05ff\s.\-]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim() + '.docx';
+    const outputPath = join(outputDir, filename);
+    writeFileSync(outputPath, buffer);
+    const updated = writeCvVersion(req.params.id, { ...version, cvData });
+    const index = readCvIndex();
+    const entry = index.versions.find(v => v.id === req.params.id);
+    if (entry) {
+      entry.name = updated.name;
+      entry.headline = updated.headline;
+      entry.updatedAt = updated.updatedAt;
+      entry.baselineStatus = updated.baselineStatus;
+      entry.docCount = seq;
+    }
+    writeCvIndex(index);
+    if (process.env.CONTRACTOR_OPEN !== '0') {
+      exec(`xdg-open "${outputPath}"`, (err) => {
+        if (err) console.error('Failed to open CV document:', err.message);
+      });
+    }
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="cv.docx"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('CV generation error:', err);
+    res.status(500).json({ error: err.message || 'Failed to generate CV' });
+  }
+});
 
 // ─── Demo data endpoints ───────────────────────────────────────────────────────
 
@@ -3307,11 +3760,11 @@ const DEFAULT_DOCUMENT_TYPES = [
   { id: 'quote', name: { he: 'הצעת מחיר', en: 'Quote' } },
   { id: 'workOrder', name: { he: 'הזמנת עבודה', en: 'Work Order' } },
   { id: 'contract', name: { he: 'חוזה', en: 'Contract' } },
-  { id: 'cv', name: { he: 'קורות חיים', en: 'CV' } },
 ];
 
 function normalizeDocumentTypes(data) {
   const normalized = data && Array.isArray(data.types) ? data : { version: 1, types: [] };
+  normalized.types = normalized.types.filter(t => t.id !== 'cv');
   for (const type of DEFAULT_DOCUMENT_TYPES) {
     if (!normalized.types.some(t => t.id === type.id)) normalized.types.push(type);
   }
