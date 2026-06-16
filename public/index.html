@@ -5502,9 +5502,17 @@
       display: grid;
       align-content: center;
       justify-items: center;
+      gap: 18px;
       min-height: 420px;
       padding: 28px;
       text-align: center;
+    }
+    .cv-empty-state p {
+      max-width: 620px;
+      margin: 0;
+    }
+    .cv-empty-state .cv-action-btn {
+      margin-top: 8px;
     }
     .cv-editor-shell {
       display: grid;
@@ -5964,12 +5972,12 @@
               <section class="cv-intake-panel">
                 <div class="cv-intake-copy">
                   <h3>ייבוא והשלמה</h3>
-                  <p>הדבק טקסט מ-LinkedIn, העלה CV קיים, או צרף צילום מסך.</p>
+                  <p>הדבק טקסט מ-LinkedIn, העלה CV קיים ב-PDF/DOCX, או צרף צילום מסך.</p>
                 </div>
                 <textarea id="cvIntakeText" rows="5" placeholder="הדבק כאן About / Experience / Profile מ-LinkedIn או אתר אחר..."></textarea>
                 <div class="cv-intake-actions">
                   <input type="file" id="cvIntakeFiles" accept=".doc,.docx,.pdf,image/*" multiple hidden>
-                  <button class="cv-action-btn" id="cvChooseFilesBtn" type="button">הוסף קבצים / צילומי מסך</button>
+                  <button class="cv-action-btn" id="cvChooseFilesBtn" type="button">העלה CV קיים (PDF/DOCX) / צילום מסך</button>
                   <span class="cv-file-status" id="cvFileStatus"></span>
                   <button class="cv-action-btn primary" id="cvRunIntakeBtn" type="button">נתח והשלם</button>
                 </div>
