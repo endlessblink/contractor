@@ -8134,8 +8134,9 @@
           cb.type = 'checkbox';
           cb.dataset.clauseId = clause.id;
           cb.dataset.category = catKey;
-          cb.checked = clause.required; // Required clauses start checked
-          // Required clauses are NOT locked — users can uncheck if not relevant to this project
+          // Required clauses + curated per-docType defaults (defaultFor) start checked.
+          cb.checked = clause.required || (Array.isArray(clause.defaultFor) && clause.defaultFor.includes(docTypeKey));
+          // Checked clauses are NOT locked — users can uncheck if not relevant to this project
 
           // Update master toggle when individual changes
           cb.addEventListener('change', () => {
@@ -8344,6 +8345,10 @@
     function applySmartRecommendations(scores) {
       if (!scores || typeof scores !== 'object') return;
 
+      // On quotes the AI only SUGGESTS (badges/highlights) — it must not
+      // auto-check clauses, so a quote stays light. Contracts keep auto-check.
+      const isQuoteDoc = docTypeSelect.value === 'quote';
+
       let highCount = 0, mediumCount = 0, lowCount = 0;
 
       const allItems = document.querySelectorAll('#clausesCategoriesContainer .clause-item');
@@ -8371,8 +8376,8 @@
           badge.classList.add('high');
           item.classList.add('ai-high');
           highCount++;
-          // Auto-check unless user overrode
-          if (!isOverridden && !cb.checked) {
+          // Auto-check unless user overrode — but never on quotes (suggest-only).
+          if (!isQuoteDoc && !isOverridden && !cb.checked) {
             cb.checked = true;
           }
         } else if (score >= 60) {

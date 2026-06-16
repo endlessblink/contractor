@@ -16,7 +16,10 @@
             "contract"
           ],
           "required": false,
-          "notes": "Used for AI-generated video/image projects"
+          "notes": "Used for AI-generated video/image projects",
+          "defaultFor": [
+            "quote"
+          ]
         },
         {
           "id": "payment-advanced-development-hours",
@@ -37,7 +40,10 @@
             "contract",
             "workOrder"
           ],
-          "required": false
+          "required": false,
+          "defaultFor": [
+            "quote"
+          ]
         },
         {
           "id": "payment-no-vat",
@@ -694,7 +700,10 @@
             "contract"
           ],
           "required": false,
-          "notes": "Two revision rounds included, excess at hourly rate"
+          "notes": "Two revision rounds included, excess at hourly rate",
+          "defaultFor": [
+            "quote"
+          ]
         },
         {
           "id": "revisions-concept-change",
@@ -808,7 +817,10 @@
           "appliesTo": [
             "quote"
           ],
-          "required": false
+          "required": false,
+          "defaultFor": [
+            "quote"
+          ]
         },
         {
           "id": "general-quote-to-contract",
@@ -2530,8 +2542,9 @@
     "cancellationNoticeWorkshop": "48 שעות מראש",
     "cancellationPenaltyWorkshop": "50%"
   },
-  "_seedHash": "7f20cc1a6f43be9b259b7fb46bf74b03bba57d72504dce198112a6237b859fac",
+  "_seedHash": "87cbb492cf36294152f9ac790e77d2ea843914e5c0c7da09ecd942dc80880f1e",
   "_previousDefaultHashes": [
-    "d2282004e99e477e6ecaff09e4757f5d2cdf5c2b1428be38cfa90ca1175269ca"
+    "d2282004e99e477e6ecaff09e4757f5d2cdf5c2b1428be38cfa90ca1175269ca",
+    "7f20cc1a6f43be9b259b7fb46bf74b03bba57d72504dce198112a6237b859fac"
   ]
 }
