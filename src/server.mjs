@@ -3580,6 +3580,61 @@ app.post('/api/validate-form', (req, res) => {
   }
 });
 
+// ─── Enhance a single text field (expand minimal input) ──────────────────────
+
+const ENHANCE_FIELDS = {
+  projectDescription: {
+    label: 'תיאור הפרויקט',
+    instruction: 'הרחב את הקלט לתיאור פרויקט מקצועי, ברור וקצר (משפט עד שניים, עד ~30 מילים). זהו כותרת/תקציר — אל תפרט יתר על המידה.',
+  },
+  serviceDetails: {
+    label: 'פירוט השירות',
+    instruction: 'הרחב את הקלט לפירוט מקצועי ומלא של השירות: מה כלול, תוצרים, היקף. כתוב כשורות בולט קצרות מופרדות בשורה חדשה (\\n). 3-7 שורות.',
+  },
+  timeline: {
+    label: 'לוחות זמנים',
+    instruction: 'הרחב את הקלט ללוח זמנים מציאותי בשלבים. כתוב כשורות קצרות מופרדות בשורה חדשה (\\n), כל שורה = שלב ומשך זמן משוער.',
+  },
+};
+
+app.post('/api/enhance-field', async (req, res) => {
+  try {
+    const { field, text, context } = req.body || {};
+    const spec = ENHANCE_FIELDS[field];
+    if (!spec) return res.status(400).json({ error: 'Unknown field' });
+    if (!text || !String(text).trim()) return res.status(400).json({ error: 'אין טקסט להרחבה' });
+
+    const ctx = context || {};
+    const ctxLines = [
+      ctx.clientName && `לקוח: ${ctx.clientName}`,
+      ctx.projectDescription && field !== 'projectDescription' && `פרויקט: ${ctx.projectDescription}`,
+      ctx.serviceType && `סוג שירות: ${ctx.serviceType}`,
+    ].filter(Boolean).join('\n');
+
+    const system = `אתה עוזר הכתיבה של ${userProfile.name || 'המשתמש'} ליצירת מסמכים עסקיים בעברית.
+${spec.instruction}
+כללים:
+- עברית תקינה ומקצועית בלבד, RTL.
+- **ללא שיווק/נימוסין** ("אשמח", "נשמח", "פתרון מוביל"). עובדתי וענייני בלבד.
+- גוף ראשון יחיד או ניטרלי — לעולם לא "אנחנו".
+- החזר **רק** את הטקסט המורחב של "${spec.label}", ללא הקדמות, ללא מרכאות, ללא הסברים.`;
+
+    const userMsg = `${ctxLines ? ctxLines + '\n\n' : ''}טקסט נוכחי של "${spec.label}":\n${text}\n\nהחזר גרסה מורחבת ומלוטשת.`;
+
+    const result = await chatCompletion({
+      system,
+      messages: [{ role: 'user', content: userMsg }],
+      maxTokens: 700,
+    });
+    const enhanced = (result.text || '').trim().replace(/^["'״]+|["'״]+$/g, '');
+    if (!enhanced) return res.status(502).json({ error: 'לא התקבל תוכן מה-AI' });
+    res.json({ enhanced, providerUsed: result.providerUsed });
+  } catch (err) {
+    console.error('[enhance-field] error:', err.message);
+    res.status(502).json({ error: err.message.slice(0, 200) });
+  }
+});
+
 // ─── Save clause to living DB ─────────────────────────────────────────────────
 
 app.post('/api/save-clause', (req, res) => {

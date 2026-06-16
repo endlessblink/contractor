@@ -1226,6 +1226,48 @@
       margin-inline-start: 2px;
     }
 
+    /* ── AI enhance ("✨ הרחב") button + preview ───────────────────── */
+    .enhance-btn {
+      font-family: inherit;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      margin-inline-start: 6px;
+      border-radius: 6px;
+      border: 1px solid var(--accent-border);
+      background: var(--accent-subtle);
+      color: var(--accent-text);
+      cursor: pointer;
+      vertical-align: middle;
+    }
+    .enhance-btn:hover { filter: brightness(1.08); }
+    .enhance-btn:disabled { opacity: 0.55; cursor: default; }
+    .enhance-preview {
+      margin-top: 6px;
+      border: 1px solid var(--accent-border);
+      border-radius: 8px;
+      background: var(--accent-subtle);
+      padding: 10px 12px;
+      font-size: 0.82rem;
+    }
+    .enhance-preview .enhance-preview-text {
+      white-space: pre-wrap;
+      line-height: 1.55;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+    .enhance-preview .enhance-preview-actions { display: flex; gap: 8px; }
+    .enhance-preview button {
+      font-family: inherit;
+      font-size: 0.74rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .enhance-preview .enhance-apply { border: 1px solid var(--accent-border); background: var(--accent-text); color: #fff; }
+    .enhance-preview .enhance-cancel { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); }
+
     .field-group input,
     .field-group select,
     .field-group textarea {
@@ -6145,14 +6187,16 @@
               </div>
               <div class="field-row cols-1">
                 <div class="field-group project-copy-field">
-                  <label>תיאור הפרויקט <span class="required">*</span></label>
+                  <label>תיאור הפרויקט <span class="required">*</span> <button type="button" class="enhance-btn" data-enhance-field="projectDescription">✨ הרחב</button></label>
                   <textarea name="projectDescription" placeholder="תיאור קצר של הפרויקט..." rows="3"></textarea>
+                  <div class="enhance-preview" data-enhance-preview="projectDescription" style="display:none;"></div>
                 </div>
               </div>
               <div class="field-row cols-1">
                 <div class="field-group">
-                  <label>פירוט השירות</label>
+                  <label>פירוט השירות <button type="button" class="enhance-btn" data-enhance-field="serviceDetails">✨ הרחב</button></label>
                   <textarea name="serviceDetails" placeholder="פירוט מלא של השירות הניתן, הדרישות, ציפיות..." rows="4"></textarea>
+                  <div class="enhance-preview" data-enhance-preview="serviceDetails" style="display:none;"></div>
                 </div>
               </div>
             </div>
@@ -6385,8 +6429,9 @@
             <div class="form-section-body">
               <div class="field-row cols-1">
                 <div class="field-group">
-                  <label>פירוט לוח הזמנים</label>
+                  <label>פירוט לוח הזמנים <button type="button" class="enhance-btn" data-enhance-field="timeline">✨ הרחב</button></label>
                   <textarea name="timeline" placeholder="דוגמה: שלב א׳ — סקריפט ועיצוב: שבוע 1-2&#10;שלב ב׳ — הפקה: שבוע 3-5&#10;שלב ג׳ — עריכה ואספקה: שבוע 6-7" rows="4"></textarea>
+                  <div class="enhance-preview" data-enhance-preview="timeline" style="display:none;"></div>
                 </div>
               </div>
             </div>
@@ -7512,7 +7557,7 @@
             if (targetDocType === 'cv') {
               btn.disabled = true;
               btn.textContent = 'יוצר גרסת CV...';
-              fetch('/api/cv-versions', {
+              fetchCvJson('/api/cv-versions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -7527,13 +7572,10 @@
                     languages: []
                   }
                 })
-              }).then(function(res) {
-                if (!res.ok) throw new Error('CV create failed');
-                return res.json();
               }).then(function() {
                 if (window._navigate) window._navigate('cv');
-              }).catch(function() {
-                alert('שגיאה ביצירת גרסת CV');
+              }).catch(function(err) {
+                alert(err.message || 'שגיאה ביצירת גרסת CV');
                 btn.disabled = false;
                 btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>מלא טופס`;
               });
@@ -9436,6 +9478,62 @@
     });
 
     // ── Review Form button ──
+    // ── AI "✨ הרחב" — expand a minimal field into polished Hebrew (preview/apply) ──
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.enhance-btn');
+      if (!btn) return;
+      const field = btn.dataset.enhanceField;
+      const textarea = docForm.querySelector(`[name="${field}"]`);
+      const preview = docForm.querySelector(`[data-enhance-preview="${field}"]`);
+      if (!textarea || !preview) return;
+      const text = (textarea.value || '').trim();
+      if (!text) { textarea.focus(); textarea.placeholder = 'כתוב משהו קצר קודם, ואז לחץ ✨ הרחב'; return; }
+
+      const original = btn.textContent;
+      btn.disabled = true; btn.textContent = '… מרחיב';
+      preview.style.display = 'none';
+      try {
+        const res = await fetch('/api/enhance-field', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ field, text, context: getFormState() }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.enhanced) throw new Error(data.error || 'נכשל');
+
+        preview.innerHTML = '';
+        const textDiv = document.createElement('div');
+        textDiv.className = 'enhance-preview-text';
+        textDiv.textContent = data.enhanced;
+        const actions = document.createElement('div');
+        actions.className = 'enhance-preview-actions';
+        const applyBtn = document.createElement('button');
+        applyBtn.type = 'button'; applyBtn.className = 'enhance-apply'; applyBtn.textContent = '✓ החל';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button'; cancelBtn.className = 'enhance-cancel'; cancelBtn.textContent = 'בטל';
+        applyBtn.addEventListener('click', () => {
+          textarea.value = data.enhanced;
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+          textarea.dispatchEvent(new Event('change', { bubbles: true }));
+          preview.style.display = 'none';
+        });
+        cancelBtn.addEventListener('click', () => { preview.style.display = 'none'; });
+        actions.appendChild(applyBtn); actions.appendChild(cancelBtn);
+        preview.appendChild(textDiv); preview.appendChild(actions);
+        preview.style.display = '';
+      } catch (err) {
+        preview.innerHTML = '';
+        const errDiv = document.createElement('div');
+        errDiv.className = 'enhance-preview-text';
+        errDiv.style.color = '#ef4444';
+        errDiv.textContent = 'ההרחבה נכשלה: ' + (err.message || 'שגיאה') + ' (בדוק שחיבור ה-AI פעיל)';
+        preview.appendChild(errDiv);
+        preview.style.display = '';
+      } finally {
+        btn.disabled = false; btn.textContent = original;
+      }
+    });
+
     const reviewFormBtn = document.getElementById('reviewFormBtn');
     reviewFormBtn.addEventListener('click', async () => {
       // Switch to chat tab
@@ -13000,8 +13098,7 @@
 
     async function loadCvVersions() {
       try {
-        var res = await fetch('/api/cv-versions');
-        var data = await res.json();
+        var data = await fetchCvJson('/api/cv-versions');
         cvState.versions = data.versions || [];
         cvState.activeId = cvState.activeId || data.activeCvId || (cvState.versions[0] && cvState.versions[0].id) || null;
         renderCvVersionList();
@@ -13011,6 +13108,18 @@
         console.error('CV versions load failed:', err);
         showCvEmptyState();
       }
+    }
+
+    async function fetchCvJson(url, options) {
+      var res = await fetch(url, options);
+      var contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        var text = await res.text();
+        throw new Error('CV API returned non-JSON response (' + res.status + '): ' + text.slice(0, 80));
+      }
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || ('CV API request failed: ' + res.status));
+      return data;
     }
 
     function showCvEmptyState() {
@@ -13047,26 +13156,32 @@
     }
 
     async function createCvVersion() {
-      var res = await fetch('/api/cv-versions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'קורות חיים', cvData: {} })
-      });
-      if (!res.ok) return alert('שגיאה ביצירת גרסת CV');
-      var version = await res.json();
-      cvState.activeId = version.id;
-      cvState.active = version;
-      await loadCvVersions();
+      try {
+        var version = await fetchCvJson('/api/cv-versions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'קורות חיים', cvData: {} })
+        });
+        cvState.activeId = version.id;
+        cvState.active = version;
+        await loadCvVersions();
+      } catch (err) {
+        console.error('CV version create failed:', err);
+        alert(err.message || 'שגיאה ביצירת גרסת CV');
+      }
     }
 
     async function loadCvVersion(id) {
-      var res = await fetch('/api/cv-versions/' + encodeURIComponent(id));
-      if (!res.ok) return showCvEmptyState();
-      cvState.active = await res.json();
-      cvState.activeId = id;
-      renderCvVersionList();
-      fillCvEditor(cvState.active);
-      showCvEditor();
+      try {
+        cvState.active = await fetchCvJson('/api/cv-versions/' + encodeURIComponent(id));
+        cvState.activeId = id;
+        renderCvVersionList();
+        fillCvEditor(cvState.active);
+        showCvEditor();
+      } catch (err) {
+        console.error('CV version load failed:', err);
+        showCvEmptyState();
+      }
     }
 
     function addCvLinkRow(label, url) {
@@ -13177,19 +13292,24 @@
     }
 
     async function saveActiveCvVersion() {
-      if (!cvState.activeId) return;
+      if (!cvState.activeId) return false;
       var body = {
         name: (document.getElementById('cvVersionName') || {}).value || 'קורות חיים',
         cvData: getCvDataFromWorkspace()
       };
-      var res = await fetch('/api/cv-versions/' + encodeURIComponent(cvState.activeId), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) return alert('שגיאה בשמירת CV');
-      cvState.active = await res.json();
-      await loadCvVersions();
+      try {
+        cvState.active = await fetchCvJson('/api/cv-versions/' + encodeURIComponent(cvState.activeId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        await loadCvVersions();
+        return true;
+      } catch (err) {
+        console.error('CV version save failed:', err);
+        alert(err.message || 'שגיאה בשמירת CV');
+        return false;
+      }
     }
 
     async function runCvIntake() {
@@ -13202,9 +13322,7 @@
       var btn = document.getElementById('cvRunIntakeBtn');
       if (btn) { btn.disabled = true; btn.textContent = 'מנתח...'; }
       try {
-        var res = await fetch('/api/cv-versions/' + encodeURIComponent(cvState.activeId) + '/intake', { method: 'POST', body: form });
-        var data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'שגיאה בניתוח CV');
+        var data = await fetchCvJson('/api/cv-versions/' + encodeURIComponent(cvState.activeId) + '/intake', { method: 'POST', body: form });
         cvState.pendingFiles = [];
         var fileInput = document.getElementById('cvIntakeFiles');
         if (fileInput) fileInput.value = '';
@@ -13224,7 +13342,8 @@
 
     async function generateActiveCv() {
       if (!cvState.activeId) return;
-      await saveActiveCvVersion();
+      var saved = await saveActiveCvVersion();
+      if (!saved) return;
       var cvData = getCvDataFromWorkspace();
       var res = await fetch('/api/cv-versions/' + encodeURIComponent(cvState.activeId) + '/generate', {
         method: 'POST',
